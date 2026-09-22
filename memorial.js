@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const petName = order.petName || '아이';
         const josa = getSubjectParticle(petName);
 
-        document.title = `${petName}의 기억의 숲 | MEMORIAL`;
+        document.title = `${petName}의 온새미로 | ONSEMIRO`;
 
         document.getElementById('memorialTitleName').innerText = petName;
         document.getElementById('ctaPetName').innerText = petName;

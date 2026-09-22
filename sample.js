@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const petName = order.petName || '하임';
         const slug = roomParam || order.roomSlug || '4K8F2G';
 
-        document.title = `${petName}의 기억의 숲 | MEMORIAL`;
+        document.title = `${petName}의 온새미로 | ONSEMIRO`;
 
         const nameEl = document.getElementById('memorialPetName');
         if (nameEl) nameEl.innerText = petName;
