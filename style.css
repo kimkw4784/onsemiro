@@ -36,6 +36,7 @@
 
 html {
     scroll-behavior: smooth;
+    scroll-padding-top: 10px;
 }
 
 body {
@@ -455,6 +456,91 @@ body {
     font-family: var(--font-serif-en);
     color: var(--accent-brown);
     font-size: 14px;
+}
+
+/* 브랜드 스토리 섹션 */
+.brand-story-section {
+    padding: 100px 0;
+    background-color: var(--bg-main);
+    text-align: center;
+}
+
+.brand-story-section .section-sub strong {
+    color: var(--accent-brown);
+    font-weight: 700;
+}
+
+/* 키워드 카드 */
+.story-keywords {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    max-width: 720px;
+    margin: 48px auto 0 auto;
+    background: var(--bg-surface);
+    padding: 28px 40px;
+    border-radius: 16px;
+    border: 1px solid rgba(43, 38, 32, 0.08);
+    box-shadow: var(--shadow-sm);
+}
+
+.keyword-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.keyword-num {
+    font-family: var(--font-serif-en);
+    font-size: 20px;
+    color: var(--accent-brown);
+    font-weight: 700;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+
+.keyword-text {
+    font-family: var(--font-serif-kr);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-main);
+    letter-spacing: -0.3px;
+    line-height: 1.4;
+}
+
+.keyword-divider {
+    width: 1px;
+    height: 36px;
+    background-color: var(--border-light);
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+    .brand-story-section {
+        padding: 60px 0;
+    }
+
+    .story-keywords {
+        flex-direction: column;
+        gap: 20px;
+        padding: 24px;
+        margin-top: 32px;
+    }
+
+    .keyword-num {
+        font-size: 18px;
+    }
+
+    .keyword-text {
+        font-size: 17px;
+    }
+
+    .keyword-divider {
+        width: 100%;
+        height: 1px;
+    }
 }
 
 .features-grid {
