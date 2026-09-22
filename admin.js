@@ -795,7 +795,7 @@ function deletePostboxLetter(letterId) {
 
     localStorage.setItem('memorial_letters', JSON.stringify(list));
     renderAdminPostbox();
-    showToast("편지가 삭제되었습니다.");
+    showToast("편지가 정상적으로 삭제되었습니다.");
 }
 
 function showToast(message) {
