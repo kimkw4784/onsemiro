@@ -606,9 +606,19 @@
                 <h2 class="section-heading">자주 묻는 질문</h2>
             </div>
 
+            <!-- FAQ 카테고리 탭 -->
+            <div class="faq-tabs">
+                <button type="button" class="faq-tab active" onclick="switchFaqTab('all', this)">전체</button>
+                <button type="button" class="faq-tab" onclick="switchFaqTab('use', this)">이용/공유</button>
+                <button type="button" class="faq-tab" onclick="switchFaqTab('data', this)">데이터/보안</button>
+                <button type="button" class="faq-tab" onclick="switchFaqTab('payment', this)">결제/기타</button>
+            </div>
+
+            <!-- FAQ 아코디언 리스트 -->
             <div class="faq-list">
-                <!-- FAQ 01 -->
-                <div class="faq-item">
+
+                <!-- [결제/기타] FAQ 01 -->
+                <div class="faq-item" data-category="payment">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 매달 결제되는 구독료가 있나요?</span>
                         <span class="faq-icon"></span>
@@ -618,8 +628,8 @@
                     </div>
                 </div>
 
-                <!-- FAQ 02 -->
-                <div class="faq-item">
+                <!-- [데이터/보안] FAQ 02 -->
+                <div class="faq-item" data-category="data">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 서비스가 중단되면 사진은 어떻게 되나요?</span>
                         <span class="faq-icon"></span>
@@ -630,8 +640,8 @@
                     </div>
                 </div>
 
-                <!-- FAQ 03 -->
-                <div class="faq-item">
+                <!-- [이용/공유] FAQ 03 -->
+                <div class="faq-item" data-category="use">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 친척이나 지인들에게 어떻게 공유하나요?</span>
                         <span class="faq-icon"></span>
@@ -640,6 +650,64 @@
                         <p class="faq-a">A. 별도의 앱 설치나 회원가입 없이 생성된 고유 링크(URL)를 카카오톡이나 문자로 전달하면 즉시 접속할 수 있습니다.</p>
                     </div>
                 </div>
+
+                <!-- [데이터/보안] FAQ 04 -->
+                <div class="faq-item" data-category="data">
+                    <button type="button" class="faq-q" onclick="toggleFaq(this)">
+                        <span>Q. 네이버나 구글 같은 포털 검색에 내 추모관이 노출되나요?</span>
+                        <span class="faq-icon"></span>
+                    </button>
+                    <div class="faq-a-wrap">
+                        <p class="faq-a">A. 아닙니다. 상업적 피드나 포털 검색에 무분별하게 노출되지 않으며, 링크를 공유받은 분들만 들어올 수 있는 완전한 독립 공간으로
+                            유지됩니다.</p>
+                    </div>
+                </div>
+
+                <!-- [이용/공유] FAQ 05 -->
+                <div class="faq-item" data-category="use">
+                    <button type="button" class="faq-q" onclick="toggleFaq(this)">
+                        <span>Q. 업로드할 수 있는 사진이나 동영상 용량 제한이 있나요?</span>
+                        <span class="faq-icon"></span>
+                    </button>
+                    <div class="faq-a-wrap">
+                        <p class="faq-a">A. 모바일에서는 기기 보호와 안정적인 전송을 위해 파일당 최대 200MB까지 업로드 가능합니다. 2분 이상의 긴 영상이나 대용량 원본 파일은
+                            PC에서 접속 시 최대 500MB까지 멈춤 없이 안전하게 담으실 수 있습니다.</p>
+                    </div>
+                </div>
+
+                <!-- [이용/공유] FAQ 06 -->
+                <div class="faq-item" data-category="use">
+                    <button type="button" class="faq-q" onclick="toggleFaq(this)">
+                        <span>Q. 추모관 링크를 따로 저장해 두어야 하나요?</span>
+                        <span class="faq-icon"></span>
+                    </button>
+                    <div class="faq-a-wrap">
+                        <p class="faq-a">A. 추모관 개설 시 입력하신 휴대폰 번호로 링크가 포함된 알림톡이 자동 발송되니, 따로 저장해두지 않으셔도 괜찮습니다.</p>
+                    </div>
+                </div>
+
+                <!-- [이용/공유] FAQ 07 -->
+                <div class="faq-item" data-category="use">
+                    <button type="button" class="faq-q" onclick="toggleFaq(this)">
+                        <span>Q. 지인들이 보내준 사진이나 추모글이 추모관에 바로 게시되나요?</span>
+                        <span class="faq-icon"></span>
+                    </button>
+                    <div class="faq-a-wrap">
+                        <p class="faq-a">A. 아닙니다. 관리자 화면에서 확인 후 승인한 사진/동영상과 추모글만 게시됩니다.</p>
+                    </div>
+                </div>
+
+                <!-- [데이터/보안] FAQ 08 -->
+                <div class="faq-item" data-category="data">
+                    <button type="button" class="faq-q" onclick="toggleFaq(this)">
+                        <span>Q. 데이터/보안</span>
+                        <span class="faq-icon"></span>
+                    </button>
+                    <div class="faq-a-wrap">
+                        <p class="faq-a">A. 데이터/보안</p>
+                    </div>
+                </div>
+
             </div>
         </div>
     </section>
@@ -651,18 +719,18 @@
                     <span class="logo-en">ONSEMIRO</span>
                     <span class="logo-kr">온새미로</span>
                 </a>
-                <p class="footer-slogan">시간을 넘어 영원히 머무는 작은 안식처</p>
+                <p class="footer-slogan">변함없이 있는 그대로, 영원히 기억되는 공간</p>
             </div>
 
             <div class="footer-divider"></div>
 
             <div class="footer-bottom">
                 <div class="footer-info">
-                    <span>상호명: 온새미로 (ONSEMIRO)</span>
+                    <span>상호명: 원우웍스</span>
                     <span>대표: 김경원</span>
-                    <span>사업자등록번호: 000-00-00000</span>
-                    <span>통신판매업신고: 제2026-서울강남-0000호</span>
-                    <span>문의: contact@memorial.kr</span>
+                    <span>사업자등록번호: 217-14-13449</span>
+                    <span>통신판매업신고: 제0000-서울강남-0000호</span>
+                    <span>이메일: wonoo.works@gmail.co.kr</span>
                 </div>
                 <div class="footer-legal">
                     <a href="terms.html" target="_blank">이용약관</a>

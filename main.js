@@ -174,3 +174,25 @@ function toggleFaq(buttonEl) {
         wrap.style.maxHeight = wrap.scrollHeight + 'px';
     }
 }
+
+// FAQ 탭 전환 함수
+function switchFaqTab(category, element) {
+    // 1. 모든 탭에서 active 클래스 제거 후 클릭한 탭에 추가
+    const tabs = document.querySelectorAll('.faq-tab');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    element.classList.add('active');
+
+    // 2. 카테고리에 맞춰 항목 노출/숨김 처리
+    const items = document.querySelectorAll('.faq-item');
+    items.forEach(item => {
+        const itemCategory = item.getAttribute('data-category');
+
+        if (category === 'all' || itemCategory === category) {
+            item.classList.remove('hide');
+        } else {
+            item.classList.add('hide');
+            // 숨겨지는 항목의 열려있는 아코디언은 닫아줌 (선택사항)
+            item.classList.remove('open');
+        }
+    });
+}

@@ -1539,6 +1539,46 @@ body {
     word-break: keep-all;
 }
 
+/* FAQ 탭 스타일 */
+.faq-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 32px 0 40px 0;
+    flex-wrap: wrap;
+}
+
+.faq-tab {
+    padding: 10px 20px;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-sub);
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.faq-tab:hover {
+    border-color: var(--accent-brown);
+    color: var(--accent-brown);
+}
+
+/* 활성화된 탭 */
+.faq-tab.active {
+    background-color: var(--accent-brown);
+    color: #ffffff;
+    border-color: var(--accent-brown);
+    font-weight: 600;
+}
+
+/* 탭 전환 시 숨김 처리 */
+.faq-item.hide {
+    display: none;
+}
+
 .footer {
     background: #FAF7F2;
     border-top: 1px solid rgba(43, 38, 32, 0.08);
@@ -1574,7 +1614,7 @@ body {
     font-size: 18px;
     font-weight: 600;
     letter-spacing: 2px;
-    color: var(--text-main);
+    color: var(--accent-brown);
 }
 
 .footer-logo .logo-kr {
