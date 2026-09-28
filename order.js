@@ -1,8 +1,13 @@
+// order.js
+
 let currentSelectedPlan = 'digital';
 const PLAN_PRICES = {
-    digital: '19,500',
-    heritage: '59,000'
+    digital: 19500,   // 숫자형으로 관리
+    heritage: 59000
 };
+
+// 토스페이먼츠 클라이언트 키 설정 (테스트용 키)
+const TOSS_CLIENT_KEY = 'test_ck_P9BRQmyarYPNx7bzL5jNVJ07KzLN';
 
 // 6자리 난수 슬러그 생성
 function generateSlug() {
@@ -27,7 +32,7 @@ function openOrderModal(planType = 'digital') {
     const meetDate = document.getElementById('petMeetInput')?.value || '2013. 05. 10.';
     const farewellDate = document.getElementById('petFarewellInput')?.value || '2026. 02. 15.';
 
-    // 2. 사진 데이터 확인 (main.js의 uploadedImageData 우선, 없으면 liveAvatar의 img src)
+    // 2. 사진 데이터 확인
     let photoData = window.uploadedImageData;
     if (!photoData) {
         const previewImg = document.querySelector('#liveAvatar img');
@@ -36,7 +41,7 @@ function openOrderModal(planType = 'digital') {
         }
     }
 
-    // 썸네일 렌더링 (사진이 있으면 사진, 없으면 선택된 동물 이모지)
+    // 썸네일 렌더링
     let thumbHtml = '🐶';
     if (photoData) {
         thumbHtml = `<img src="${photoData}" alt="${petName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
@@ -107,7 +112,7 @@ function openOrderModal(planType = 'digital') {
                     </div>
 
                     <button type="submit" id="orderSubmitBtn" class="btn btn-primary btn-full">
-                        ${PLAN_PRICES[currentSelectedPlan]}원 결제 및 생성하기
+                        ${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제 및 생성하기
                     </button>
                 </form>
             </div>
@@ -137,25 +142,33 @@ function selectPlanInModal(cardElement, planValue) {
 
     const submitBtn = document.getElementById('orderSubmitBtn');
     if (submitBtn) {
-        submitBtn.innerText = `${PLAN_PRICES[planValue]}원 결제 및 생성하기`;
+        submitBtn.innerText = `${PLAN_PRICES[planValue].toLocaleString()}원 결제 및 생성하기`;
     }
 }
 
-// 폼 최종 제출 및 저장
-function handleOrderSubmit(event) {
+// 폼 최종 제출 및 토스 결제 요청
+async function handleOrderSubmit(event) {
     event.preventDefault();
 
     const petName = document.getElementById('petNameInput')?.value || '우리 아이';
     const roomSlug = generateSlug();
 
-    // 사진 데이터 가져오기 (메모리 변수 or DOM src)
+    // 사진 데이터 가져오기
     let photoData = window.uploadedImageData;
     if (!photoData) {
         const previewImg = document.querySelector('#liveAvatar img');
         if (previewImg && previewImg.src) photoData = previewImg.src;
     }
 
+    // 주문번호(orderId) 생성: 고유한 문자열이어야 함
+    const orderId = 'ONSEMIRO_' + new Date().getTime() + '_' + roomSlug;
+    const amount = PLAN_PRICES[currentSelectedPlan];
+    const applicantName = document.getElementById('applicantName')?.value.trim() || '';
+    const applicantPhone = document.getElementById('applicantPhone')?.value.trim() || '';
+
+    // 결제 성공 후 돌아왔을 때 보관할 주문 데이터
     const orderData = {
+        orderId: orderId,
         petName: petName,
         roomSlug: roomSlug,
         meetDate: document.getElementById('petMeetInput')?.value || '',
@@ -164,14 +177,45 @@ function handleOrderSubmit(event) {
         gift2: document.getElementById('giftInput2')?.value || '',
         quote: document.getElementById('petQuoteInput')?.value || '',
         bgm: document.getElementById('petBgmSelect')?.value || '',
-        applicantName: document.getElementById('applicantName')?.value.trim() || '',
-        applicantPhone: document.getElementById('applicantPhone')?.value.trim() || '',
+        applicantName: applicantName,
+        applicantPhone: applicantPhone,
         plan: currentSelectedPlan,
+        amount: amount,
         petPhoto: photoData || '',
         createdAt: new Date().toISOString()
     };
 
-    localStorage.setItem('recentMemorialOrder', JSON.stringify(orderData));
-    closeOrderModal();
-    location.href = "complete.html";
+    // 임시로 로컬스토리지에 전달 데이터 저장 (결제완료 페이지 complete.html에서 사용)
+    localStorage.setItem('pendingMemorialOrder', JSON.stringify(orderData));
+
+    // 토스페이먼츠 결제 호출
+    try {
+        if (typeof TossPayments === 'undefined') {
+            alert('토스페이먼츠 SDK가 로드되지 않았습니다. HTML에 SDK 스크립트를 추가해주세요.');
+            return;
+        }
+
+        const tossPayments = TossPayments(TOSS_CLIENT_KEY);
+        const payment = tossPayments.payment({ customerKey: TossPayments.ANONYMOUS });
+
+        await payment.requestPayment({
+            method: 'CARD', // 카카오페이, 토스페이, 신용카드 등 일반 결제창
+            amount: {
+                currency: 'KRW',
+                value: amount,
+            },
+            orderId: orderId,
+            orderName: `온새미로 디지털 메모리얼 (${petName})`,
+            successUrl: window.location.origin + '/complete.html', // 결제 성공 시 이동
+            failUrl: window.location.origin + '/fail.html',          // 결제 취소/실패 시 이동
+            customerName: applicantName,
+            customerMobilePhone: applicantPhone,
+        });
+
+    } catch (error) {
+        console.error('결제 요청 에러:', error);
+        if (error.code !== 'USER_CANCEL') {
+            alert('결제창을 여는 중 오류가 발생했습니다: ' + error.message);
+        }
+    }
 }
