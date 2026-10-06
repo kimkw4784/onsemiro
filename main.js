@@ -113,29 +113,29 @@ function addCount(btn, type = 'treat') {
 function createHeroParticle(targetEl, type, petType) {
     const emojiPacks = {
         dog: {
-            treat: ['🦴', '🍖', '🥩', '🍪', '✨'],
-            toy: ['🎾', '⚾', '🧸', '⭐', '✨'],
-            candle: ['🕯️', '✨', '🌟', '💛']
+            treat: ['noto:bone', 'noto:cut-of-meat', 'noto:cookie', 'fxemoji:sparkles'],
+            toy: ['noto:soccer-ball', 'twemoji:teddy-bear', 'noto:star'],
+            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star']
         },
         cat: {
-            treat: ['🐟', '🍣', '🍗', '🥛', '✨'],
-            toy: ['🧶', '🪢', '📦', '🎈', '✨'],
-            candle: ['🕯️', '✨', '🌟', '💛']
+            treat: ['noto-v1:fish', 'ph:fish-duotone', 'fluent-emoji-flat:glass-of-milk'],
+            toy: ['noto:yarn', 'noto:package', 'noto:balloon'],
+            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star']
         },
         small: {
-            treat: ['🌻', '🥕', '🍎', '🍓', '✨'],
-            toy: ['🎡', '🔔', '🎀', '⭐', '✨'],
-            candle: ['🕯️', '✨', '🌟', '💛']
+            treat: ['noto:sunflower', 'noto:carrot', 'noto:red-apple'],
+            toy: ['noto:bell', 'noto:ribbon'],
+            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star']
         }
     };
 
     const currentPack = emojiPacks[petType] || emojiPacks.dog;
     const targetList = currentPack[type] || currentPack.treat;
-    const emoji = targetList[Math.floor(Math.random() * targetList.length)];
+    const iconName = targetList[Math.floor(Math.random() * targetList.length)];
 
     const particle = document.createElement('span');
     particle.className = 'interactive-floating-particle';
-    particle.innerText = emoji;
+    particle.innerHTML = `<iconify-icon icon="${iconName}"></iconify-icon>`;
 
     const randomOffset = (Math.random() - 0.5) * 24;
     particle.style.left = `calc(50% + ${randomOffset}px)`;

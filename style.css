@@ -1156,12 +1156,16 @@ body {
     border: 1px solid rgba(43, 38, 32, 0.12);
     border-radius: 8px;
     font-family: var(--font-sans);
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-sub);
     cursor: pointer;
     text-align: center;
     transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
 .pet-type-btn:hover {
@@ -1174,6 +1178,12 @@ body {
     color: #FFFFFF;
     border-color: var(--text-main);
     font-weight: 600;
+}
+
+.pet-icon {
+    font-size: 18px;
+    vertical-align: middle;
+    line-height: 1;
 }
 
 .upload-icon {

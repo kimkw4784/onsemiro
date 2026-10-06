@@ -19,13 +19,13 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
 
     <link rel="stylesheet" href="style.css">
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕊️</text></svg>">
+    <link rel="icon" href="https://api.iconify.design/noto:paw-prints.svg">
     <script src="https://js.tosspayments.com/v2/standard"></script>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 
     <script src="firebase-config.js"></script>
     <script src="main.js"></script>
@@ -399,12 +399,21 @@
                     <div class="form-group">
                         <label class="form-label">아이 종류 선택</label>
                         <div class="pet-type-selector">
-                            <button type="button" class="pet-type-btn active" onclick="selectPetType(this, 'dog')">🐶
-                                강아지</button>
-                            <button type="button" class="pet-type-btn" onclick="selectPetType(this, 'cat')">🐱
-                                고양이</button>
-                            <button type="button" class="pet-type-btn" onclick="selectPetType(this, 'small')">🐹
-                                소동물</button>
+                            <button type="button" class="pet-type-btn active" onclick="selectPetType(this, 'dog')">
+                                <iconify-icon icon="fluent-emoji-flat:dog-face" class="pet-icon"
+                                    aria-hidden="true"></iconify-icon>
+                                <span>강아지</span>
+                            </button>
+                            <button type="button" class="pet-type-btn" onclick="selectPetType(this, 'cat')">
+                                <iconify-icon icon="fluent-emoji-flat:cat-face" class="pet-icon"
+                                    aria-hidden="true"></iconify-icon>
+                                <span>고양이</span>
+                            </button>
+                            <button type="button" class="pet-type-btn" onclick="selectPetType(this, 'small')">
+                                <iconify-icon icon="fluent-emoji-flat:hamster" class="pet-icon"
+                                    aria-hidden="true"></iconify-icon>
+                                <span>소동물</span>
+                            </button>
                         </div>
                     </div>
 
