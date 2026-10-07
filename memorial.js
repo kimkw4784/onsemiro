@@ -74,6 +74,44 @@ function switchBgm() {
     }).catch(err => console.log("곡 재생 대기:", err));
 }
 
+
+// =========================================
+// 저장된 배경음악을 추모관 선택창에 반영
+// (빌더는 곡 제목을, 관리자 정보 탭은 키 값을 저장하므로 둘 다 처리)
+// =========================================
+const BGM_FILES = {
+    piano: './audio/bgm-piano.mp3',
+    guitar: './audio/bgm-guitar.mp3',
+    musicbox: './audio/bgm-musicbox.mp3',
+    none: 'none'
+};
+const BGM_TITLE_TO_KEY = {
+    '별빛 아래 너와 나 (잔잔한 피아노)': 'piano',
+    '따뜻한 봄날의 산책 (어쿠스틱 기타)': 'guitar',
+    '영원한 안식처 (서정적인 오르골)': 'musicbox',
+    '음악 없음 (조용한 추모)': 'none'
+};
+
+function applySavedBgm(saved) {
+    const select = document.getElementById('bgmSelect');
+    if (!select || !saved) return;
+
+    const key = BGM_TITLE_TO_KEY[saved] || saved;
+    const value = BGM_FILES[key];
+    if (!value) return;
+
+    select.value = value;
+    const btn = document.getElementById('bgmToggleBtn');
+    if (value === 'none') {
+        if (btn) {
+            btn.style.opacity = '0.5';
+            btn.style.pointerEvents = 'none';
+        }
+    } else {
+        bgmAudio.src = value; // 자동재생은 브라우저가 막기 때문에 곡만 준비해 두고, 재생 버튼으로 시작
+    }
+}
+
 // =========================================
 // 인터랙션 (헌화/간식)
 // =========================================
@@ -286,6 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
     activeRoomSlug = roomParam || (order && order.roomSlug) || 'active_room';
 
     if (order) {
+        applySavedBgm(order.bgm);
         const petName = order.petName || '아이';
 
         document.title = `${petName}의 온새미로 | ONSEMIRO`;
