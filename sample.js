@@ -1,9 +1,10 @@
-// 한글 받침 유무에 따른 주격 조사(이/가) 판별 함수
-function getSubjectParticle(name) {
-    if (!name) return '이';
+// 이름 끝에 받침이 있으면 '이'를 붙여 부르는 이름으로 바꿔줍니다.
+// (하임 → 하임이, 코코 → 코코) 뒤에 붙는 조사는 항상 받침 없는 형태(가/를/와/의/에게)로 쓰면 됩니다.
+function callName(name) {
+    if (!name) return '';
     const lastChar = name.charCodeAt(name.length - 1);
-    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return '이';
-    return (lastChar - 0xAC00) % 28 > 0 ? '이' : '가';
+    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return name;
+    return (lastChar - 0xAC00) % 28 > 0 ? name + '이' : name;
 }
 
 const bgmAudio = new Audio();
@@ -310,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.title = `${petName}의 온새미로 | ONSEMIRO`;
 
         const nameEl = document.getElementById('memorialPetName');
-        if (nameEl) nameEl.innerText = petName;
+        if (nameEl) nameEl.innerText = callName(petName);
 
         const introNameEl = document.querySelector('.intro-name');
         if (introNameEl) introNameEl.innerText = petName;
@@ -320,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const letterMsgInput = document.getElementById('letterMsg');
         if (letterMsgInput) {
-            letterMsgInput.placeholder = `${petName}에게 전하고 싶은 따뜻한 한마디를 남겨주세요. (최대 1,000자)`;
+            letterMsgInput.placeholder = `${callName(petName)}에게 전하고 싶은 따뜻한 한마디를 남겨주세요. (최대 1,000자)`;
         }
 
         const quoteEl = document.querySelector('.intro-quote');
@@ -386,12 +387,10 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionStorage.setItem(welcomeKey, 'true');
 
             setTimeout(() => {
-                const josa = getSubjectParticle(petName);
-
                 const bubble = document.createElement('div');
                 bubble.className = 'interact-welcome-bubble';
                 bubble.innerHTML = `
-                    <span>보호자님이 오실 때까지 ${petName}${josa} 외롭지 않게 온새미로가 먼저 촛불을 켜두었습니다 🕯️</span>
+                    <span>보호자님이 오실 때까지 ${callName(petName)}가 외롭지 않게 온새미로가 먼저 촛불을 켜두었습니다 🕯️</span>
                     <button type="button" class="btn-bubble-close" aria-label="닫기">✕</button>
                 `;
 
@@ -419,13 +418,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (timelineList) {
         const rawTL = localStorage.getItem('memorial_timeline_list');
         const activeName = (order && order.petName) ? order.petName : '코코';
-        const josa = getSubjectParticle(activeName);
 
         // 관리자 추가 데이터가 있으면 그것을 사용, 없으면 기본값 노출
         let tlData = rawTL ? JSON.parse(rawTL) : [
             {
                 date: (order && order.meetDate) ? order.meetDate.replace(/\./g, '. ').trim() : '2013. 05. 10.',
-                story: `손바닥만 하던 ${activeName}${josa} 처음 우리 집에 오던 날, 온 세상이 따뜻해졌어.`
+                story: `손바닥만 하던 ${callName(activeName)}가 처음 우리 집에 오던 날, 온 세상이 따뜻해졌어.`
             },
             {
                 date: (order && order.farewellDate) ? order.farewellDate.replace(/\./g, '. ').trim() : '2026. 02. 15.',

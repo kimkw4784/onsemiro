@@ -17,13 +17,15 @@ document.addEventListener('DOMContentLoaded', () => {
             orderData.paidAmount = amount;
             orderData.orderId = orderId || orderData.orderId;
         }
-        // 결제 완료 후 최종 데이터 확정 저장 및 대기 데이터 삭제
+        // 결제 완료 후 대기 데이터를 먼저 비워 공간을 확보한 뒤 최종 데이터 저장
         localStorage.removeItem('pendingMemorialOrder');
         try {
             localStorage.setItem('recentMemorialOrder', JSON.stringify(orderData));
         } catch (e) {
             console.error('주문 정보 저장 실패:', e);
         }
+    } else if (recentRaw) {
+        orderData = JSON.parse(recentRaw);
     }
 
     // 온새미로 기본 도메인
@@ -40,15 +42,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const noticeNameEl = document.getElementById('noticePetName');
         const noticeJosaEl = document.getElementById('noticePetJosa');
         if (noticeNameEl) {
-            noticeNameEl.innerText = petName;
-            if (noticeJosaEl) noticeJosaEl.innerText = getSubjectParticle(petName);
+            noticeNameEl.innerText = callName(petName);
+            if (noticeJosaEl) noticeJosaEl.innerText = '가';
         }
 
         const smsNameEl = document.getElementById('smsPetName');
         const smsJosaEl = document.getElementById('smsPetJosa');
         if (smsNameEl) {
-            smsNameEl.innerText = petName;
-            if (smsJosaEl) smsJosaEl.innerText = getObjectParticle(petName);
+            smsNameEl.innerText = callName(petName);
+            if (smsJosaEl) smsJosaEl.innerText = '를';
         }
 
         // [주문 요약] 신청자, 추모관 명칭, 주문번호, 플랜
@@ -106,21 +108,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 한글 받침 유무에 따른 주격 조사(이/가) 판별 함수
-function getSubjectParticle(name) {
-    if (!name) return '가';
+// 이름 끝에 받침이 있으면 '이'를 붙여 부르는 이름으로 바꿔줍니다.
+// (하임 → 하임이, 코코 → 코코) 뒤에 붙는 조사는 항상 받침 없는 형태(가/를/와/의/에게)로 쓰면 됩니다.
+function callName(name) {
+    if (!name) return '';
     const lastChar = name.charCodeAt(name.length - 1);
-    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return '가';
-    return (lastChar - 0xAC00) % 28 > 0 ? '이' : '가';
+    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return name;
+    return (lastChar - 0xAC00) % 28 > 0 ? name + '이' : name;
 }
 
-// 한글 받침 유무에 따른 목적격 조사(을/를) 판별 함수
-function getObjectParticle(name) {
-    if (!name) return '를';
-    const lastChar = name.charCodeAt(name.length - 1);
-    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return '를';
-    return (lastChar - 0xAC00) % 28 > 0 ? '을' : '를';
-}
 
 // 링크 클립보드 복사 함수
 function copyLink(inputId) {

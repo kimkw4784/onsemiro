@@ -1,3 +1,12 @@
+// 이름 끝에 받침이 있으면 '이'를 붙여 부르는 이름으로 바꿔줍니다.
+// (하임 → 하임이, 코코 → 코코) 뒤에 붙는 조사는 항상 받침 없는 형태(가/를/와/의/에게)로 쓰면 됩니다.
+function callName(name) {
+    if (!name) return '';
+    const lastChar = name.charCodeAt(name.length - 1);
+    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return name;
+    return (lastChar - 0xAC00) % 28 > 0 ? name + '이' : name;
+}
+
 let selectedFiles = [];
 
 // 기기 환경 감지 (모바일: 200MB, PC: 500MB)
@@ -42,11 +51,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.title = `${petName}와의 추억 모으기 | 온새미로`;
+    document.title = `${callName(petName)}와의 추억 모으기 | 온새미로`;
     const nameEl = document.getElementById('targetPetName');
     const guideEl = document.getElementById('targetPetGuide');
-    if (nameEl) nameEl.innerText = petName;
-    if (guideEl) guideEl.innerText = petName;
+    if (nameEl) nameEl.innerText = callName(petName);
+    if (guideEl) guideEl.innerText = callName(petName);
+
+    // '코코와의 관계' 라벨과 이야기 입력칸 안내 문구도 아이 이름으로 교체
+    const relationLabel = document.getElementById('senderRelation')?.closest('.form-group')?.querySelector('.form-label');
+    if (relationLabel && relationLabel.firstChild) {
+        relationLabel.firstChild.textContent = `${callName(petName)}와의 관계 `;
+    }
+    const storyInput = document.getElementById('memoryStory');
+    if (storyInput) {
+        storyInput.placeholder = `언제 찍은 사진인지, 또는 ${callName(petName)}와 함께했던 소중한 추억 이야기를 자유롭게 적어주세요.`;
+    }
 });
 
 // 이미지 -> WebP 고화질 보존 압축 (최대 FHD 1920px, 퀄리티 0.88)

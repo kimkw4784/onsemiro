@@ -1,9 +1,10 @@
-// 한글 받침 유무에 따른 조사 판별 함수
-function getSubjectParticle(name) {
-    if (!name) return '이';
+// 이름 끝에 받침이 있으면 '이'를 붙여 부르는 이름으로 바꿔줍니다.
+// (하임 → 하임이, 코코 → 코코) 뒤에 붙는 조사는 항상 받침 없는 형태(가/를/와/의/에게)로 쓰면 됩니다.
+function callName(name) {
+    if (!name) return '';
     const lastChar = name.charCodeAt(name.length - 1);
-    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return '이';
-    return (lastChar - 0xAC00) % 28 > 0 ? '이' : '가';
+    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return name;
+    return (lastChar - 0xAC00) % 28 > 0 ? name + '이' : name;
 }
 
 function normalizeDateStr(dateStr) {
@@ -286,12 +287,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (order) {
         const petName = order.petName || '아이';
-        const josa = getSubjectParticle(petName);
 
         document.title = `${petName}의 온새미로 | ONSEMIRO`;
 
         document.getElementById('memorialTitleName').innerText = petName;
-        document.getElementById('ctaPetName').innerText = petName;
+        document.getElementById('ctaPetName').innerText = callName(petName);
 
         // 인트로 프로필 사진
         const avatarImg = document.getElementById('introAvatar');
@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tlData = [
                     {
                         date: normalizeDateStr(order.meetDate) || '2025. 09. 18.',
-                        story: `손바닥만 하던 ${petName}${josa} 처음 우리 집에 오던 날, 온 세상이 따뜻해졌어.`
+                        story: `손바닥만 하던 ${callName(petName)}가 처음 우리 집에 오던 날, 온 세상이 따뜻해졌어.`
                     },
                     {
                         date: normalizeDateStr(order.farewellDate) || '2026. 09. 17.',
