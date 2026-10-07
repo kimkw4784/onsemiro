@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>결제 미완료 | ONSEMIRO 온새미로</title>
+
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="complete.css">
+    <link rel="icon" href="https://api.iconify.design/noto:paw-prints.svg">
+</head>
+
+<body class="complete-page-body">
+
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <span class="logo-en">ONSEMIRO</span>
+                <span class="logo-kr">온새미로</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="complete-container">
+        <div class="complete-card">
+            <div class="complete-header">
+                <div class="complete-check-icon" aria-hidden="true">!</div>
+                <span class="complete-tag">PAYMENT NOT COMPLETED</span>
+                <h1 class="complete-title" id="failTitle">결제가 완료되지 않았어요</h1>
+                <p class="complete-desc" id="failDesc">
+                    결제 과정에서 문제가 발생했습니다.<br>
+                    승인되지 않은 결제는 청구되지 않으니 안심하세요.
+                </p>
+            </div>
+
+            <div class="complete-actions">
+                <a href="index.html#pricing" class="btn btn-primary btn-full">다시 시도하기</a>
+                <a href="index.html" class="btn btn-secondary btn-full">메인으로 가기</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 토스페이먼츠가 실패 시 붙여주는 code, message 값으로 안내 문구 결정
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const message = params.get('message');
+
+            const titleEl = document.getElementById('failTitle');
+            const descEl = document.getElementById('failDesc');
+
+            if (code === 'PAY_PROCESS_CANCELED' || code === 'USER_CANCEL') {
+                titleEl.innerText = '결제를 취소하셨어요';
+                descEl.innerHTML = '입력하신 추모관 정보는 결제 전이라 저장되지 않았습니다.<br>준비되시면 언제든 다시 시작해 주세요.';
+            } else if (message) {
+                descEl.innerText = message + '\n승인되지 않은 결제는 청구되지 않으니 안심하세요.';
+            }
+
+            // 결제가 끝나지 않았으므로 임시 주문 정보 정리
+            try {
+                localStorage.removeItem('pendingMemorialOrder');
+            } catch (e) { /* 무시 */ }
+        })();
+    </script>
+</body>
+
+</html>

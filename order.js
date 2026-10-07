@@ -2,22 +2,12 @@
 
 let currentSelectedPlan = 'digital';
 const PLAN_PRICES = {
-    digital: 19500,   // 숫자형으로 관리
+    digital: 19500,   // 화면 표시용 (실제 결제 금액은 서버 가격표로 정해짐)
     heritage: 59000
 };
 
 // 토스페이먼츠 클라이언트 키 설정 (테스트용 키)
 const TOSS_CLIENT_KEY = 'test_ck_P9BRQmyarYPNx7bzL5jNVJ07KzLN';
-
-// 6자리 난수 슬러그 생성
-function generateSlug() {
-    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
-}
 
 // 빌더에서 선택한 반려동물 종류 (dog / cat / small)
 const PET_TYPE_ICONS = {
@@ -156,77 +146,86 @@ function selectPlanInModal(cardElement, planValue) {
     }
 }
 
-// 폼 최종 제출 및 토스 결제 요청
+// 폼 최종 제출 → 서버에 주문 등록 → 토스 결제창 열기
 async function handleOrderSubmit(event) {
     event.preventDefault();
 
-    const petName = document.getElementById('petNameInput')?.value || '우리 아이';
-    const roomSlug = generateSlug();
-
-    // 사진 데이터 가져오기
-    let photoData = window.uploadedImageData;
-    if (!photoData) {
-        const previewImg = document.querySelector('#liveAvatar img');
-        if (previewImg && previewImg.src) photoData = previewImg.src;
+    if (typeof TossPayments === 'undefined') {
+        alert('결제 모듈을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        return;
     }
 
-    // 주문번호(orderId) 생성: 고유한 문자열이어야 함
-    const orderId = 'ONSEMIRO_' + new Date().getTime() + '_' + roomSlug;
-    const amount = PLAN_PRICES[currentSelectedPlan];
+    const submitBtn = document.getElementById('orderSubmitBtn');
+    const originalBtnText = submitBtn ? submitBtn.innerText : '';
+    const setLoading = (isLoading) => {
+        if (!submitBtn) return;
+        submitBtn.disabled = isLoading;
+        submitBtn.innerText = isLoading ? '결제를 준비하고 있어요...' : originalBtnText;
+    };
+
     const applicantName = document.getElementById('applicantName')?.value.trim() || '';
     const applicantPhone = document.getElementById('applicantPhone')?.value.trim() || '';
 
-    // 결제 성공 후 돌아왔을 때 보관할 주문 데이터
-    const orderData = {
-        orderId: orderId,
-        petName: petName,
+    // 서버로 보낼 추모관 정보 (사진은 직접 고른 경우에만 전송)
+    const memorial = {
+        petName: document.getElementById('petNameInput')?.value.trim() || '우리 아이',
         petType: getSelectedPetType(),
-        roomSlug: roomSlug,
         meetDate: document.getElementById('petMeetInput')?.value || '',
         farewellDate: document.getElementById('petFarewellInput')?.value || '',
         gift1: document.getElementById('giftInput1')?.value || '',
         gift2: document.getElementById('giftInput2')?.value || '',
         quote: document.getElementById('petQuoteInput')?.value || '',
         bgm: document.getElementById('petBgmSelect')?.value || '',
-        applicantName: applicantName,
-        applicantPhone: applicantPhone,
-        plan: currentSelectedPlan,
-        amount: amount,
-        petPhoto: photoData || '',
-        createdAt: new Date().toISOString()
+        photo: window.uploadedImageData || ''
     };
 
-    // 임시로 로컬스토리지에 전달 데이터 저장 (결제완료 페이지 complete.html에서 사용)
-    localStorage.setItem('pendingMemorialOrder', JSON.stringify(orderData));
+    setLoading(true);
 
-    // 토스페이먼츠 결제 호출
+    // 1. 서버에 주문 등록 (금액은 서버가 가격표로 정해서 돌려줌)
+    let order;
     try {
-        if (typeof TossPayments === 'undefined') {
-            alert('토스페이먼츠 SDK가 로드되지 않았습니다. HTML에 SDK 스크립트를 추가해주세요.');
-            return;
-        }
+        const result = await functions.httpsCallable('createOrder')({
+            plan: currentSelectedPlan,
+            memorial,
+            applicant: { name: applicantName, phone: applicantPhone }
+        });
+        order = result.data;
+    } catch (error) {
+        console.error('주문 등록 실패:', error);
+        alert(error.message || '주문을 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        setLoading(false);
+        return;
+    }
 
+    // 2. 완료 화면에서 바로 보여줄 정보만 임시 저장 (사진·연락처 제외)
+    const { photo, ...memorialWithoutPhoto } = memorial;
+    localStorage.setItem('pendingMemorialOrder', JSON.stringify({
+        ...memorialWithoutPhoto,
+        orderId: order.orderId,
+        plan: currentSelectedPlan,
+        applicantName
+    }));
+
+    // 3. 서버가 정한 주문번호·금액으로 토스 결제창 열기
+    try {
         const tossPayments = TossPayments(TOSS_CLIENT_KEY);
         const payment = tossPayments.payment({ customerKey: TossPayments.ANONYMOUS });
 
         await payment.requestPayment({
-            method: 'CARD', // 카카오페이, 토스페이, 신용카드 등 일반 결제창
-            amount: {
-                currency: 'KRW',
-                value: amount,
-            },
-            orderId: orderId,
-            orderName: `온새미로 디지털 메모리얼 (${petName})`,
-            successUrl: window.location.origin + '/complete.html', // 결제 성공 시 이동
-            failUrl: window.location.origin + '/fail.html',          // 결제 취소/실패 시 이동
+            method: 'CARD',
+            amount: { currency: 'KRW', value: order.amount },
+            orderId: order.orderId,
+            orderName: order.orderName,
+            successUrl: window.location.origin + '/complete.html',
+            failUrl: window.location.origin + '/fail.html',
             customerName: applicantName,
-            customerMobilePhone: applicantPhone,
+            customerMobilePhone: applicantPhone.replace(/[^\d]/g, '')
         });
-
     } catch (error) {
         console.error('결제 요청 에러:', error);
         if (error.code !== 'USER_CANCEL') {
             alert('결제창을 여는 중 오류가 발생했습니다: ' + error.message);
         }
+        setLoading(false);
     }
 }

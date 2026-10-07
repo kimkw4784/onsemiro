@@ -422,3 +422,19 @@ body {
 .link-item-tip.tip-warning span {
     color: #C05621;
 }
+
+/* 결제 확인 중 로딩 표시 */
+.complete-spinner {
+    width: 22px;
+    height: 22px;
+    border: 2px solid rgba(212, 163, 115, 0.3);
+    border-top-color: var(--accent-brown);
+    border-radius: 50%;
+    animation: complete-spin 0.8s linear infinite;
+}
+
+@keyframes complete-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
