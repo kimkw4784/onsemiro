@@ -7,16 +7,25 @@ function callName(name) {
     return (lastChar - 0xAC00) % 28 > 0 ? name + '이' : name;
 }
 
-function normalizeDateStr(dateStr) {
-    if (!dateStr) return '';
-    const cleaned = dateStr.replace(/[^\d]/g, '');
-    if (cleaned.length === 8) {
-        return `${cleaned.slice(0, 4)}. ${cleaned.slice(4, 6)}. ${cleaned.slice(6, 8)}.`;
-    }
-    return dateStr.trim();
+let activeRoomSlug = '';
+let activePetType = 'dog';
+
+// 화면에 넣기 전에 HTML 특수문자를 바꿔서, 입력값에 섞인 태그가 실행되지 않게 함
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
-let activeRoomSlug = 'default';
+// "2013-05-10" → "2013. 05. 10."
+function formatIsoDate(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${y}. ${m}. ${d}.`;
+}
 
 // =========================================
 // 오디오 BGM 컨트롤러
@@ -127,17 +136,18 @@ function addInteractCount(btn, type = 'default') {
     cntEl.classList.add('count-bump');
 
     createFloatingParticle(btn, type);
+
+    // 서버에 +1 저장 (보안 규칙상 카운트를 1씩 올리는 것만 허용됨)
+    if (activeRoomSlug && ['treat', 'toy', 'candle'].includes(type)) {
+        db.collection('memorials').doc(activeRoomSlug).update({
+            [`counts.${type}`]: firebase.firestore.FieldValue.increment(1)
+        }).catch(err => console.error('카운트 저장 실패:', err));
+    }
 }
 
 function createFloatingParticle(targetEl, type) {
-    // 저장된 주문 정보에서 동물 종류 판별 (기본값: 'dog')
-    let petType = 'dog';
-    try {
-        const order = JSON.parse(localStorage.getItem('recentMemorialOrder') || '{}');
-        if (order.petType) petType = order.petType;
-    } catch (e) {
-        console.error(e);
-    }
+    // 추모관 정보에서 읽어온 동물 종류 (기본값: 'dog')
+    const petType = activePetType;
 
     // 동물 종류별 아이콘 세트 (Iconify Noto Emoji)
     const iconPacks = {
@@ -331,117 +341,145 @@ function createVideoElement(src, date, desc) {
 // =========================================
 // 초기화 및 데이터 바인딩
 // =========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const roomParam = urlParams.get('room');
+    const roomParam = (urlParams.get('room') || '').trim().toUpperCase();
+    const adminKey = urlParams.get('key');
 
-    const rawData = localStorage.getItem('recentMemorialOrder');
-    let order = rawData ? JSON.parse(rawData) : null;
-
-    activeRoomSlug = roomParam || (order && order.roomSlug) || 'active_room';
-
-    if (order) {
-        applySavedBgm(order.bgm);
-        const petName = order.petName || '아이';
-
-        document.title = `${petName}의 온새미로 | ONSEMIRO`;
-
-        document.getElementById('memorialTitleName').innerText = petName;
-        document.getElementById('ctaPetName').innerText = callName(petName);
-
-        // 인트로 프로필 사진
-        const avatarImg = document.getElementById('introAvatar');
-        if (avatarImg) {
-            avatarImg.src = order.petPhoto || './images/coco4.png';
-            avatarImg.alt = petName;
-        }
-
-        // 날짜 및 경과일 계산
-        const cleanMeet = order.meetDate ? order.meetDate.replace(/\s+/g, '').replace(/\.$/, '') : '';
-        const cleanFarewell = order.farewellDate ? order.farewellDate.replace(/\s+/g, '').replace(/\.$/, '') : '';
-        let daysText = '';
-        if (cleanMeet && cleanFarewell) {
-            const startDate = new Date(cleanMeet.replace(/\./g, '-'));
-            const endDate = new Date(cleanFarewell.replace(/\./g, '-'));
-            if (!isNaN(startDate) && !isNaN(endDate)) {
-                const diffDays = Math.ceil(Math.abs(endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-                daysText = ` (함께한 <strong>${diffDays.toLocaleString()}일</strong>의 여정)`;
-            }
-        }
-        document.getElementById('memorialDates').innerHTML = `${cleanMeet} — ${cleanFarewell}${daysText}`;
-
-        // 추모글/문구
-        const quoteEl = document.getElementById('memorialQuote');
-        if (quoteEl) {
-            quoteEl.innerHTML = order.quote
-                ? `“${order.quote.replace(/\n/g, '<br>')}”`
-                : `“우리 가족에게 와줘서 정말 행복했어. 영원히 사랑해.”`;
-        }
-
-        // 헌정 인터랙션 버튼
-        const row = document.getElementById('interactiveRow');
-        if (row) {
-            const g1 = order.gift1 || '좋아하던 간식';
-            const g2 = order.gift2 || '노란 장난감';
-            row.innerHTML = `
-                <button type="button" class="btn-interact" onclick="addInteractCount(this, 'treat')">
-                    <span class="btn-dot"></span> ${g1} <strong class="cnt">1</strong>
-                </button>
-                <button type="button" class="btn-interact" onclick="addInteractCount(this, 'toy')">
-                    <span class="btn-dot"></span> ${g2} <strong class="cnt">1</strong>
-                </button>
-                <button type="button" class="btn-interact" onclick="addInteractCount(this, 'candle')">
-                    <span class="btn-dot"></span> 촛불 밝히기 <strong class="cnt">1</strong>
-                </button>
-            `;
-        }
-
-        // 취합 링크 및 관리자 버튼
-        document.getElementById('galleryUploadBtn').href = `upload.html?room=${activeRoomSlug}`;
-        const adminBtn = document.getElementById('adminFloatingBtn');
-        if (adminBtn) {
-            adminBtn.href = `admin.html?room=${activeRoomSlug}`;
-            adminBtn.style.display = 'inline-flex';
-        }
-
-        // 발자취 타임라인
-        const tlList = document.getElementById('memorialTimelineList');
-        if (tlList) {
-            const currentSlug = activeRoomSlug || (order && order.roomSlug) || 'default';
-            const roomTlKey = `timeline_${currentSlug}`;
-            const rawTL = localStorage.getItem(roomTlKey);
-            let tlData = [];
-
-            if (rawTL) {
-                tlData = JSON.parse(rawTL);
-            } else {
-                tlData = [
-                    {
-                        date: normalizeDateStr(order.meetDate) || '2025. 09. 18.',
-                        story: `손바닥만 하던 ${callName(petName)}가 처음 우리 집에 오던 날, 온 세상이 따뜻해졌어.`
-                    },
-                    {
-                        date: normalizeDateStr(order.farewellDate) || '2026. 09. 17.',
-                        story: '가족들의 품에서 조용히 눈을 감고, 가장 빛나는 별이 된 날.'
-                    }
-                ];
-                localStorage.setItem(roomTlKey, JSON.stringify(tlData));
-                localStorage.setItem('memorial_timeline_list', JSON.stringify(tlData));
-            }
-
-            tlData.sort((a, b) => (parseInt(a.date.replace(/[^\d]/g, ''), 10) || 0) - (parseInt(b.date.replace(/[^\d]/g, ''), 10) || 0));
-            tlList.innerHTML = tlData.map(item => `
-                <div class="timeline-item">
-                    <span class="timeline-date">${item.date}</span>
-                    <p class="timeline-text">${item.story}</p>
-                </div>
-            `).join('');
-        }
+    if (!roomParam) {
+        showNotFound();
+        return;
     }
 
-    renderMedia(order);
+    // Firestore에서 추모관 정보 읽기
+    let memorial = null;
+    try {
+        const snap = await db.collection('memorials').doc(roomParam).get();
+        if (snap.exists) memorial = snap.data();
+    } catch (err) {
+        console.error('추모관 불러오기 실패:', err);
+    }
+
+    if (!memorial) {
+        showNotFound();
+        return;
+    }
+
+    activeRoomSlug = roomParam;
+    activePetType = memorial.petType || 'dog';
+    renderMemorial(memorial, adminKey);
+
+    // 아직 Firestore로 옮기기 전인 영역 (다음 단계에서 연결 예정)
+    renderMedia(memorial);
     loadLetters();
 });
+
+// 추모관 기본 정보를 화면에 채우기
+function renderMemorial(memorial, adminKey) {
+    const petName = memorial.petName || '아이';
+    const counts = memorial.counts || {};
+    const gifts = memorial.gifts || [];
+
+    applySavedBgm(memorial.bgm);
+    document.title = `${petName}의 온새미로 | ONSEMIRO`;
+
+    document.getElementById('memorialTitleName').innerText = petName;
+    document.getElementById('ctaPetName').innerText = callName(petName);
+
+    // 인트로 프로필 사진
+    const avatarImg = document.getElementById('introAvatar');
+    if (avatarImg) {
+        avatarImg.src = memorial.photoUrl || './images/coco4.png';
+        avatarImg.alt = petName;
+    }
+
+    // 날짜 및 함께한 날 계산
+    const meet = formatIsoDate(memorial.meetDate);
+    const farewell = formatIsoDate(memorial.farewellDate);
+    let daysText = '';
+    if (memorial.meetDate && memorial.farewellDate) {
+        const diff = new Date(memorial.farewellDate) - new Date(memorial.meetDate);
+        if (!isNaN(diff) && diff >= 0) {
+            const diffDays = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
+            daysText = ` (함께한 <strong>${diffDays.toLocaleString()}일</strong>의 여정)`;
+        }
+    }
+    document.getElementById('memorialDates').innerHTML = `${meet} — ${farewell}${daysText}`;
+
+    // 한 줄 메시지
+    const quoteEl = document.getElementById('memorialQuote');
+    if (quoteEl) {
+        quoteEl.innerHTML = memorial.quote
+            ? `“${escapeHtml(memorial.quote).replace(/\n/g, '<br>')}”`
+            : '“우리 가족에게 와줘서 정말 행복했어. 영원히 사랑해.”';
+    }
+
+    // 선물·촛불 버튼 (카운트는 서버에 저장된 값)
+    const row = document.getElementById('interactiveRow');
+    if (row) {
+        const g1 = escapeHtml(gifts[0] || '좋아하던 간식');
+        const g2 = escapeHtml(gifts[1] || '노란 장난감');
+        row.innerHTML = `
+            <button type="button" class="btn-interact" onclick="addInteractCount(this, 'treat')">
+                <span class="btn-dot"></span> ${g1} <strong class="cnt">${counts.treat || 0}</strong>
+            </button>
+            <button type="button" class="btn-interact" onclick="addInteractCount(this, 'toy')">
+                <span class="btn-dot"></span> ${g2} <strong class="cnt">${counts.toy || 0}</strong>
+            </button>
+            <button type="button" class="btn-interact" onclick="addInteractCount(this, 'candle')">
+                <span class="btn-dot"></span> 촛불 밝히기 <strong class="cnt">${counts.candle || 0}</strong>
+            </button>
+        `;
+    }
+
+    // 사진 모으기 링크
+    document.getElementById('galleryUploadBtn').href = `upload.html?room=${activeRoomSlug}`;
+
+    // 관리자 버튼은 관리자 링크(&key=...)로 들어온 경우에만 표시
+    const adminBtn = document.getElementById('adminFloatingBtn');
+    if (adminBtn && adminKey) {
+        adminBtn.href = `admin.html?room=${activeRoomSlug}&key=${encodeURIComponent(adminKey)}`;
+        adminBtn.style.display = 'inline-flex';
+    }
+
+    // 발자취 타임라인 (Firestore 연결 전까지 기본 문구 + 이 브라우저에 저장된 기록)
+    const tlList = document.getElementById('memorialTimelineList');
+    if (tlList) {
+        const rawTL = localStorage.getItem(`timeline_${activeRoomSlug}`);
+        let tlData = rawTL ? JSON.parse(rawTL) : [
+            {
+                date: meet || '2025. 09. 18.',
+                story: `손바닥만 하던 ${callName(petName)}가 처음 우리 집에 오던 날, 온 세상이 따뜻해졌어.`
+            },
+            {
+                date: farewell || '2026. 09. 17.',
+                story: '가족들의 품에서 조용히 눈을 감고, 가장 빛나는 별이 된 날.'
+            }
+        ];
+
+        tlData.sort((a, b) => (parseInt(a.date.replace(/[^\d]/g, ''), 10) || 0) - (parseInt(b.date.replace(/[^\d]/g, ''), 10) || 0));
+        tlList.innerHTML = tlData.map(item => `
+            <div class="timeline-item">
+                <span class="timeline-date">${escapeHtml(item.date)}</span>
+                <p class="timeline-text">${escapeHtml(item.story)}</p>
+            </div>
+        `).join('');
+    }
+}
+
+// 주소가 잘못됐거나 없는 추모관일 때
+function showNotFound() {
+    const main = document.querySelector('.sample-container');
+    if (!main) return;
+    main.innerHTML = `
+        <section class="memorial-intro" style="padding: 120px 20px;">
+            <span class="intro-badge">NOT FOUND</span>
+            <h1 class="intro-name" style="font-size: 24px;">추모관을 찾을 수 없어요</h1>
+            <p class="intro-dates">주소가 정확한지 다시 한 번 확인해 주세요.<br>알림톡으로 받으신 주소를 그대로 눌러 들어오시면 가장 정확합니다.</p>
+            <a href="index.html" class="btn-banner" style="display:inline-block; margin-top: 24px;">온새미로 메인으로</a>
+        </section>
+    `;
+}
 
 // 모달 및 유틸리티
 function openImageModal(item) {
@@ -465,7 +503,9 @@ function closeImageModalDirect() {
 }
 
 function copyMemorialLink() {
-    navigator.clipboard.writeText(window.location.href).then(() => showToast("추모관 링크가 복사되었습니다."));
+    // 관리자 키(&key=...)가 함께 복사되지 않도록 공개 주소만 복사
+    const publicUrl = `${window.location.origin}/memorial.html?room=${activeRoomSlug}`;
+    navigator.clipboard.writeText(publicUrl).then(() => showToast("추모관 링크가 복사되었습니다."));
 }
 
 function showToast(msg) {
