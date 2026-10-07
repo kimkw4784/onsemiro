@@ -18,10 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
             orderData.orderId = orderId || orderData.orderId;
         }
         // 결제 완료 후 최종 데이터 확정 저장 및 대기 데이터 삭제
-        localStorage.setItem('recentMemorialOrder', JSON.stringify(orderData));
         localStorage.removeItem('pendingMemorialOrder');
-    } else if (recentRaw) {
-        orderData = JSON.parse(recentRaw);
+        try {
+            localStorage.setItem('recentMemorialOrder', JSON.stringify(orderData));
+        } catch (e) {
+            console.error('주문 정보 저장 실패:', e);
+        }
     }
 
     // 온새미로 기본 도메인

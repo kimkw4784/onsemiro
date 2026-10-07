@@ -2316,3 +2316,8 @@ body {
     background: #F7F3EE;
     font-weight: 600;
 }
+
+.upload-hint-text.is-selected {
+    color: var(--accent-brown);
+    font-weight: 600;
+}

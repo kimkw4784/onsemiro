@@ -76,15 +76,27 @@ function updateLiveGifts() {
 // 빌더 사진 첨부 시 Base64 저장 및 미리보기 갱신
 function handlePhotoUpload(event) {
     const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            window.uploadedImageData = e.target.result;
-            const avatar = document.getElementById('liveAvatar');
-            avatar.innerHTML = `<img src="${window.uploadedImageData}" alt="업로드된 프로필">`;
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const scale = Math.min(1, 800 / Math.max(img.width, img.height));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            window.uploadedImageData = canvas.toDataURL('image/jpeg', 0.85);
+            document.getElementById('liveAvatar').innerHTML = `<img src="${window.uploadedImageData}" alt="업로드된 프로필">`;
+
+            const hint = document.querySelector('.upload-hint-text');
+            if (hint) { hint.textContent = '✓ 사진이 등록됐어요'; hint.classList.add('is-selected'); }
+            const btnText = document.querySelector('.btn-photo-upload span');
+            if (btnText) btnText.textContent = '사진 바꾸기';
         };
-        reader.readAsDataURL(file);
-    }
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 
 function addCount(btn, type = 'treat') {
