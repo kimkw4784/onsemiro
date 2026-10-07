@@ -7,7 +7,7 @@ const PLAN_PRICES = {
 };
 
 // 토스페이먼츠 클라이언트 키 설정 (테스트용 키)
-const TOSS_CLIENT_KEY = 'test_ck_P9BRQmyarYPNx7bzL5jNVJ07KzLN';
+const TOSS_CLIENT_KEY = 'test_ck_LlDJaYngro5x6xkBPvBn3ezGdRpX';
 
 // 빌더에서 선택한 반려동물 종류 (dog / cat / small)
 const PET_TYPE_ICONS = {
