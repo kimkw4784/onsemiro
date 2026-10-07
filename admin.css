@@ -48,11 +48,11 @@
 }
 
 /* =========================================
-   ⭐️ 4단 대분류 탭 네비게이션
+   ⭐️ 5단 대분류 탭 네비게이션
 ========================================= */
 .admin-main-nav {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
     background: #EAE6DF;
     padding: 4px;
@@ -935,4 +935,284 @@
 
 .btn-story-action:hover {
     color: var(--accent-brown, #B89065);
+}
+
+/* 좁은 화면에서는 탭 글자를 살짝 줄여 다섯 칸이 들어가게 */
+@media (max-width: 480px) {
+    .main-tab-btn {
+        font-size: 11px;
+        padding: 9px 1px;
+    }
+}
+
+
+/* =========================================
+   ⭐️ 5. 추모관 정보 수정 탭
+========================================= */
+.info-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.info-card {
+    background: #FFFFFF;
+    border: 1px solid rgba(43, 38, 32, 0.08);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.info-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    position: relative;
+}
+
+.info-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-main, #2B2620);
+}
+
+/* 기존 .timeline-input 스타일을 이어받고 폭만 보정 */
+.info-input {
+    width: 100%;
+    box-sizing: border-box;
+    color: var(--text-main, #2B2620);
+}
+
+.info-textarea {
+    height: 76px;
+    resize: vertical;
+    line-height: 1.55;
+    font-family: var(--font-serif-kr, serif);
+}
+
+.info-hint {
+    font-size: 11.5px;
+    color: var(--text-sub, #7A7269);
+    margin: 0;
+    line-height: 1.5;
+    word-break: keep-all;
+}
+
+.info-count {
+    align-self: flex-end;
+    font-size: 11px;
+    color: #A0988F;
+}
+
+/* 대표 사진 + 이름 */
+.info-profile-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.info-avatar {
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: #F3EDE2;
+    border: 3px solid #FFFFFF;
+    box-shadow: 0 0 0 1px rgba(212, 163, 115, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.info-avatar-empty {
+    font-size: 11px;
+    color: #A0988F;
+}
+
+.info-profile-fields {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.info-photo-btn {
+    align-self: flex-start;
+    background: transparent;
+    border: none;
+    padding: 2px 0;
+    font-size: 12px;
+    color: var(--accent-brown, #B89065);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.info-photo-btn:hover {
+    color: var(--text-main, #2B2620);
+}
+
+/* 아이 종류 선택 (index.html 빌더와 같은 3분할 구성) */
+.info-type-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.info-type-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 4px;
+    background: #FCFAF7;
+    border: 1px solid rgba(43, 38, 32, 0.12);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-sub, #7A7269);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.info-type-btn iconify-icon {
+    font-size: 18px;
+}
+
+.info-type-btn:hover {
+    border-color: var(--accent-brown, #B89065);
+}
+
+.info-type-btn.active {
+    background: #FAF3E8;
+    border-color: var(--accent-brown, #B89065);
+    color: var(--text-main, #2B2620);
+    font-weight: 600;
+}
+
+/* 날짜 / 선물 2단 배치 */
+.info-date-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.info-days {
+    margin: -6px 0 0;
+    font-family: var(--font-serif-kr, serif);
+    font-size: 13px;
+    color: var(--accent-brown, #B89065);
+    text-align: center;
+}
+
+.info-days:empty {
+    display: none;
+}
+
+/* 헤리티지 명판 안내 */
+.info-heritage-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #FAF5EE;
+    border: 1px solid rgba(212, 163, 115, 0.3);
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.info-heritage-notice[hidden] {
+    display: none;
+}
+
+.info-heritage-notice p {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--text-sub, #7A7269);
+    word-break: keep-all;
+}
+
+.info-heritage-notice strong {
+    color: var(--text-main, #2B2620);
+    font-weight: 600;
+}
+
+.info-notice-icon {
+    font-size: 15px;
+    line-height: 1.4;
+    flex-shrink: 0;
+}
+
+/* 하단 고정 저장 바 */
+.info-save-bar {
+    position: sticky;
+    bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(43, 38, 32, 0.08);
+    border-radius: 12px;
+    padding: 10px 10px 10px 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    margin-top: 4px;
+}
+
+.info-save-status {
+    font-size: 12.5px;
+    color: var(--text-sub, #7A7269);
+}
+
+.info-save-status.is-dirty {
+    color: var(--accent-brown, #B89065);
+    font-weight: 600;
+}
+
+.info-save-btn {
+    padding: 11px 18px;
+}
+
+.info-save-btn:disabled {
+    background: #D9D3CA;
+    cursor: default;
+}
+
+/* 키보드 이동 시 포커스 표시 */
+.info-type-btn:focus-visible,
+.info-photo-btn:focus-visible,
+.info-save-btn:focus-visible {
+    outline: 2px solid var(--accent-brown, #B89065);
+    outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+    .info-profile-row {
+        gap: 14px;
+    }
+
+    .info-avatar {
+        width: 76px;
+        height: 76px;
+    }
+
+    .info-type-btn {
+        font-size: 12px;
+        gap: 4px;
+    }
 }

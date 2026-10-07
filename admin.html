@@ -12,6 +12,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin.css">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕊️</text></svg>">
 </head>
@@ -26,7 +27,7 @@
             <p class="admin-main-desc">소중한 추억 조각과 발자취, 전해온 편지를 한눈에 관리합니다.</p>
         </header>
 
-        <!-- ⭐️ 4단 대분류 메인 탭 (순서 변경 적용) -->
+        <!-- ⭐️ 5단 대분류 메인 탭 (순서 변경 적용) -->
         <nav class="admin-main-nav">
             <button type="button" class="main-tab-btn active" onclick="switchMainTab('direct')">
                 <span class="tab-label">🖼️ 바로 업로드</span>
@@ -43,6 +44,9 @@
             <button type="button" class="main-tab-btn" onclick="switchMainTab('postbox')">
                 <span class="tab-label">📮 우체통 관리</span>
                 <span id="badgePostboxMain" class="main-tab-badge">0</span>
+            </button>
+            <button type="button" class="main-tab-btn" onclick="switchMainTab('info')">
+                <span class="tab-label">✏️ 추모관 정보</span>
             </button>
         </nav>
 
@@ -137,6 +141,120 @@
                     <span class="postbox-total-text">총 <strong id="postboxCount">0</strong>개의 편지</span>
                 </div>
                 <div class="postbox-admin-list" id="adminPostboxList"></div>
+            </div>
+        </section>
+
+        <!-- ⭐️ 탭 5: 추모관 정보 수정 패널 -->
+        <section id="panel-info" class="admin-tab-panel">
+            <div class="panel-desc-box">
+                <p class="panel-sub-desc">추모관 첫 화면에 보이는 아이의 정보를 고칠 수 있습니다. 저장하면 추모관에 바로 반영됩니다.</p>
+            </div>
+
+            <div class="info-form">
+                <!-- 그룹 1: 대표 사진 · 이름 · 종류 -->
+                <div class="info-card">
+                    <div class="info-profile-row">
+                        <div class="info-avatar" id="infoAvatar">
+                            <span class="info-avatar-empty">사진 없음</span>
+                        </div>
+                        <div class="info-profile-fields">
+                            <label class="info-label" for="infoPetName">아이 이름</label>
+                            <input type="text" id="infoPetName" class="timeline-input info-input" maxlength="20"
+                                placeholder="예: 코코" oninput="markInfoDirty()">
+                            <button type="button" class="info-photo-btn"
+                                onclick="document.getElementById('infoPhotoInput').click()">대표 사진 바꾸기</button>
+                            <input type="file" id="infoPhotoInput" accept="image/*" hidden
+                                onchange="handleInfoPhoto(this)">
+                        </div>
+                    </div>
+
+                    <div class="info-field">
+                        <span class="info-label" id="infoTypeLabel">아이 종류</span>
+                        <div class="info-type-group" role="radiogroup" aria-labelledby="infoTypeLabel">
+                            <button type="button" class="info-type-btn" data-type="dog" role="radio"
+                                aria-checked="false" onclick="selectInfoPetType('dog')">
+                                <iconify-icon icon="fluent-emoji-flat:dog-face" aria-hidden="true"></iconify-icon>
+                                강아지
+                            </button>
+                            <button type="button" class="info-type-btn" data-type="cat" role="radio"
+                                aria-checked="false" onclick="selectInfoPetType('cat')">
+                                <iconify-icon icon="fluent-emoji-flat:cat-face" aria-hidden="true"></iconify-icon>
+                                고양이
+                            </button>
+                            <button type="button" class="info-type-btn" data-type="small" role="radio"
+                                aria-checked="false" onclick="selectInfoPetType('small')">
+                                <iconify-icon icon="fluent-emoji-flat:hamster" aria-hidden="true"></iconify-icon>
+                                소동물
+                            </button>
+                        </div>
+                        <p class="info-hint">추모관의 간식·장난감 아이콘이 종류에 맞게 바뀝니다.</p>
+                    </div>
+                </div>
+
+                <!-- 그룹 2: 함께한 날 · 한 줄 메시지 -->
+                <div class="info-card">
+                    <div class="info-date-row">
+                        <div class="info-field">
+                            <label class="info-label" for="infoMeetDate">처음 만난 날</label>
+                            <input type="date" id="infoMeetDate" class="timeline-input info-input"
+                                onchange="markInfoDirty()">
+                        </div>
+                        <div class="info-field">
+                            <label class="info-label" for="infoFarewellDate">별이 된 날</label>
+                            <input type="date" id="infoFarewellDate" class="timeline-input info-input"
+                                onchange="markInfoDirty()">
+                        </div>
+                    </div>
+                    <p class="info-days" id="infoDaysText" aria-live="polite"></p>
+
+                    <div class="info-field">
+                        <label class="info-label" for="infoQuote">남기고 싶은 한 줄 메시지</label>
+                        <textarea id="infoQuote" class="timeline-input info-input info-textarea" maxlength="100"
+                            oninput="markInfoDirty()"></textarea>
+                        <span class="info-count" id="infoQuoteCount">0 / 100</span>
+                    </div>
+                </div>
+
+                <!-- 그룹 3: 선물 · 배경음악 -->
+                <div class="info-card">
+                    <div class="info-date-row">
+                        <div class="info-field">
+                            <label class="info-label" for="infoGift1">첫 번째 선물</label>
+                            <input type="text" id="infoGift1" class="timeline-input info-input" maxlength="15"
+                                placeholder="예: 좋아하던 간식" oninput="markInfoDirty()">
+                        </div>
+                        <div class="info-field">
+                            <label class="info-label" for="infoGift2">두 번째 선물</label>
+                            <input type="text" id="infoGift2" class="timeline-input info-input" maxlength="15"
+                                placeholder="예: 테니스공" oninput="markInfoDirty()">
+                        </div>
+                    </div>
+                    <p class="info-hint">추모관에서 방문객이 눌러 건넬 수 있는 선물 버튼의 이름입니다.</p>
+
+                    <div class="info-field">
+                        <label class="info-label" for="infoBgm">배경음악</label>
+                        <select id="infoBgm" class="timeline-input info-input" onchange="markInfoDirty()">
+                            <option value="piano">별빛 아래 너와 나 (잔잔한 피아노)</option>
+                            <option value="guitar">따뜻한 봄날의 산책 (어쿠스틱 기타)</option>
+                            <option value="musicbox">영원한 안식처 (서정적인 오르골)</option>
+                            <option value="none">음악 없음 (조용한 추모)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 헤리티지 패키지 이용자에게만 노출 -->
+                <div class="info-heritage-notice" id="infoHeritageNotice" hidden>
+                    <span class="info-notice-icon" aria-hidden="true">🪧</span>
+                    <p>이름과 날짜를 바꿔도 이미 제작 중인 <strong>명판 각인 내용은 변경되지 않습니다.</strong>
+                        명판 수정이 필요하시면 고객센터로 문의해 주세요.</p>
+                </div>
+
+                <!-- 저장 바 -->
+                <div class="info-save-bar">
+                    <span class="info-save-status" id="infoSaveStatus" aria-live="polite">변경 사항 없음</span>
+                    <button type="button" id="btnInfoSave" class="btn-timeline-add info-save-btn"
+                        onclick="saveMemorialInfo()" disabled>변경 내용 저장</button>
+                </div>
             </div>
         </section>
 

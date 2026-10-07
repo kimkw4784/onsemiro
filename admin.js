@@ -35,10 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAdminTimeline();
     renderAdminPostbox();
     updateMainTabBadges();
+    loadMemorialInfo();
 });
 
 // =========================================
-// 0. 메인 4단 탭 전환 및 배지 동기화
+// 0. 메인 5단 탭 전환 및 배지 동기화
 // =========================================
 function switchMainTab(tabKey) {
     currentMainTab = tabKey;
@@ -806,4 +807,184 @@ function showToast(message) {
     setTimeout(() => {
         toast.classList.remove("show");
     }, 2500);
+}
+
+// =========================================
+// ⭐️ 5. 추모관 정보 수정
+// -----------------------------------------
+// ※ 지금은 화면 확인용으로 localStorage(recentMemorialOrder)를 읽고 씁니다.
+//   Firebase 연결 단계에서 loadMemorialInfo / saveMemorialInfo 두 함수의
+//   안쪽만 Firestore 읽기 + Cloud Functions 호출로 바꿀 예정입니다.
+// =========================================
+
+let infoOriginal = null;   // 불러온 당시 값 (변경 여부 비교용)
+let infoPetType = 'dog';
+let infoPhotoData = '';
+
+// 예전 주문 데이터의 BGM 제목 → 새 키 값으로 변환
+const BGM_LEGACY_MAP = {
+    '별빛 아래 너와 나 (잔잔한 피아노)': 'piano',
+    '따뜻한 봄날의 산책 (어쿠스틱 기타)': 'guitar',
+    '영원한 안식처 (서정적인 오르골)': 'musicbox',
+    '음악 없음 (조용한 추모)': 'none'
+};
+
+// "2013. 05. 10." ↔ "2013-05-10" (date input 형식) 변환
+function toInputDate(str) {
+    if (!str) return '';
+    const d = str.replace(/[^\d]/g, '');
+    return d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}` : '';
+}
+
+function fromInputDate(str) {
+    if (!str) return '';
+    const [y, m, d] = str.split('-');
+    return `${y}. ${m}. ${d}.`;
+}
+
+function loadMemorialInfo() {
+    let order = {};
+    try {
+        order = JSON.parse(localStorage.getItem('recentMemorialOrder') || '{}');
+    } catch (e) {
+        console.error(e);
+    }
+
+    infoPetType = order.petType || 'dog';
+    infoPhotoData = order.petPhoto || '';
+
+    document.getElementById('infoPetName').value = order.petName || '';
+    document.getElementById('infoMeetDate').value = toInputDate(order.meetDate);
+    document.getElementById('infoFarewellDate').value = toInputDate(order.farewellDate);
+    document.getElementById('infoQuote').value = order.quote || '';
+    document.getElementById('infoGift1').value = order.gift1 || '';
+    document.getElementById('infoGift2').value = order.gift2 || '';
+    document.getElementById('infoBgm').value = BGM_LEGACY_MAP[order.bgm] || order.bgm || 'piano';
+
+    document.getElementById('infoHeritageNotice').hidden = order.plan !== 'heritage';
+
+    renderInfoAvatar();
+    renderInfoPetType();
+    infoOriginal = collectInfoValues();
+    markInfoDirty();
+}
+
+// 현재 입력값을 하나의 객체로 모으기
+function collectInfoValues() {
+    return {
+        petName: document.getElementById('infoPetName').value.trim(),
+        petType: infoPetType,
+        petPhoto: infoPhotoData,
+        meetDate: document.getElementById('infoMeetDate').value,
+        farewellDate: document.getElementById('infoFarewellDate').value,
+        quote: document.getElementById('infoQuote').value.trim(),
+        gift1: document.getElementById('infoGift1').value.trim(),
+        gift2: document.getElementById('infoGift2').value.trim(),
+        bgm: document.getElementById('infoBgm').value
+    };
+}
+
+function renderInfoAvatar() {
+    const avatar = document.getElementById('infoAvatar');
+    avatar.innerHTML = infoPhotoData
+        ? `<img src="${infoPhotoData}" alt="대표 사진">`
+        : '<span class="info-avatar-empty">사진 없음</span>';
+}
+
+function renderInfoPetType() {
+    document.querySelectorAll('.info-type-btn').forEach(btn => {
+        const isActive = btn.dataset.type === infoPetType;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-checked', isActive);
+    });
+}
+
+function selectInfoPetType(type) {
+    infoPetType = type;
+    renderInfoPetType();
+    markInfoDirty();
+}
+
+// 대표 사진 교체 (기존 compressImage 함수 재사용)
+async function handleInfoPhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        alert('대표 사진은 이미지 파일만 등록할 수 있습니다.');
+        input.value = '';
+        return;
+    }
+    const result = await compressImage(file);
+    infoPhotoData = result.data;
+    renderInfoAvatar();
+    markInfoDirty();
+    input.value = '';
+}
+
+// 함께한 날 계산 + 글자 수 + 변경 여부 표시
+function markInfoDirty() {
+    const values = collectInfoValues();
+
+    // 함께한 날
+    const daysEl = document.getElementById('infoDaysText');
+    if (values.meetDate && values.farewellDate) {
+        const diff = new Date(values.farewellDate) - new Date(values.meetDate);
+        daysEl.innerText = diff >= 0
+            ? `함께한 ${Math.ceil(diff / 86400000).toLocaleString()}일의 여정`
+            : '별이 된 날이 처음 만난 날보다 앞서 있어요. 날짜를 확인해 주세요.';
+    } else {
+        daysEl.innerText = '';
+    }
+
+    // 메시지 글자 수
+    document.getElementById('infoQuoteCount').innerText = `${values.quote.length} / 100`;
+
+    // 변경 여부
+    if (!infoOriginal) return;
+    const isDirty = JSON.stringify(values) !== JSON.stringify(infoOriginal);
+    const statusEl = document.getElementById('infoSaveStatus');
+    statusEl.innerText = isDirty ? '저장하지 않은 변경 사항이 있어요' : '변경 사항 없음';
+    statusEl.classList.toggle('is-dirty', isDirty);
+    document.getElementById('btnInfoSave').disabled = !isDirty;
+}
+
+function saveMemorialInfo() {
+    const values = collectInfoValues();
+
+    if (!values.petName) {
+        alert('아이 이름을 입력해 주세요.');
+        document.getElementById('infoPetName').focus();
+        return;
+    }
+    if (values.meetDate && values.farewellDate && values.farewellDate < values.meetDate) {
+        alert('별이 된 날이 처음 만난 날보다 앞서 있습니다. 날짜를 확인해 주세요.');
+        return;
+    }
+
+    // ---- (임시) localStorage 저장 → 나중에 Cloud Functions 호출로 교체 ----
+    let order = {};
+    try {
+        order = JSON.parse(localStorage.getItem('recentMemorialOrder') || '{}');
+    } catch (e) { /* 빈 값으로 진행 */ }
+
+    Object.assign(order, values, {
+        meetDate: fromInputDate(values.meetDate),
+        farewellDate: fromInputDate(values.farewellDate)
+    });
+
+    try {
+        localStorage.setItem('recentMemorialOrder', JSON.stringify(order));
+    } catch (e) {
+        alert('저장 공간이 부족해 저장하지 못했습니다. 사진 크기를 줄여 다시 시도해 주세요.');
+        return;
+    }
+    // ---------------------------------------------------------------
+
+    // 상단 제목 이름도 함께 갱신
+    const nameEl = document.getElementById('adminPetName');
+    if (nameEl) nameEl.innerText = values.petName;
+
+    infoOriginal = values;
+    markInfoDirty();
+    showToast('추모관 정보를 저장했습니다.');
 }

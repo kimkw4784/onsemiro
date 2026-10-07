@@ -13,3 +13,4 @@ if (!firebase.apps.length) {
 }
 window.db = firebase.firestore();
 window.storage = firebase.storage();
+window.functions = firebase.app().functions('asia-northeast3');
