@@ -19,6 +19,19 @@ function generateSlug() {
     return code;
 }
 
+// 빌더에서 선택한 반려동물 종류 (dog / cat / small)
+const PET_TYPE_ICONS = {
+    dog: 'fluent-emoji-flat:dog-face',
+    cat: 'fluent-emoji-flat:cat-face',
+    small: 'fluent-emoji-flat:hamster'
+};
+
+function getSelectedPetType() {
+    const activeBtn = document.querySelector('.pet-type-btn.active');
+    const match = activeBtn?.getAttribute('onclick')?.match(/'(dog|cat|small)'/);
+    return match ? match[1] : 'dog';
+}
+
 // 모달 열기 (빌더에 입력된 최신 정보 및 사진 동기화)
 function openOrderModal(planType = 'digital') {
     currentSelectedPlan = planType;
@@ -42,12 +55,9 @@ function openOrderModal(planType = 'digital') {
     }
 
     // 썸네일 렌더링
-    let thumbHtml = '🐶';
+    let thumbHtml = `<iconify-icon icon="${PET_TYPE_ICONS[getSelectedPetType()]}" aria-hidden="true"></iconify-icon>`;
     if (photoData) {
         thumbHtml = `<img src="${photoData}" alt="${petName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-    } else {
-        const activeBtn = document.querySelector('.pet-type-btn.active');
-        thumbHtml = activeBtn ? activeBtn.innerText.trim().slice(0, 2) : '🐶';
     }
 
     // 3. 모달 마크업 동적 삽입
@@ -56,7 +66,7 @@ function openOrderModal(planType = 'digital') {
         <div class="order-modal-card">
             <div class="order-modal-header">
                 <h3>우리 아이 추모관 평생 소장하기</h3>
-                <button type="button" class="btn-modal-close" onclick="closeOrderModal()">✕</button>
+                <button type="button" class="btn-modal-close" onclick="closeOrderModal()" aria-label="닫기"><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
             </div>
 
             <div class="order-modal-body">
@@ -108,7 +118,7 @@ function openOrderModal(planType = 'digital') {
                     </div>
 
                     <div class="order-notice">
-                        <p>✓ 개설 완료 즉시 비공개 관리자 링크와 가족 전용 주소가 발급됩니다.</p>
+                        <p><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> 개설 완료 즉시 비공개 관리자 링크와 가족 전용 주소가 발급됩니다.</p>
                     </div>
 
                     <button type="submit" id="orderSubmitBtn" class="btn btn-primary btn-full">
@@ -170,6 +180,7 @@ async function handleOrderSubmit(event) {
     const orderData = {
         orderId: orderId,
         petName: petName,
+        petType: getSelectedPetType(),
         roomSlug: roomSlug,
         meetDate: document.getElementById('petMeetInput')?.value || '',
         farewellDate: document.getElementById('petFarewellInput')?.value || '',

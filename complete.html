@@ -16,8 +16,8 @@
 
     <!-- 분리된 전용 CSS 연결 -->
     <link rel="stylesheet" href="complete.css">
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕊️</text></svg>">
+    <link rel="icon" href="https://api.iconify.design/noto:paw-prints.svg">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 </head>
 
 <body class="complete-page-body">
@@ -35,7 +35,11 @@
         <div class="complete-card">
             <!-- 상단 완료 아이콘 및 안내 -->
             <div class="complete-header">
-                <div class="complete-check-icon">✓</div>
+                <div class="complete-check-icon" aria-hidden="true"><svg viewBox="0 0 20 20" width="1em" height="1em"
+                        fill="none" aria-hidden="true">
+                        <path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                    </svg></div>
                 <span class="complete-tag">ORDER COMPLETED</span>
                 <h1 class="complete-title">추모관 개설이 완료되었습니다</h1>
                 <p class="complete-desc">
@@ -62,7 +66,7 @@
                 </div>
 
                 <div class="group-inner-banner welcome-banner">
-                    <span class="banner-icon">🕯️</span>
+                    <span class="banner-icon"><iconify-icon icon="noto:candle" aria-hidden="true"></iconify-icon></span>
                     <p>
                         보호자님이 오실 때까지 <strong id="noticePetName">아이</strong><span id="noticePetJosa">가</span> 심심하지
                         않도록<br>
@@ -74,7 +78,8 @@
             <!-- [2그룹] 목적별 링크 분리 (지인 전달용) -->
             <div class="complete-group-box">
                 <div class="group-section-title">
-                    <span class="section-title-icon">📢</span>
+                    <span class="section-title-icon"><iconify-icon icon="noto:loudspeaker"
+                            aria-hidden="true"></iconify-icon></span>
                     <strong>지인에게 전달할 링크</strong>
                     <span class="section-title-sub">가족·친지분들께 상황에 맞게 전달해 주세요.</span>
                 </div>
@@ -107,7 +112,10 @@
                                 onclick="copyLink('uploadLinkInput')">복사</button>
                         </div>
                         <div class="link-item-tip">
-                            <span>✓</span> 보내온 사진은 관리자 화면에서 보호자님이 승인한 것만 공개됩니다.
+                            <span><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true">
+                                    <path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg></span> 보내온 사진은 관리자 화면에서 보호자님이 승인한 것만 공개됩니다.
                         </div>
                     </div>
                 </div>
@@ -116,7 +124,8 @@
             <!-- [3그룹] 보호자 전용 시크릿 링크 묶음 -->
             <div class="complete-group-box box-admin-secret">
                 <div class="group-section-title title-admin">
-                    <span class="section-title-icon">🔒</span>
+                    <span class="section-title-icon"><iconify-icon icon="noto:locked"
+                            aria-hidden="true"></iconify-icon></span>
                     <strong>보호자 전용 관리 링크</strong>
                     <span class="section-title-sub">개설자 본인만 열람 및 수정할 수 있습니다.</span>
                 </div>
@@ -133,13 +142,15 @@
                             onclick="copyLink('adminSecretLinkInput')">복사</button>
                     </div>
                     <div class="link-item-tip tip-warning">
-                        <span>⚠️</span> 관리 권한이 포함되어 있으므로 지인에게 공유되지 않도록 주의해 주세요.
+                        <span><iconify-icon icon="noto:warning" aria-hidden="true"></iconify-icon></span> 관리 권한이 포함되어
+                        있으므로 지인에게 공유되지 않도록 주의해 주세요.
                     </div>
                 </div>
 
                 <!-- 알림톡 안내 배너 -->
                 <div class="group-inner-banner sms-banner" style="margin-top: 14px;">
-                    <span class="banner-icon">💬</span>
+                    <span class="banner-icon"><iconify-icon icon="noto:speech-balloon"
+                            aria-hidden="true"></iconify-icon></span>
                     <p>
                         위 주소들은 따로 저장해두지 않으셔도 괜찮습니다.<br>
                         언제든 <strong id="smsPetName">아이</strong><span id="smsPetJosa">를</span> 보러 다시 찾아오실 수 있도록<br>
@@ -149,8 +160,10 @@
             </div>
 
             <div class="complete-actions">
-                <a href="sample.html" id="viewMemorialBtn" class="btn btn-primary btn-full">추모관 둘러보기 →</a>
-                <a href="admin.html" id="adminManageBtn" class="btn btn-secondary btn-full btn-admin">⚙️ 추모관 관리자 화면으로
+                <a href="sample.html" id="viewMemorialBtn" class="btn btn-primary btn-full">추모관 둘러보기</a>
+                <a href="admin.html" id="adminManageBtn"
+                    class="btn btn-secondary btn-full btn-admin"><span><iconify-icon icon="noto:gear"
+                            aria-hidden="true"></iconify-icon></span> 추모관 관리자 화면으로
                     가기</a>
             </div>
 

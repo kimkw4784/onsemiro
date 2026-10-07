@@ -130,27 +130,44 @@ function addInteractCount(btn, type = 'default') {
 }
 
 function createFloatingParticle(targetEl, type) {
-    const emojiPacks = {
+    // 저장된 주문 정보에서 동물 종류 판별 (기본값: 'dog')
+    let petType = 'dog';
+    try {
+        const order = JSON.parse(localStorage.getItem('recentMemorialOrder') || '{}');
+        if (order.petType) petType = order.petType;
+    } catch (e) {
+        console.error(e);
+    }
+
+    // 동물 종류별 아이콘 세트 (Iconify Noto Emoji)
+    const iconPacks = {
         dog: {
-            treat: ['🦴', '🍖', '🥩', '🍪', '🐾', '✨'],
-            toy: ['🎾', '⚾', '🧸', '🥏', '⭐', '✨'],
-            candle: ['🕯️', '✨', '🌟', '💛', '🌈'],
-            default: ['🐾', '🤍', '✨', '🕊️']
+            treat: ['noto:bone', 'noto:meat-on-bone', 'noto:cookie', 'fxemoji:sparkles'],
+            toy: ['noto:soccer-ball', 'twemoji:teddy-bear', 'noto:balloon'],
+            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star', 'fluent-emoji-flat:pink-heart', 'noto:rainbow'],
+            default: ['noto:paw-prints', 'fluent-emoji-flat:pink-heart', 'fxemoji:sparkles']
         },
         cat: {
-            treat: ['🐟', '🍣', '🍗', '🥛', '🐾', '✨'],
-            toy: ['🧶', '🪢', '📦', '🎈', '⭐', '✨'],
-            candle: ['🕯️', '✨', '🌟', '💛', '🌈'],
-            default: ['🐾', '🤍', '✨', '🕊️']
+            treat: ['noto-v1:fish', 'streamline-plump-color:fish', 'fluent-emoji-flat:glass-of-milk'],
+            toy: ['noto:yarn', 'noto:package', 'noto:balloon'],
+            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star', 'fluent-emoji-flat:pink-heart', 'noto:rainbow'],
+            default: ['noto:paw-prints', 'fluent-emoji-flat:pink-heart', 'fxemoji:sparkles']
+        },
+        small: {
+            treat: ['noto:sunflower', 'noto:carrot', 'noto:red-apple'],
+            toy: ['noto:bell', 'noto:ribbon', 'noto:balloon'],
+            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star', 'fluent-emoji-flat:pink-heart', 'noto:rainbow'],
+            default: ['noto:herb', 'fluent-emoji-flat:pink-heart', 'fxemoji:sparkles']
         }
     };
 
-    const targetList = emojiPacks.dog[type] || emojiPacks.dog.default;
-    const emoji = targetList[Math.floor(Math.random() * targetList.length)];
+    const currentPack = iconPacks[petType] || iconPacks.dog;
+    const targetList = currentPack[type] || currentPack.default;
+    const iconName = targetList[Math.floor(Math.random() * targetList.length)];
 
     const particle = document.createElement('span');
     particle.className = 'interactive-floating-particle';
-    particle.innerText = emoji;
+    particle.innerHTML = `<iconify-icon icon="${iconName}"></iconify-icon>`;
 
     const randomOffset = (Math.random() - 0.5) * 30;
     particle.style.left = `calc(50% + ${randomOffset}px)`;
@@ -228,7 +245,7 @@ function handleLetterSubmit(e) {
     nameInput.value = '';
     relationInput.value = '';
     msgInput.value = '';
-    showToast("소중한 마음이 우체통에 고이 전해졌습니다 ✉️");
+    showToast("소중한 마음이 우체통에 고이 전해졌습니다.");
 }
 
 // =========================================
@@ -250,7 +267,7 @@ function renderMedia(order) {
     let photoCount = 0;
     let videoCount = 0;
 
-    // ⭐️ 대표 사진(order.petPhoto)은 상단 원형 프로필에만 노출하고, 갤러리에는 주입하지 않습니다.
+    // 대표 사진(order.petPhoto)은 상단 원형 프로필에만 노출하고, 갤러리에는 주입하지 않습니다.
     // 관리자(보호자)가 승인한 지인 사진/영상만 갤러리에 노출
     approvedList.forEach(item => {
         if (!item.files) return;
@@ -301,7 +318,7 @@ function createVideoElement(src, date, desc) {
     div.innerHTML = `
         <div class="video-wrapper">
             <video src="${src}" loop muted playsinline preload="auto"></video>
-            <div class="video-play-overlay"><span class="play-icon">▶</span></div>
+            <div class="video-play-overlay"><span class="play-icon"><svg viewBox="0 0 20 20" width="1em" height="1em" aria-hidden="true"><path d="M6.5 4.5l9 5.5-9 5.5z" fill="currentColor"/></svg></span></div>
         </div>
         <div class="video-info">
             <span class="video-date">${date}</span>

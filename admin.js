@@ -120,7 +120,7 @@ function setFilter(filter) {
 }
 
 function updateCounts(list) {
-    // ⭐️ 보호자 직접 등록 항목(!item.isDirect)은 지인 검수 카운트에서 제외
+    // 보호자 직접 등록 항목(!item.isDirect)은 지인 검수 카운트에서 제외
     const guestMemories = list.filter(item => !item.isDirect);
 
     const pCount = guestMemories.filter(item => item.status === 'pending').length;
@@ -247,7 +247,7 @@ function renderCards() {
     const list = getMemories();
     updateCounts(list);
 
-    // ⭐️ 보호자 직접 등록 항목(!item.isDirect)은 지인 검수 목록에서 완전 제외
+    // 보호자 직접 등록 항목(!item.isDirect)은 지인 검수 목록에서 완전 제외
     const filtered = list.filter(item => {
         if (item.isDirect) return false;
         if (currentFilter === 'unposted') {
@@ -309,13 +309,13 @@ function renderCards() {
 
         const topActionHtml = (currentFilter === 'pending')
             ? ''
-            : `<button type="button" class="btn-revert-mini" onclick="revertStatus('${item.id}')">↩ 다시 검수</button>`;
+            : `<button type="button" class="btn-revert-mini" onclick="revertStatus('${item.id}')">다시 검수</button>`;
 
         let actionBarHtml = '';
         if (currentFilter === 'pending') {
             const hasChecked = checkedCount > 0;
             const toggleBtnText = (checkedCount === totalFiles) ? '전체 해제' : '전체 선택';
-            const approveBtnText = hasChecked ? `🌿 선택한 ${checkedCount}장 전시하기` : `🚫 전시 제외하고 보관`;
+            const approveBtnText = hasChecked ? `<iconify-icon icon="noto:herb" aria-hidden="true"></iconify-icon> 선택한 ${checkedCount}장 전시하기` : `<iconify-icon icon="noto:prohibited" aria-hidden="true"></iconify-icon> 전시 제외하고 보관`;
             const approveBtnClass = hasChecked ? 'btn-approve-submit' : 'btn-approve-submit mode-reject';
 
             actionBarHtml = `
@@ -376,7 +376,7 @@ function renderSelectedPreviews() {
         return `
             <div class="preview-thumb-wrap">
                 ${isVideo ? `<video src="${objectUrl}"></video>` : `<img src="${objectUrl}">`}
-                <button type="button" class="btn-remove-preview" onclick="removeSelectedFile(${idx})">✕</button>
+                <button type="button" class="btn-remove-preview" onclick="removeSelectedFile(${idx})" aria-label="선택 취소"><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
             </div>
         `;
     }).join('');
@@ -458,12 +458,12 @@ async function handleDirectUpload() {
 
         const newMemory = {
             id: 'DIR-' + Date.now(),
-            sender: '보호자', // ⭐️ 2번 워딩: '보호자' 적용
+            sender: '보호자', // 2번 워딩: '보호자' 적용
             relation: '',
             story: storyText,
             submittedAt: dateStr,
             status: 'approved',
-            isDirect: true,   // ⭐️ 1번 분리: 지인 검수 탭에 뜨지 않도록 플래그 지정
+            isDirect: true,   // 1번 분리: 지인 검수 탭에 뜨지 않도록 플래그 지정
             files: fileObjects
         };
 
@@ -479,7 +479,7 @@ async function handleDirectUpload() {
 
         renderDirectGallery();
         renderCards();
-        showToast("갤러리에 등록되었습니다 🌿");
+        showToast("갤러리에 등록되었습니다.");
     } catch (err) {
         console.error(err);
         alert("업로드 처리 중 오류가 발생했습니다. 파일 용량을 확인해 주세요.");
@@ -510,7 +510,7 @@ function renderDirectGallery() {
                 ? `<video src="${f.data}" muted playsinline></video>`
                 : `<img src="${f.data}" alt="갤러리 사진">`;
 
-            // ⭐️ 라벨 표기: 보호자 업로드 항목은 깔끔하게 '보호자'로 표기
+            // 라벨 표기: 보호자 업로드 항목은 깔끔하게 '보호자'로 표기
             const senderLabel = (item.isDirect || item.sender === '보호자' || item.sender === '가족' || item.sender === '가족의 기록')
                 ? '보호자'
                 : `${item.relation} ${item.sender}`.trim();
@@ -519,7 +519,7 @@ function renderDirectGallery() {
                 <div class="direct-media-card" id="mediaCard-${item.id}-${fIdx}">
                     <div class="direct-media-thumb">
                         ${mediaTag}
-                        <button type="button" class="btn-direct-delete" title="삭제" onclick="deleteGalleryItem('${item.id}', ${fIdx})">✕</button>
+                        <button type="button" class="btn-direct-delete" title="삭제" onclick="deleteGalleryItem('${item.id}', ${fIdx})" aria-label="삭제"><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
                     </div>
                     <div class="direct-media-info">
                         <span class="direct-media-tag">${senderLabel}</span>
@@ -545,7 +545,7 @@ function renderDirectGallery() {
     updateMainTabBadges();
 }
 
-// ⭐️ 3번: '보호자' 라벨 태그는 온전히 유지하고, 사연 텍스트 영역만 인풋창으로 전환
+// 3번: '보호자' 라벨 태그는 온전히 유지하고, 사연 텍스트 영역만 인풋창으로 전환
 function startEditStory(itemId, fIdx) {
     const list = getMemories();
     const item = list.find(m => m.id === itemId);
@@ -810,7 +810,7 @@ function showToast(message) {
 }
 
 // =========================================
-// ⭐️ 5. 추모관 정보 수정
+// 5. 추모관 정보 수정
 // -----------------------------------------
 // ※ 지금은 화면 확인용으로 localStorage(recentMemorialOrder)를 읽고 씁니다.
 //   Firebase 연결 단계에서 loadMemorialInfo / saveMemorialInfo 두 함수의

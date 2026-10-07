@@ -90,7 +90,10 @@ function handlePhotoUpload(event) {
             document.getElementById('liveAvatar').innerHTML = `<img src="${window.uploadedImageData}" alt="업로드된 프로필">`;
 
             const hint = document.querySelector('.upload-hint-text');
-            if (hint) { hint.textContent = '✓ 사진이 등록됐어요'; hint.classList.add('is-selected'); }
+            if (hint) {
+                hint.innerHTML = '<svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true" style="vertical-align:-0.15em"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> 사진이 등록됐어요';
+                hint.classList.add('is-selected');
+            }
             const btnText = document.querySelector('.btn-photo-upload span');
             if (btnText) btnText.textContent = '사진 바꾸기';
         };
@@ -123,25 +126,28 @@ function addCount(btn, type = 'treat') {
 }
 
 function createHeroParticle(targetEl, type, petType) {
-    const emojiPacks = {
+    const iconPacks = {
         dog: {
-            treat: ['noto:bone', 'noto:cut-of-meat', 'noto:cookie', 'fxemoji:sparkles'],
-            toy: ['noto:soccer-ball', 'twemoji:teddy-bear', 'noto:star'],
-            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star']
+            treat: ['noto:bone', 'noto:meat-on-bone', 'noto:cookie', 'fxemoji:sparkles'],
+            toy: ['noto:soccer-ball', 'twemoji:teddy-bear', 'noto:balloon'],
+            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star', 'fluent-emoji-flat:pink-heart', 'noto:rainbow'],
+            default: ['noto:paw-prints', 'fluent-emoji-flat:pink-heart', 'fxemoji:sparkles']
         },
         cat: {
-            treat: ['noto-v1:fish', 'ph:fish-duotone', 'fluent-emoji-flat:glass-of-milk'],
+            treat: ['noto-v1:fish', 'streamline-plump-color:fish', 'fluent-emoji-flat:glass-of-milk'],
             toy: ['noto:yarn', 'noto:package', 'noto:balloon'],
-            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star']
+            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star', 'fluent-emoji-flat:pink-heart', 'noto:rainbow'],
+            default: ['noto:paw-prints', 'fluent-emoji-flat:pink-heart', 'fxemoji:sparkles']
         },
         small: {
             treat: ['noto:sunflower', 'noto:carrot', 'noto:red-apple'],
-            toy: ['noto:bell', 'noto:ribbon'],
-            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star']
+            toy: ['noto:bell', 'noto:ribbon', 'noto:balloon'],
+            candle: ['noto:candle', 'fxemoji:sparkles', 'noto:star', 'fluent-emoji-flat:pink-heart', 'noto:rainbow'],
+            default: ['noto:herb', 'fluent-emoji-flat:pink-heart', 'fxemoji:sparkles']
         }
     };
 
-    const currentPack = emojiPacks[petType] || emojiPacks.dog;
+    const currentPack = iconPacks[petType] || iconPacks.dog;
     const targetList = currentPack[type] || currentPack.treat;
     const iconName = targetList[Math.floor(Math.random() * targetList.length)];
 

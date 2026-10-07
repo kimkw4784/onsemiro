@@ -387,11 +387,11 @@ body {
     overflow: visible;
     font-family: var(--font-sans);
     font-size: 11px;
-    /* ⭐️ 기존 아담한 폰트 크기 유지 */
+    /* 기존 아담한 폰트 크기 유지 */
     font-weight: 500;
     color: var(--text-sub);
     padding: 7px 12px;
-    /* ⭐️ 기존 패딩 규격 유지 */
+    /* 기존 패딩 규격 유지 */
     border-radius: 20px;
     border: 1px solid rgba(43, 38, 32, 0.08);
     background: #FFFFFF;
