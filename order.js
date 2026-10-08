@@ -111,7 +111,7 @@ function openOrderModal(planType = 'digital') {
 
                     <div class="form-group">
                         <label class="form-label">결제 수단</label>
-                        <div class="plan-card-group" id="payMethodGroup" style="grid-template-columns: repeat(3, 1fr);">
+                        <div class="plan-card-group" id="payMethodGroup" style="grid-template-columns: repeat(2, 1fr);">
                             <label class="plan-card active" onclick="selectPayMethod(this, 'CARD')">
                                 <input type="radio" name="payMethod" value="CARD" checked>
                                 <div class="plan-card-content">
@@ -125,14 +125,7 @@ function openOrderModal(planType = 'digital') {
                                     <span class="plan-name">계좌이체</span>
                                     <p class="plan-desc">내 계좌에서 바로</p>
                                 </div>
-                            </label>
-                            <label class="plan-card" onclick="selectPayMethod(this, 'MOBILE_PHONE')">
-                                <input type="radio" name="payMethod" value="MOBILE_PHONE">
-                                <div class="plan-card-content">
-                                    <span class="plan-name">휴대폰</span>
-                                    <p class="plan-desc">통신요금과 함께</p>
-                                </div>
-                            </label>
+                            </label>                            
                         </div>
                     </div>
 
