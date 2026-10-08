@@ -1237,6 +1237,11 @@
 .admin-locked-btn {
     display: inline-block;
     margin-top: 28px;
+    padding: 14px 32px;
+    border-radius: 8px;
+    font-size: 14.5px;
+    font-weight: 600;
+    line-height: 1.4;
     text-decoration: none;
 }
 
