@@ -268,53 +268,71 @@ async function handleLetterSubmit(e) {
 // =========================================
 // 갤러리 및 미디어 렌더링
 // =========================================
-function renderMedia(order) {
+const MEDIA_BASE = 'https://media.onsemiro.me';
+function mediaUrl(path) {
+    return path ? `${MEDIA_BASE}/${path}` : '';
+}
+
+// 승인된 사진·영상 불러오기 (보호자가 전시한 것만 모아 둔 gallery 목록)
+async function renderMedia() {
     const photoGrid = document.getElementById('galleryGrid');
     const videoGrid = document.getElementById('videoGrid');
     const videoSection = document.getElementById('videoSection');
-
     if (!photoGrid) return;
+
+    let items = [];
+    try {
+        const snap = await db.collection('memorials').doc(activeRoomSlug).collection('gallery').get();
+        items = snap.docs.map(doc => doc.data());
+    } catch (err) {
+        console.error('갤러리 불러오기 실패:', err);
+    }
+
+    // 최신 추억이 앞으로, 같은 묶음 안에서는 올린 순서대로
+    items.sort((a, b) => {
+        const diff = (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
+        return diff !== 0 ? diff : (a.fileIndex || 0) - (b.fileIndex || 0);
+    });
+
     photoGrid.innerHTML = '';
     if (videoGrid) videoGrid.innerHTML = '';
-
-    const rawMemories = localStorage.getItem('pendingMemories');
-    const memories = rawMemories ? JSON.parse(rawMemories) : [];
-    const approvedList = memories.filter(item => item.status === 'approved');
 
     let photoCount = 0;
     let videoCount = 0;
 
-    // 대표 사진(order.petPhoto)은 상단 원형 프로필에만 노출하고, 갤러리에는 주입하지 않습니다.
-    // 관리자(보호자)가 승인한 지인 사진/영상만 갤러리에 노출
-    approvedList.forEach(item => {
-        if (!item.files) return;
-        item.files.filter(f => !f.excluded).forEach(f => {
-            const senderTag = `${item.relation} ${item.sender}`;
-            const captionText = item.story ? `${item.story} (${senderTag})` : senderTag;
+    items.forEach(item => {
+        const d = item.createdAt?.toDate?.();
+        const dateText = d ? `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getDate()).padStart(2, '0')}.` : '';
+        const caption = item.story ? `${item.story} (${item.senderLabel})` : item.senderLabel;
 
-            if (f.type === 'video' && videoGrid) {
-                videoCount++;
-                videoGrid.prepend(createVideoElement(f.data, `${item.submittedAt} · ${senderTag}`, item.story || '보내주신 영상입니다.'));
-            } else {
-                photoCount++;
-                const el = createPhotoElement(f.data, captionText);
-                el.classList.add('approved-memory');
-                photoGrid.prepend(el);
-            }
-        });
+        if (item.type === 'video') {
+            if (!videoGrid) return;
+            videoCount++;
+            videoGrid.appendChild(createVideoElement(
+                mediaUrl(item.path),
+                mediaUrl(item.thumbPath),
+                [dateText, item.senderLabel].filter(Boolean).join(' · '),
+                item.story || '보내주신 영상입니다.'
+            ));
+        } else {
+            photoCount++;
+            const el = createPhotoElement(mediaUrl(item.path), caption);
+            el.classList.add('approved-memory');
+            photoGrid.appendChild(el);
+        }
     });
 
-    // 승인된 사진이 0장일 때의 빈 화면 안내
+    // 전시된 사진이 없을 때의 안내
     if (photoCount === 0) {
         photoGrid.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 44px 16px; background: #FFF; border-radius: 14px; border: 1px dashed rgba(43, 38, 32, 0.12);">
-                <p style="font-size: 13.5px; color: var(--text-sub); margin-bottom: 6px;">아직 전시 승인된 기억의 사진이 없습니다.</p>
-                <p style="font-size: 12px; color: var(--text-muted);">지인들이 보내온 사진은 관리자 화면에서 승인 후 공개됩니다.</p>
+                <p style="font-size: 13.5px; color: var(--text-sub); margin-bottom: 6px;">아직 전시된 기억의 사진이 없습니다.</p>
+                <p style="font-size: 12px; color: var(--text-muted);">가족과 지인들이 보내온 사진은 보호자님 확인 후 공개됩니다.</p>
             </div>
         `;
     }
 
-    // 영상이 있을 때만 비디오 섹션 오픈
+    // 영상이 있을 때만 영상 섹션 열기
     if (videoSection) {
         videoSection.style.display = videoCount > 0 ? 'block' : 'none';
     }
@@ -324,25 +342,83 @@ function createPhotoElement(src, caption) {
     const div = document.createElement('div');
     div.className = 'gallery-item';
     div.onclick = function () { openImageModal(this); };
-    div.innerHTML = `<img src="${src}" alt="${caption}">`;
+    div.innerHTML = `<img src="${src}" alt="${escapeHtml(caption)}" loading="lazy">`;
     return div;
 }
 
-function createVideoElement(src, date, desc) {
+// 영상은 썸네일만 먼저 보여주고, 눌렀을 때 영상을 불러옴 (데이터 절약)
+function createVideoElement(src, thumb, date, desc) {
     const div = document.createElement('div');
     div.className = 'video-card';
     div.onclick = () => openVideoModal(src, date, desc);
     div.innerHTML = `
         <div class="video-wrapper">
-            <video src="${src}" loop muted playsinline preload="auto"></video>
+            <img src="${thumb}" alt="" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
             <div class="video-play-overlay"><span class="play-icon"><svg viewBox="0 0 20 20" width="1em" height="1em" aria-hidden="true"><path d="M6.5 4.5l9 5.5-9 5.5z" fill="currentColor"/></svg></span></div>
         </div>
         <div class="video-info">
-            <span class="video-date">${date}</span>
-            <p class="video-desc">${desc}</p>
+            <span class="video-date">${escapeHtml(date)}</span>
+            <p class="video-desc">${escapeHtml(desc)}</p>
         </div>
     `;
     return div;
+}
+
+// 영상 모달 (재생 중에는 배경음악을 잠시 멈췄다가, 닫으면 다시 재생)
+let wasBgmPlayingBeforeVideo = false;
+
+function openVideoModal(videoSrc, dateText, descText) {
+    const modal = document.getElementById('videoModal');
+    const player = document.getElementById('modalVideoPlayer');
+    const bgmBtn = document.getElementById('bgmToggleBtn');
+
+    if (isBgmPlaying) {
+        wasBgmPlayingBeforeVideo = true;
+        bgmAudio.pause();
+        isBgmPlaying = false;
+        if (bgmBtn) bgmBtn.innerText = '재생';
+    } else {
+        wasBgmPlayingBeforeVideo = false;
+    }
+
+    player.src = videoSrc;
+    document.getElementById('modalVideoDate').innerText = dateText;
+    document.getElementById('modalVideoDesc').innerText = descText;
+    player.muted = false;
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    player.load();
+    const playPromise = player.play();
+    if (playPromise !== undefined) {
+        playPromise.catch(err => console.log('자동재생 차단됨:', err));
+    }
+}
+
+function closeVideoModal(event) {
+    if (event.target.id === 'videoModal') forceCloseModal();
+}
+
+function forceCloseModal() {
+    const modal = document.getElementById('videoModal');
+    const player = document.getElementById('modalVideoPlayer');
+    const bgmBtn = document.getElementById('bgmToggleBtn');
+
+    player.pause();
+    player.removeAttribute('src');
+    player.load();
+
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+
+    if (wasBgmPlayingBeforeVideo) {
+        bgmAudio.play().then(() => {
+            isBgmPlaying = true;
+            if (bgmBtn) bgmBtn.innerText = '정지';
+        }).catch(err => console.log('BGM 복구 에러:', err));
+        wasBgmPlayingBeforeVideo = false;
+    }
 }
 
 // =========================================
@@ -376,8 +452,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     activePetType = memorial.petType || 'dog';
     renderMemorial(memorial, adminKey);
 
-    // 아직 Firestore로 옮기기 전인 영역 (다음 단계에서 연결 예정)
-    renderMedia(memorial);
+    // 갤러리·우체통
+    renderMedia();
     loadLetters();
 });
 

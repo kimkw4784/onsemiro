@@ -7,7 +7,8 @@ function callName(name) {
     return (lastChar - 0xAC00) % 28 > 0 ? name + '이' : name;
 }
 
-let selectedFiles = [];
+let selectedFiles = [];     // prepareMediaFile 결과 목록
+let uploadRoom = '';
 
 // 기기 환경 감지 (모바일: 200MB, PC: 500MB)
 function getMaxFileSize() {
@@ -19,38 +20,30 @@ function getMaxFileSize() {
     };
 }
 
-// 아이 이름, 룸 파라미터 및 되돌아가기 링크 연동
-document.addEventListener('DOMContentLoaded', () => {
+// 추모관 정보 불러와서 아이 이름, 돌아가기 링크 연결
+document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const roomParam = urlParams.get('room');
+    uploadRoom = (urlParams.get('room') || '').trim().toUpperCase();
+
+    let memorial = null;
+    if (uploadRoom) {
+        try {
+            const snap = await db.collection('memorials').doc(uploadRoom).get();
+            if (snap.exists) memorial = snap.data();
+        } catch (err) {
+            console.error('추모관 불러오기 실패:', err);
+        }
+    }
+
+    if (!memorial) {
+        showUploadUnavailable();
+        return;
+    }
 
     const backLink = document.querySelector('.back-link');
-    if (backLink && roomParam) {
-        backLink.href = `sample.html?room=${roomParam}`;
-    }
+    if (backLink) backLink.href = `memorial.html?room=${uploadRoom}`;
 
-    let petName = '코코';
-    const rawData = localStorage.getItem('recentMemorialOrder');
-    if (rawData) {
-        try {
-            const order = JSON.parse(rawData);
-            if (order.petName) petName = order.petName;
-        } catch (e) {
-            console.error(e);
-        }
-    } else if (roomParam) {
-        const allOrders = localStorage.getItem('memorialOrders');
-        if (allOrders) {
-            try {
-                const list = JSON.parse(allOrders);
-                const matched = list.find(item => item.roomSlug === roomParam);
-                if (matched && matched.petName) petName = matched.petName;
-            } catch (e) {
-                console.error(e);
-            }
-        }
-    }
-
+    const petName = memorial.petName || '아이';
     document.title = `${callName(petName)}와의 추억 모으기 | 온새미로`;
     const nameEl = document.getElementById('targetPetName');
     const guideEl = document.getElementById('targetPetGuide');
@@ -68,125 +61,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 이미지 -> WebP 고화질 보존 압축 (최대 FHD 1920px, 퀄리티 0.88)
-function compressImageToWebp(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (e) => {
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                const maxDim = 1920; // FHD 고해상도 규격
-
-                if (width > maxDim || height > maxDim) {
-                    if (width > height) {
-                        height = Math.round((height * maxDim) / width);
-                        width = maxDim;
-                    } else {
-                        width = Math.round((width * maxDim) / height);
-                        height = maxDim;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-
-                // 렌더링 스무딩 품질 극대화
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                ctx.drawImage(img, 0, 0, width, height);
-
-                // 시각적 무손실 구간 (0.88)
-                const webpDataUrl = canvas.toDataURL('image/webp', 0.88);
-                resolve({ dataUrl: webpDataUrl, type: 'image' });
-            };
-            img.onerror = reject;
-        };
-        reader.onerror = reject;
-    });
+// 주소가 잘못됐을 때
+function showUploadUnavailable() {
+    const card = document.querySelector('.upload-form-card');
+    const header = document.querySelector('.upload-header');
+    if (header) {
+        header.innerHTML = `
+            <span class="upload-badge">Memory Gathering</span>
+            <h1 class="upload-title">추모관을 찾을 수 없어요</h1>
+            <p class="upload-guide">주소가 정확한지 다시 한 번 확인해 주세요.<br>보호자님께 받으신 주소를 그대로 눌러 들어오시면 가장 정확합니다.</p>
+        `;
+    }
+    if (card) card.style.display = 'none';
+    const back = document.querySelector('.back-link-box');
+    if (back) back.style.display = 'none';
 }
 
-// 비디오 프레임 추출 -> 고화질 WebP 변환
-function extractVideoThumbnailToWebp(file) {
-    return new Promise((resolve, reject) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.muted = true;
-        video.playsInline = true;
-        video.src = URL.createObjectURL(file);
-
-        video.onloadedmetadata = () => {
-            video.currentTime = Math.min(1.0, video.duration / 2);
-        };
-
-        video.onseeked = () => {
-            const canvas = document.createElement('canvas');
-            let width = video.videoWidth;
-            let height = video.videoHeight;
-            const maxDim = 1280; // 비디오 썸네일 HD 규격
-
-            if (width > maxDim || height > maxDim) {
-                if (width > height) {
-                    height = Math.round((height * maxDim) / width);
-                    width = maxDim;
-                } else {
-                    width = Math.round((width * maxDim) / height);
-                    height = maxDim;
-                }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(video, 0, 0, width, height);
-
-            const webpDataUrl = canvas.toDataURL('image/webp', 0.88);
-            URL.revokeObjectURL(video.src);
-            resolve({ dataUrl: webpDataUrl, type: 'video' });
-        };
-
-        video.onerror = reject;
-    });
+function setLoader(visible, text) {
+    const loader = document.getElementById('compressLoading');
+    const progressText = document.getElementById('compressProgress');
+    if (loader) loader.style.display = visible ? 'flex' : 'none';
+    if (progressText && text) progressText.innerText = text;
 }
 
-function appendPreviewItem(container, src, type, fileName) {
-    const item = document.createElement('div');
-    item.className = 'preview-item';
-
-    item.innerHTML = `
-        <img src="${src}" alt="미리보기">
-        ${type === 'video' ? '<span style="position:absolute; bottom:4px; right:4px; font-size:10px; background:rgba(0,0,0,0.6); color:#fff; padding:2px 4px; border-radius:4px;">VIDEO</span>' : ''}
-        <button type="button" class="btn-remove-preview" onclick="removeFile(this, '${fileName}')">✕</button>
-    `;
-    container.appendChild(item);
+function renderPreviews() {
+    const grid = document.getElementById('previewGrid');
+    if (!grid) return;
+    grid.innerHTML = selectedFiles.map((item, idx) => `
+        <div class="preview-item">
+            <img src="${item.previewUrl}" alt="미리보기">
+            ${item.type === 'video' ? '<span style="position:absolute; bottom:4px; right:4px; font-size:10px; background:rgba(0,0,0,0.6); color:#fff; padding:2px 4px; border-radius:4px;">VIDEO</span>' : ''}
+            <button type="button" class="btn-remove-preview" onclick="removeFile(${idx})" aria-label="삭제"><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        </div>
+    `).join('');
 }
 
-function removeFile(btn, fileName) {
-    selectedFiles = selectedFiles.filter(f => f.name !== fileName);
-    btn.parentElement.remove();
+function removeFile(index) {
+    const [removed] = selectedFiles.splice(index, 1);
+    if (removed && removed.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+    renderPreviews();
 }
 
 async function handleFileSelect(e) {
     const files = Array.from(e.target.files);
-    const grid = document.getElementById('previewGrid');
 
     if (selectedFiles.length + files.length > 3) {
-        alert("추억 파일은 한 번에 최대 3개까지만 등록할 수 있습니다.");
+        alert('추억 파일은 한 번에 최대 3개까지만 등록할 수 있습니다.');
         e.target.value = '';
         return;
     }
 
     const { limit, isMobile } = getMaxFileSize();
-    const loader = document.getElementById('compressLoading');
-    const progressText = document.getElementById('compressProgress');
 
     for (const file of files) {
         // 원본 선택 용량 체크 (모바일 200MB / PC 500MB)
@@ -200,87 +125,64 @@ async function handleFileSelect(e) {
             continue;
         }
 
-        if (loader) loader.style.display = 'flex';
-        if (progressText) progressText.innerText = `"${file.name}" 고화질로 변환 중...`;
-
+        setLoader(true, `"${file.name}" 준비 중...`);
         try {
-            if (file.type.startsWith('image/')) {
-                const compressed = await compressImageToWebp(file);
-                selectedFiles.push({
-                    name: file.name,
-                    data: compressed.dataUrl,
-                    type: 'image',
-                    excluded: false
-                });
-                appendPreviewItem(grid, compressed.dataUrl, 'image', file.name);
-            } else if (file.type.startsWith('video/')) {
-                const compressed = await extractVideoThumbnailToWebp(file);
-                selectedFiles.push({
-                    name: file.name,
-                    data: compressed.dataUrl,
-                    type: 'video',
-                    excluded: false
-                });
-                appendPreviewItem(grid, compressed.dataUrl, 'video', file.name);
-            }
+            selectedFiles.push(await prepareMediaFile(file));
         } catch (err) {
-            console.error("고화질 변환 실패:", err);
+            console.error('파일 준비 실패:', err);
             alert(`"${file.name}" 파일을 처리하지 못했습니다. 다른 파일로 시도해 주세요.`);
         }
     }
 
-    if (loader) loader.style.display = 'none';
+    setLoader(false);
+    renderPreviews();
     e.target.value = '';
 }
 
-function handleUploadSubmit(e) {
+async function handleUploadSubmit(e) {
     e.preventDefault();
 
     if (selectedFiles.length === 0) {
-        alert("사진이나 영상을 최소 1개 이상 등록해 주세요.");
+        alert('사진이나 영상을 최소 1개 이상 등록해 주세요.');
         return;
     }
 
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const formattedDate = `${yyyy}. ${mm}. ${dd}.`;
-
-    const newMemory = {
-        id: 'MEM-' + Date.now(),
-        sender: document.getElementById('senderName').value.trim(),
-        relation: document.getElementById('senderRelation').value.trim(),
-        story: document.getElementById('memoryStory').value.trim(),
-        files: selectedFiles,
-        status: 'pending',
-        submittedAt: formattedDate
-    };
+    const submitBtn = document.querySelector('.btn-submit-upload');
+    if (submitBtn) submitBtn.disabled = true;
+    setLoader(true, '업로드를 준비하고 있어요...');
 
     try {
-        const existingList = JSON.parse(localStorage.getItem('pendingMemories') || '[]');
-        existingList.unshift(newMemory);
-        localStorage.setItem('pendingMemories', JSON.stringify(existingList));
+        await uploadMemory({
+            slug: uploadRoom,
+            sender: document.getElementById('senderName').value.trim(),
+            relation: document.getElementById('senderRelation').value.trim(),
+            story: document.getElementById('memoryStory').value.trim(),
+            items: selectedFiles,
+            onProgress: (percent) => setLoader(true, `소중한 추억을 보내는 중... ${percent}%`)
+        });
 
-        showToast("소중한 추억이 가족분들께 안전하게 전달되었습니다.");
+        setLoader(false);
+        showToast('소중한 추억이 가족분들께 안전하게 전달되었습니다.');
 
-        setTimeout(() => {
-            document.getElementById('memoryForm').reset();
-            document.getElementById('previewGrid').innerHTML = '';
-            selectedFiles = [];
-        }, 800);
+        document.getElementById('memoryForm').reset();
+        selectedFiles.forEach(item => item.previewUrl && URL.revokeObjectURL(item.previewUrl));
+        selectedFiles = [];
+        renderPreviews();
     } catch (err) {
-        console.error("스토리지 저장 실패:", err);
-        alert("브라우저 저장 공간이 가득 찼습니다. 기존 항목을 검수한 후 다시 시도해 주세요.");
+        console.error('업로드 실패:', err);
+        setLoader(false);
+        alert(`${err.message || '업로드 중 문제가 발생했습니다.'}\n잠시 후 다시 시도해 주세요.`);
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
     }
 }
 
 function showToast(message) {
-    const toast = document.getElementById("toastMessage");
+    const toast = document.getElementById('toastMessage');
     if (!toast) return;
     toast.innerText = message;
-    toast.classList.add("show");
+    toast.classList.add('show');
     setTimeout(() => {
-        toast.classList.remove("show");
+        toast.classList.remove('show');
     }, 2500);
 }

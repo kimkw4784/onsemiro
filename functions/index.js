@@ -3,14 +3,34 @@ const { onCall, HttpsError } = require("firebase-functions/https");
 const { defineSecret } = require("firebase-functions/params");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
-const { getStorage } = require("firebase-admin/storage");
 const crypto = require("crypto");
+const { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 initializeApp();
 const db = getFirestore();
 
 // 토스 시크릿 키 (Firebase 비밀 값 보관함에서 꺼내 씀 - 코드에는 절대 적지 않음)
 const TOSS_SECRET_KEY = defineSecret("TOSS_SECRET_KEY");
+
+// Cloudflare R2 (사진·영상 저장소) 접근 정보
+const R2_ACCESS_KEY_ID = defineSecret("R2_ACCESS_KEY_ID");
+const R2_SECRET_ACCESS_KEY = defineSecret("R2_SECRET_ACCESS_KEY");
+const R2_ACCOUNT_ID = defineSecret("R2_ACCOUNT_ID");
+const R2_SECRETS = [R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ACCOUNT_ID];
+const R2_BUCKET = "onsemiro-media";
+const MEDIA_BASE = "https://media.onsemiro.me";
+
+// 업로드 제한 (악용 방지용 안전장치)
+const UPLOAD_LIMITS = {
+    maxFilesPerMemory: 10,
+    imageBytes: 30 * 1024 * 1024,        // 사진 1장 (압축 후라 넉넉함)
+    videoBytes: 500 * 1024 * 1024,       // 영상 1개
+    thumbBytes: 2 * 1024 * 1024,         // 영상 썸네일
+    memorialBytes: 20 * 1024 * 1024 * 1024 // 추모관 1곳 전체
+};
+const IMAGE_TYPES = ["image/webp", "image/jpeg", "image/png", "image/gif"];
+const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 
 // 모든 함수를 서울 리전에서 실행, 동시 실행 개수 제한(비용 안전장치)
 setGlobalOptions({ region: "asia-northeast3", maxInstances: 10 });
@@ -81,24 +101,54 @@ function hashKey(key) {
     return crypto.createHash("sha256").update(key).digest("hex");
 }
 
-// base64 대표 사진을 Storage에 저장하고 공개 주소 돌려주기
+// R2 연결 (S3 호환 방식)
+let r2Client = null;
+function getR2() {
+    if (!r2Client) {
+        r2Client = new S3Client({
+            region: "auto",
+            endpoint: `https://${R2_ACCOUNT_ID.value().trim()}.r2.cloudflarestorage.com`,
+            credentials: {
+                accessKeyId: R2_ACCESS_KEY_ID.value().trim(),
+                secretAccessKey: R2_SECRET_ACCESS_KEY.value().trim()
+            }
+        });
+    }
+    return r2Client;
+}
+
+function mediaUrl(path) {
+    return path ? `${MEDIA_BASE}/${path}` : "";
+}
+
+async function deleteR2Object(path) {
+    if (!path) return;
+    try {
+        await getR2().send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: path }));
+    } catch (err) {
+        console.error("R2 파일 삭제 실패:", path, err);
+    }
+}
+
+// base64 대표 사진을 R2에 저장하고 { path, url } 돌려주기
+// (같은 주소를 덮어쓰면 캐시 때문에 예전 사진이 보일 수 있어서, 저장할 때마다 새 이름 사용)
 async function saveProfilePhoto(slug, dataUrl) {
     const match = /^data:(image\/(jpeg|png|webp));base64,(.+)$/.exec(dataUrl || "");
-    if (!match) return "";
+    if (!match) return null;
 
     const contentType = match[1];
     const extension = match[2] === "jpeg" ? "jpg" : match[2];
-    const buffer = Buffer.from(match[3], "base64");
-    const path = `memorials/${slug}/profile.${extension}`;
-    const token = crypto.randomUUID();
+    const path = `memorials/${slug}/profile-${Date.now()}.${extension}`;
 
-    const bucket = getStorage().bucket();
-    await bucket.file(path).save(buffer, {
-        contentType,
-        metadata: { metadata: { firebaseStorageDownloadTokens: token } }
-    });
+    await getR2().send(new PutObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: path,
+        Body: Buffer.from(match[3], "base64"),
+        ContentType: contentType,
+        CacheControl: "public, max-age=31536000, immutable"
+    }));
 
-    return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
+    return { path, url: mediaUrl(path) };
 }
 
 // =========================================
@@ -166,7 +216,7 @@ exports.createOrder = onCall(async (request) => {
 // 2. 결제 승인 (결제 성공 후 complete.html에서 호출)
 // - 토스에 실제 결제를 확인하고, 금액이 맞을 때만 추모관 생성
 // =========================================
-exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY] }, async (request) => {
+exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS] }, async (request) => {
     const { paymentKey, orderId } = request.data || {};
     const amount = Number(request.data?.amount);
 
@@ -234,12 +284,13 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY] }, async (request) 
     const draft = order.memorialDraft || {};
 
     // 대표 사진 저장 (실패해도 추모관 생성은 계속 진행)
-    let photoUrl = "";
+    let photo = null;
     try {
-        photoUrl = await saveProfilePhoto(slug, draft.photo);
+        photo = await saveProfilePhoto(slug, draft.photo);
     } catch (err) {
         console.error("대표 사진 저장 실패:", err);
     }
+    const photoUrl = photo ? photo.url : "";
 
     const batch = db.batch();
 
@@ -252,6 +303,8 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY] }, async (request) 
         gifts: [draft.gift1, draft.gift2],
         bgm: draft.bgm,
         photoUrl,
+        photoPath: photo ? photo.path : "",
+        storageBytes: 0,
         plan: order.plan,
         // 보호자가 오기 전 온새미로가 먼저 켜둔 촛불과 선물
         counts: { treat: 1, toy: 1, candle: 1 },
@@ -360,7 +413,7 @@ exports.verifyAdmin = onCall(async (request) => {
 // =========================================
 // 4. 추모관 기본 정보 수정 (관리자 화면 '추모관 정보' 탭)
 // =========================================
-exports.updateMemorialInfo = onCall(async (request) => {
+exports.updateMemorialInfo = onCall({ secrets: R2_SECRETS }, async (request) => {
     const { slug, key } = request.data || {};
     const info = request.data?.info || {};
     await assertAdmin(slug, key);
@@ -393,11 +446,21 @@ exports.updateMemorialInfo = onCall(async (request) => {
         if (info.photo.length > 700000) {
             throw new HttpsError("invalid-argument", "사진 용량이 너무 큽니다. 다른 사진으로 시도해 주세요.");
         }
-        update.photoUrl = await saveProfilePhoto(slug, info.photo);
+        const photo = await saveProfilePhoto(slug, info.photo);
+        if (photo) {
+            update.photoUrl = photo.url;
+            update.photoPath = photo.path;
+        }
     }
 
     const ref = db.collection("memorials").doc(slug);
+    const before = (await ref.get()).data() || {};
     await ref.update(update);
+
+    // 대표 사진을 바꿨다면 예전 사진 파일 정리
+    if (update.photoPath && before.photoPath && before.photoPath !== update.photoPath) {
+        await deleteR2Object(before.photoPath);
+    }
 
     const saved = await ref.get();
     return { memorial: pickMemorial(saved.data()) };
@@ -479,5 +542,290 @@ exports.adminUpdateLetter = onCall(async (request) => {
         throw new HttpsError("invalid-argument", "상태 값이 올바르지 않습니다.");
     }
     await ref.update({ status, reviewedAt: FieldValue.serverTimestamp() });
+    return { ok: true };
+});
+
+
+// =========================================
+// 사진·영상 (추억) - Cloudflare R2
+// - memories: 보낸 원본 기록 (비공개, 관리자만 서버 함수로 접근)
+// - gallery : 승인된 파일만 모아 둔 공개 목록 (추모관 갤러리가 읽음)
+// =========================================
+
+// 갤러리 공개 목록을 추억 기록 상태에 맞게 다시 만들기
+async function syncGallery(slug, memoryId, memory) {
+    const galleryRef = db.collection("memorials").doc(slug).collection("gallery");
+    const old = await galleryRef.where("memoryId", "==", memoryId).get();
+    const batch = db.batch();
+    old.docs.forEach((doc) => batch.delete(doc.ref));
+
+    if (memory && memory.status === "approved") {
+        const senderLabel = memory.isDirect ? "보호자" : `${memory.relation || ""} ${memory.sender || ""}`.trim();
+        (memory.files || []).forEach((file, index) => {
+            if (file.excluded) return;
+            batch.set(galleryRef.doc(`${memoryId}_${index}`), {
+                memoryId,
+                fileIndex: index,
+                type: file.type,
+                path: file.path,
+                thumbPath: file.thumbPath || "",
+                story: memory.story || "",
+                senderLabel,
+                createdAt: memory.createdAt || FieldValue.serverTimestamp()
+            });
+        });
+    }
+    await batch.commit();
+}
+
+// 업로드 주소 발급 (지인 업로드 = 키 없음 / 보호자 바로 업로드 = 관리자 키)
+exports.createMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) => {
+    const data = request.data || {};
+    const slug = String(data.slug || "").toUpperCase();
+    const isDirect = Boolean(data.key);
+
+    if (isDirect) {
+        await assertAdmin(slug, data.key);
+    }
+
+    const memorialRef = db.collection("memorials").doc(slug);
+    const memorialSnap = await memorialRef.get();
+    if (!/^[A-Z0-9]{6}$/.test(slug) || !memorialSnap.exists) {
+        throw new HttpsError("not-found", "추모관을 찾을 수 없습니다.");
+    }
+
+    const files = Array.isArray(data.files) ? data.files : [];
+    if (files.length === 0 || files.length > UPLOAD_LIMITS.maxFilesPerMemory) {
+        throw new HttpsError("invalid-argument", "파일 개수를 확인해 주세요.");
+    }
+
+    const sender = isDirect ? "보호자" : cleanText(data.sender, 20);
+    const relation = isDirect ? "" : cleanText(data.relation, 20);
+    const story = cleanText(data.story, 1000);
+    if (!isDirect && (!sender || !relation)) {
+        throw new HttpsError("invalid-argument", "보내는 분 성함과 관계를 입력해 주세요.");
+    }
+
+    // 파일 하나하나 검사
+    let totalBytes = 0;
+    const plan = files.map((file, index) => {
+        const type = file.type === "video" ? "video" : "image";
+        const contentType = String(file.contentType || "");
+        const size = Number(file.size) || 0;
+        const thumbSize = Number(file.thumbSize) || 0;
+
+        const allowedTypes = type === "video" ? VIDEO_TYPES : IMAGE_TYPES;
+        const maxBytes = type === "video" ? UPLOAD_LIMITS.videoBytes : UPLOAD_LIMITS.imageBytes;
+        if (!allowedTypes.includes(contentType) || size <= 0 || size > maxBytes) {
+            throw new HttpsError("invalid-argument", `${index + 1}번째 파일의 형식이나 용량을 확인해 주세요.`);
+        }
+        if (type === "video" && (thumbSize <= 0 || thumbSize > UPLOAD_LIMITS.thumbBytes)) {
+            throw new HttpsError("invalid-argument", "영상 썸네일을 만들지 못했습니다.");
+        }
+
+        totalBytes += size + thumbSize;
+        return { type, contentType, size, thumbSize };
+    });
+
+    const used = memorialSnap.data().storageBytes || 0;
+    if (used + totalBytes > UPLOAD_LIMITS.memorialBytes) {
+        throw new HttpsError("resource-exhausted", "추모관 저장 공간이 가득 찼습니다. 보호자님께 문의해 주세요.");
+    }
+
+    const memoryRef = memorialRef.collection("memories").doc();
+    const extOf = (ct) => ({
+        "image/webp": "webp", "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif",
+        "video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm"
+    }[ct] || "bin");
+
+    const storedFiles = plan.map((p, i) => ({
+        type: p.type,
+        contentType: p.contentType,
+        size: p.size,
+        path: `memorials/${slug}/memories/${memoryRef.id}/${i}.${extOf(p.contentType)}`,
+        thumbPath: p.type === "video" ? `memorials/${slug}/memories/${memoryRef.id}/${i}_thumb.webp` : "",
+        thumbSize: p.thumbSize,
+        excluded: false
+    }));
+
+    await memoryRef.set({
+        sender,
+        relation,
+        story,
+        isDirect,
+        status: "uploading",
+        files: storedFiles,
+        totalBytes,
+        createdAt: FieldValue.serverTimestamp()
+    });
+
+    // 1시간짜리 1회용 업로드 주소
+    const sign = (key, contentType) => getSignedUrl(
+        getR2(),
+        new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, ContentType: contentType }),
+        { expiresIn: 3600 }
+    );
+
+    const uploads = await Promise.all(storedFiles.map(async (f) => ({
+        url: await sign(f.path, f.contentType),
+        thumbUrl: f.thumbPath ? await sign(f.thumbPath, "image/webp") : ""
+    })));
+
+    return { memoryId: memoryRef.id, uploads };
+});
+
+// 업로드 완료 확인 → 지인은 '확인 대기', 보호자는 바로 '전시'
+exports.completeMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) => {
+    const slug = String(request.data?.slug || "").toUpperCase();
+    const memoryId = String(request.data?.memoryId || "");
+    if (!/^[A-Z0-9]{6}$/.test(slug) || !memoryId) {
+        throw new HttpsError("invalid-argument", "업로드 정보가 올바르지 않습니다.");
+    }
+
+    const memorialRef = db.collection("memorials").doc(slug);
+    const memoryRef = memorialRef.collection("memories").doc(memoryId);
+    const snap = await memoryRef.get();
+    if (!snap.exists || snap.data().status !== "uploading") {
+        throw new HttpsError("failed-precondition", "이미 처리되었거나 없는 업로드입니다.");
+    }
+    const memory = snap.data();
+
+    // 실제로 R2에 올라갔는지, 신고한 크기와 맞는지 확인
+    const check = async (path, expectedSize, maxBytes) => {
+        const head = await getR2().send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: path }));
+        const size = Number(head.ContentLength) || 0;
+        if (size <= 0 || size > maxBytes || size > expectedSize * 1.01 + 1024) {
+            throw new Error("size mismatch");
+        }
+        return size;
+    };
+
+    let realBytes = 0;
+    try {
+        for (const f of memory.files) {
+            const max = f.type === "video" ? UPLOAD_LIMITS.videoBytes : UPLOAD_LIMITS.imageBytes;
+            realBytes += await check(f.path, f.size, max);
+            if (f.thumbPath) realBytes += await check(f.thumbPath, f.thumbSize, UPLOAD_LIMITS.thumbBytes);
+        }
+    } catch (err) {
+        console.error("업로드 확인 실패:", err);
+        await Promise.all(memory.files.flatMap((f) => [deleteR2Object(f.path), deleteR2Object(f.thumbPath)]));
+        await memoryRef.delete();
+        throw new HttpsError("failed-precondition", "파일이 끝까지 올라가지 않았습니다. 다시 시도해 주세요.");
+    }
+
+    const status = memory.isDirect ? "approved" : "pending";
+    await memoryRef.update({ status, totalBytes: realBytes });
+    await memorialRef.update({ storageBytes: FieldValue.increment(realBytes) });
+
+    if (status === "approved") {
+        await syncGallery(slug, memoryId, { ...memory, status });
+    }
+    return { status };
+});
+
+// 관리자: 추억 전체 목록 (확인 대기·전시·제외 모두)
+exports.adminListMemories = onCall(async (request) => {
+    const { slug, key } = request.data || {};
+    await assertAdmin(slug, key);
+
+    const snap = await db.collection("memorials").doc(slug).collection("memories").get();
+    const memories = snap.docs
+        .map((doc) => {
+            const d = doc.data();
+            return {
+                id: doc.id,
+                sender: d.sender || "",
+                relation: d.relation || "",
+                story: d.story || "",
+                isDirect: Boolean(d.isDirect),
+                status: d.status,
+                files: (d.files || []).map((f) => ({
+                    type: f.type,
+                    url: mediaUrl(f.path),
+                    thumbUrl: mediaUrl(f.thumbPath),
+                    excluded: Boolean(f.excluded)
+                })),
+                createdAt: d.createdAt ? d.createdAt.toMillis() : 0
+            };
+        })
+        .filter((m) => m.status !== "uploading");
+    memories.sort((a, b) => b.createdAt - a.createdAt);
+    return { memories };
+});
+
+// 관리자: 검수 결정 (선택한 파일만 전시 / 전부 제외 / 다시 검수)
+exports.adminReviewMemory = onCall(async (request) => {
+    const { slug, key, id, action } = request.data || {};
+    await assertAdmin(slug, key);
+
+    const ref = db.collection("memorials").doc(slug).collection("memories").doc(String(id || ""));
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError("not-found", "추억을 찾을 수 없습니다.");
+    const memory = snap.data();
+    const files = memory.files || [];
+
+    if (action === "revert") {
+        files.forEach((f) => { f.excluded = false; });
+        await ref.update({ status: "pending", files });
+        await syncGallery(slug, ref.id, null);
+        return { status: "pending" };
+    }
+
+    if (action !== "apply") throw new HttpsError("invalid-argument", "처리 방식이 올바르지 않습니다.");
+
+    const excluded = Array.isArray(request.data.excluded) ? request.data.excluded : [];
+    files.forEach((f, i) => { f.excluded = Boolean(excluded[i]); });
+    const status = files.some((f) => !f.excluded) ? "approved" : "unposted";
+
+    await ref.update({ status, files, reviewedAt: FieldValue.serverTimestamp() });
+    await syncGallery(slug, ref.id, { ...memory, files, status });
+    return { status };
+});
+
+// 관리자: 사연 수정
+exports.adminUpdateMemoryStory = onCall(async (request) => {
+    const { slug, key, id } = request.data || {};
+    await assertAdmin(slug, key);
+
+    const ref = db.collection("memorials").doc(slug).collection("memories").doc(String(id || ""));
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError("not-found", "추억을 찾을 수 없습니다.");
+
+    const story = cleanText(request.data?.story, 1000);
+    await ref.update({ story });
+    await syncGallery(slug, ref.id, { ...snap.data(), story });
+    return { ok: true };
+});
+
+// 관리자: 갤러리에서 파일 하나 삭제 (R2 원본까지 완전히 삭제)
+exports.adminDeleteMemoryFile = onCall({ secrets: R2_SECRETS }, async (request) => {
+    const { slug, key, id } = request.data || {};
+    const fileIndex = Number(request.data?.fileIndex);
+    await assertAdmin(slug, key);
+
+    const memorialRef = db.collection("memorials").doc(slug);
+    const ref = memorialRef.collection("memories").doc(String(id || ""));
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError("not-found", "추억을 찾을 수 없습니다.");
+
+    const memory = snap.data();
+    const files = memory.files || [];
+    const target = files[fileIndex];
+    if (!target) throw new HttpsError("not-found", "파일을 찾을 수 없습니다.");
+
+    await deleteR2Object(target.path);
+    await deleteR2Object(target.thumbPath);
+    const freed = (target.size || 0) + (target.thumbSize || 0);
+
+    files.splice(fileIndex, 1);
+    if (files.length === 0) {
+        await ref.delete();
+        await syncGallery(slug, ref.id, null);
+    } else {
+        await ref.update({ files, totalBytes: FieldValue.increment(-freed) });
+        await syncGallery(slug, ref.id, { ...memory, files });
+    }
+    await memorialRef.update({ storageBytes: FieldValue.increment(-freed) });
     return { ok: true };
 });

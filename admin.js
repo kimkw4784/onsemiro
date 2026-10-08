@@ -77,10 +77,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const backLink = document.querySelector('.admin-footer-links .link-btn');
     if (backLink) backLink.href = `memorial.html?room=${room}`;
 
-    renderCards();
-    renderDirectGallery();
     updateMainTabBadges();
     loadMemorialInfo(adminMemorial);
+
+    // 사진·영상은 서버에서 불러옴
+    loadMemories();
 
     // 발자취·우체통은 서버에서 불러옴
     loadTimeline();
@@ -135,7 +136,7 @@ function switchMainTab(tabKey) {
 }
 
 function updateMainTabBadges() {
-    const memories = getMemories();
+    const memories = memoriesCache;
 
     // 1) 지인 검수 대기 건수 (보호자 직접 업로드 항목 제외)
     const pendingCount = memories.filter(item => item.status === 'pending' && !item.isDirect).length;
@@ -174,13 +175,18 @@ function updateMainTabBadges() {
 // =========================================
 // 1. 지인 사진/영상 검수 로직 (보호자 업로드 제외)
 // =========================================
-function getMemories() {
-    return JSON.parse(localStorage.getItem('pendingMemories') || '[]');
-}
+let memoriesCache = [];   // 서버에서 불러온 추억(사진·영상) 목록
 
-function saveMemories(list) {
-    localStorage.setItem('pendingMemories', JSON.stringify(list));
-    updateMainTabBadges();
+async function loadMemories() {
+    try {
+        const result = await functions.httpsCallable('adminListMemories')({ slug: adminRoom, key: adminKey });
+        memoriesCache = result.data.memories || [];
+    } catch (err) {
+        console.error('추억 불러오기 실패:', err);
+        memoriesCache = [];
+    }
+    renderCards();
+    renderDirectGallery();
 }
 
 function setFilter(filter) {
@@ -196,141 +202,91 @@ function setFilter(filter) {
 }
 
 function updateCounts(list) {
-    // 보호자 직접 등록 항목(!item.isDirect)은 지인 검수 카운트에서 제외
+    // 보호자 직접 등록 항목은 지인 검수 카운트에서 제외
     const guestMemories = list.filter(item => !item.isDirect);
 
-    const pCount = guestMemories.filter(item => item.status === 'pending').length;
-    const aCount = guestMemories.filter(item => item.status === 'approved').length;
-    const uCount = guestMemories.filter(item => item.status === 'unposted' || item.status === 'private').length;
-
-    const pEl = document.getElementById('countPending');
-    const aEl = document.getElementById('countApproved');
-    const uEl = document.getElementById('countUnposted');
-
-    if (pEl) pEl.innerText = pCount;
-    if (aEl) aEl.innerText = aCount;
-    if (uEl) uEl.innerText = uCount;
+    const setCount = (id, n) => { const el = document.getElementById(id); if (el) el.innerText = n; };
+    setCount('countPending', guestMemories.filter(item => item.status === 'pending').length);
+    setCount('countApproved', guestMemories.filter(item => item.status === 'approved').length);
+    setCount('countUnposted', guestMemories.filter(item => item.status === 'unposted').length);
 
     updateMainTabBadges();
 }
 
+// 검수 대기 중 파일 선택/해제 (화면에서만 바뀌고, '전시하기'를 눌러야 저장됨)
 function toggleFileExclude(itemId, fileIndex) {
-    const list = getMemories();
-    const item = list.find(m => m.id === itemId);
+    const item = memoriesCache.find(m => m.id === itemId);
     if (!item || !item.files[fileIndex]) return;
-
     item.files[fileIndex].excluded = !item.files[fileIndex].excluded;
-    saveMemories(list);
     renderCards();
 }
 
 function toggleAllFiles(itemId) {
-    const list = getMemories();
-    const item = list.find(m => m.id === itemId);
+    const item = memoriesCache.find(m => m.id === itemId);
     if (!item || !item.files || item.files.length === 0) return;
-
     const hasChecked = item.files.some(f => !f.excluded);
-    item.files.forEach(f => f.excluded = hasChecked);
-
-    saveMemories(list);
+    item.files.forEach(f => { f.excluded = hasChecked; });
     renderCards();
 }
 
-function applyMediaDecision(itemId) {
-    const list = getMemories();
-    const index = list.findIndex(m => m.id === itemId);
-    if (index === -1) return;
+async function applyMediaDecision(itemId) {
+    const item = memoriesCache.find(m => m.id === itemId);
+    if (!item) return;
 
-    const currentItem = list[index];
-    const approvedFiles = currentItem.files.filter(f => !f.excluded);
-    const unpostedFiles = currentItem.files.filter(f => f.excluded);
-
-    const originId = currentItem.originId || currentItem.id;
-    const fullOriginalFiles = currentItem.originFiles || JSON.parse(JSON.stringify(currentItem.files));
-
-    list.splice(index, 1);
-
-    if (approvedFiles.length > 0 && unpostedFiles.length > 0) {
-        const approvedItem = {
-            ...currentItem,
-            id: 'MEM-APP-' + Date.now(),
-            originId: originId,
-            originFiles: fullOriginalFiles,
-            files: approvedFiles.map(f => ({ ...f, excluded: false })),
-            status: 'approved'
-        };
-        const unpostedItem = {
-            ...currentItem,
-            id: 'MEM-UNP-' + (Date.now() + 1),
-            originId: originId,
-            originFiles: fullOriginalFiles,
-            files: unpostedFiles.map(f => ({ ...f, excluded: true })),
-            status: 'unposted'
-        };
-
-        list.unshift(approvedItem);
-        list.unshift(unpostedItem);
-        showToast(`${approvedFiles.length}장은 전시 승인, ${unpostedFiles.length}장은 제외 처리되었습니다.`);
-    } else if (approvedFiles.length > 0 && unpostedFiles.length === 0) {
-        currentItem.status = 'approved';
-        currentItem.files.forEach(f => f.excluded = false);
-        list.unshift(currentItem);
-        showToast("모든 사진이 전시 승인되었습니다.");
-    } else {
-        currentItem.status = 'unposted';
-        currentItem.files.forEach(f => f.excluded = true);
-        list.unshift(currentItem);
-        showToast("모든 사진이 제외 처리되었습니다.");
+    try {
+        const result = await functions.httpsCallable('adminReviewMemory')({
+            slug: adminRoom,
+            key: adminKey,
+            id: itemId,
+            action: 'apply',
+            excluded: item.files.map(f => Boolean(f.excluded))
+        });
+        const shown = item.files.filter(f => !f.excluded).length;
+        const hidden = item.files.length - shown;
+        showToast(result.data.status === 'approved'
+            ? (hidden > 0 ? `${shown}개는 전시, ${hidden}개는 제외했습니다.` : '모든 사진이 전시되었습니다.')
+            : '모든 사진을 제외 처리했습니다.');
+        await loadMemories();
+    } catch (err) {
+        console.error(err);
+        alert(err.message || '처리하지 못했습니다.');
     }
-
-    saveMemories(list);
-    renderCards();
-    renderDirectGallery();
 }
 
-function revertStatus(itemId) {
-    let list = getMemories();
-    const targetItem = list.find(m => m.id === itemId);
-    if (!targetItem) return;
-
-    if (targetItem.originId && targetItem.originFiles) {
-        const oId = targetItem.originId;
-        const restoredOriginalItem = {
-            ...targetItem,
-            id: oId,
-            status: 'pending',
-            files: targetItem.originFiles.map(f => ({ ...f, excluded: false })),
-            originId: undefined,
-            originFiles: undefined
-        };
-
-        list = list.filter(m => m.id !== itemId && m.originId !== oId && m.id !== oId);
-        list.unshift(restoredOriginalItem);
-    } else {
-        targetItem.status = 'pending';
-        if (targetItem.files) {
-            targetItem.files.forEach(f => f.excluded = false);
-        }
+async function revertStatus(itemId) {
+    try {
+        await functions.httpsCallable('adminReviewMemory')({ slug: adminRoom, key: adminKey, id: itemId, action: 'revert' });
+        showToast('대기함으로 복원되었습니다.');
+        currentFilter = 'pending';
+        await loadMemories();
+        setFilter('pending');
+    } catch (err) {
+        console.error(err);
+        alert(err.message || '복원하지 못했습니다.');
     }
+}
 
-    saveMemories(list);
-    showToast("대기함으로 복원되었습니다.");
-    setFilter('pending');
-    renderDirectGallery();
+function formatMs(ms) {
+    if (!ms) return '';
+    const d = new Date(ms);
+    return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getDate()).padStart(2, '0')}.`;
+}
+
+function mediaTagFor(f, forList) {
+    if (f.type === 'video') {
+        return forList
+            ? `<video src="${f.url}" poster="${f.thumbUrl}" controls playsinline preload="none"></video>`
+            : `<video src="${f.url}" poster="${f.thumbUrl}" muted playsinline preload="none"></video>`;
+    }
+    return `<img src="${f.url}" alt="추억 사진" loading="lazy">`;
 }
 
 function renderCards() {
-    const list = getMemories();
+    const list = memoriesCache;
     updateCounts(list);
 
-    // 보호자 직접 등록 항목(!item.isDirect)은 지인 검수 목록에서 완전 제외
-    const filtered = list.filter(item => {
-        if (item.isDirect) return false;
-        if (currentFilter === 'unposted') {
-            return item.status === 'unposted' || item.status === 'private';
-        }
-        return item.status === currentFilter;
-    });
+    // 보호자 직접 등록 항목은 지인 검수 목록에서 제외
+    const filtered = list.filter(item => !item.isDirect && item.status === currentFilter);
 
     const container = document.getElementById('memoryCardList');
     if (!container) return;
@@ -355,10 +311,6 @@ function renderCards() {
                 const isExcluded = f.excluded === true;
                 if (!isExcluded) checkedCount++;
 
-                const mediaTag = f.type === 'video'
-                    ? `<video src="${f.data}" controls playsinline></video>`
-                    : `<img src="${f.data}" alt="추억 사진">`;
-
                 const checkSvg = `
                     <svg viewBox="0 0 16 16" fill="none" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3.5 8.5 6.5 11.5 12.5 5"></polyline>
@@ -371,7 +323,7 @@ function renderCards() {
 
                 mediaHtml += `
                     <div class="media-thumbnail ${isExcluded ? 'excluded' : ''}" ${clickAction}>
-                        ${mediaTag}
+                        ${mediaTagFor(f, currentFilter !== 'pending')}
                         ${currentFilter === 'pending' ? `
                             <button type="button" class="btn-toggle-check ${isExcluded ? 'unchecked' : 'checked'}">
                                 ${checkSvg}
@@ -391,7 +343,7 @@ function renderCards() {
         if (currentFilter === 'pending') {
             const hasChecked = checkedCount > 0;
             const toggleBtnText = (checkedCount === totalFiles) ? '전체 해제' : '전체 선택';
-            const approveBtnText = hasChecked ? `<iconify-icon icon="noto:herb" aria-hidden="true"></iconify-icon> 선택한 ${checkedCount}장 전시하기` : `<iconify-icon icon="noto:prohibited" aria-hidden="true"></iconify-icon> 전시 제외하고 보관`;
+            const approveBtnText = hasChecked ? `<iconify-icon icon="noto:herb" aria-hidden="true"></iconify-icon> 선택한 ${checkedCount}개 전시하기` : `<iconify-icon icon="noto:prohibited" aria-hidden="true"></iconify-icon> 전시 제외하고 보관`;
             const approveBtnClass = hasChecked ? 'btn-approve-submit' : 'btn-approve-submit mode-reject';
 
             actionBarHtml = `
@@ -409,14 +361,14 @@ function renderCards() {
         card.innerHTML = `
             <div class="card-top-info">
                 <div class="sender-profile">
-                    <span class="sender-name">${item.sender}</span>
-                    <span class="sender-relation">${item.relation}</span>
-                    <span class="submit-date">${item.submittedAt}</span>
+                    <span class="sender-name">${escapeHtml(item.sender)}</span>
+                    <span class="sender-relation">${escapeHtml(item.relation)}</span>
+                    <span class="submit-date">${formatMs(item.createdAt)}</span>
                 </div>
                 ${topActionHtml}
             </div>
             ${mediaHtml}
-            <div class="card-story-text">${item.story}</div>
+            <div class="card-story-text">${escapeHtml(item.story)}</div>
             ${actionBarHtml}
         `;
 
@@ -463,51 +415,15 @@ function removeSelectedFile(index) {
     renderSelectedPreviews();
 }
 
-function compressImage(file) {
-    return new Promise((resolve) => {
-        if (file.type.startsWith('video') || file.size < 400 * 1024) {
-            const reader = new FileReader();
-            reader.onload = e => resolve({ data: e.target.result, type: file.type.startsWith('video') ? 'video' : 'photo' });
-            reader.readAsDataURL(file);
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const maxDim = 1200;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > maxDim || height > maxDim) {
-                    if (width > height) {
-                        height = Math.round((height * maxDim) / width);
-                        width = maxDim;
-                    } else {
-                        width = Math.round((width * maxDim) / height);
-                        height = maxDim;
-                    }
-                }
-
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
-                resolve({ data: compressedDataUrl, type: 'photo' });
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
 async function handleDirectUpload() {
     if (!currentSelectedFiles || currentSelectedFiles.length === 0) {
-        alert("업로드할 사진이나 영상을 선택해 주세요.");
+        alert('업로드할 사진이나 영상을 선택해 주세요.');
+        return;
+    }
+
+    const tooBig = currentSelectedFiles.find(f => f.size > 500 * 1024 * 1024);
+    if (tooBig) {
+        alert(`"${tooBig.name}" 파일이 500MB를 넘어 올릴 수 없습니다.`);
         return;
     }
 
@@ -516,36 +432,21 @@ async function handleDirectUpload() {
     const storyText = storyInput.value.trim() || '보호자가 남긴 소중한 순간';
 
     submitBtn.disabled = true;
-    submitBtn.innerText = "처리 중...";
+    submitBtn.innerText = '준비 중...';
 
     try {
-        const fileObjects = [];
+        const items = [];
         for (const file of currentSelectedFiles) {
-            const compressed = await compressImage(file);
-            fileObjects.push({
-                data: compressed.data,
-                type: compressed.type,
-                excluded: false
-            });
+            items.push(await prepareMediaFile(file));
         }
 
-        const today = new Date();
-        const dateStr = `${today.getFullYear()}. ${String(today.getMonth() + 1).padStart(2, '0')}. ${String(today.getDate()).padStart(2, '0')}.`;
-
-        const newMemory = {
-            id: 'DIR-' + Date.now(),
-            sender: '보호자', // 2번 워딩: '보호자' 적용
-            relation: '',
+        await uploadMemory({
+            slug: adminRoom,
+            key: adminKey,
             story: storyText,
-            submittedAt: dateStr,
-            status: 'approved',
-            isDirect: true,   // 1번 분리: 지인 검수 탭에 뜨지 않도록 플래그 지정
-            files: fileObjects
-        };
-
-        const list = getMemories();
-        list.unshift(newMemory);
-        saveMemories(list);
+            items,
+            onProgress: (percent) => { submitBtn.innerText = `올리는 중 ${percent}%`; }
+        });
 
         // 폼 초기화
         currentSelectedFiles = [];
@@ -553,15 +454,14 @@ async function handleDirectUpload() {
         storyInput.value = '';
         document.getElementById('directFileInput').value = '';
 
-        renderDirectGallery();
-        renderCards();
-        showToast("갤러리에 등록되었습니다.");
+        showToast('갤러리에 등록되었습니다.');
+        await loadMemories();
     } catch (err) {
         console.error(err);
-        alert("업로드 처리 중 오류가 발생했습니다. 파일 용량을 확인해 주세요.");
+        alert(`${err.message || '업로드 중 문제가 발생했습니다.'}\n잠시 후 다시 시도해 주세요.`);
     } finally {
         submitBtn.disabled = false;
-        submitBtn.innerText = "즉시 등록";
+        submitBtn.innerText = '즉시 등록';
     }
 }
 
@@ -570,37 +470,29 @@ function renderDirectGallery() {
     const countEl = document.getElementById('directGalleryCount');
     if (!container) return;
 
-    const list = getMemories();
-    const approvedMemories = list.filter(item => item.status === 'approved');
+    const approvedMemories = memoriesCache.filter(item => item.status === 'approved');
 
     let totalCount = 0;
     let html = '<div class="direct-media-grid">';
 
     approvedMemories.forEach(item => {
         if (!item.files) return;
+        const senderLabel = item.isDirect ? '보호자' : `${item.relation} ${item.sender}`.trim();
+
         item.files.forEach((f, fIdx) => {
             if (f.excluded) return;
             totalCount++;
 
-            const mediaTag = f.type === 'video'
-                ? `<video src="${f.data}" muted playsinline></video>`
-                : `<img src="${f.data}" alt="갤러리 사진">`;
-
-            // 라벨 표기: 보호자 업로드 항목은 깔끔하게 '보호자'로 표기
-            const senderLabel = (item.isDirect || item.sender === '보호자' || item.sender === '가족' || item.sender === '가족의 기록')
-                ? '보호자'
-                : `${item.relation} ${item.sender}`.trim();
-
             html += `
                 <div class="direct-media-card" id="mediaCard-${item.id}-${fIdx}">
                     <div class="direct-media-thumb">
-                        ${mediaTag}
+                        ${mediaTagFor(f, false)}
                         <button type="button" class="btn-direct-delete" title="삭제" onclick="deleteGalleryItem('${item.id}', ${fIdx})" aria-label="삭제"><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
                     </div>
                     <div class="direct-media-info">
-                        <span class="direct-media-tag">${senderLabel}</span>
+                        <span class="direct-media-tag">${escapeHtml(senderLabel)}</span>
                         <div class="story-display-box">
-                            <p class="direct-media-desc">${item.story || '남겨진 추억'}</p>
+                            <p class="direct-media-desc">${escapeHtml(item.story || '남겨진 추억')}</p>
                             <button type="button" class="btn-story-action" onclick="startEditStory('${item.id}', '${fIdx}')">수정</button>
                         </div>
                     </div>
@@ -612,19 +504,16 @@ function renderDirectGallery() {
     html += '</div>';
     if (countEl) countEl.innerText = totalCount;
 
-    if (totalCount === 0) {
-        container.innerHTML = `<div class="empty-state" style="padding: 30px;">현재 갤러리에 전시 중인 사진이 없습니다. 위에서 직접 등록해보세요.</div>`;
-    } else {
-        container.innerHTML = html;
-    }
+    container.innerHTML = totalCount === 0
+        ? `<div class="empty-state" style="padding: 30px;">현재 갤러리에 전시 중인 사진이 없습니다. 위에서 직접 등록해보세요.</div>`
+        : html;
 
     updateMainTabBadges();
 }
 
-// 3번: '보호자' 라벨 태그는 온전히 유지하고, 사연 텍스트 영역만 인풋창으로 전환
+// 사연 텍스트 영역만 입력창으로 전환
 function startEditStory(itemId, fIdx) {
-    const list = getMemories();
-    const item = list.find(m => m.id === itemId);
+    const item = memoriesCache.find(m => m.id === itemId);
     if (!item) return;
 
     const card = document.getElementById(`mediaCard-${itemId}-${fIdx}`);
@@ -632,7 +521,7 @@ function startEditStory(itemId, fIdx) {
 
     storyBox.innerHTML = `
         <div class="direct-edit-box">
-            <input type="text" id="editStoryInput-${itemId}" class="direct-edit-input" value="${item.story || ''}" placeholder="이야기 입력">
+            <input type="text" id="editStoryInput-${itemId}" class="direct-edit-input" value="${escapeHtml(item.story || '')}" maxlength="1000" placeholder="이야기 입력">
             <button type="button" class="btn-timeline-add" style="padding: 2px 8px; font-size: 11px;" onclick="saveEditStory('${itemId}')">저장</button>
         </div>
         <button type="button" class="btn-story-action" onclick="renderDirectGallery()">취소</button>
@@ -645,39 +534,35 @@ function startEditStory(itemId, fIdx) {
     }
 }
 
-function saveEditStory(itemId) {
+async function saveEditStory(itemId) {
     const input = document.getElementById(`editStoryInput-${itemId}`);
     if (!input) return;
 
-    const newText = input.value.trim();
-    const list = getMemories();
-    const item = list.find(m => m.id === itemId);
-    if (item) {
-        item.story = newText;
-        saveMemories(list);
-        showToast("사연이 수정되었습니다.");
+    try {
+        await functions.httpsCallable('adminUpdateMemoryStory')({
+            slug: adminRoom, key: adminKey, id: itemId, story: input.value.trim()
+        });
+        showToast('사연이 수정되었습니다.');
+        await loadMemories();
+    } catch (err) {
+        console.error(err);
+        alert(err.message || '사연을 수정하지 못했습니다.');
     }
-    renderDirectGallery();
 }
 
-function deleteGalleryItem(itemId, fileIndex) {
-    if (!confirm("이 사진을 갤러리에서 삭제하시겠습니까?")) return;
+async function deleteGalleryItem(itemId, fileIndex) {
+    if (!confirm('이 사진(영상)을 완전히 삭제하시겠습니까?\n삭제한 파일은 되돌릴 수 없습니다.')) return;
 
-    const list = getMemories();
-    const target = list.find(m => m.id === itemId);
-    if (!target || !target.files) return;
-
-    target.files.splice(fileIndex, 1);
-
-    if (target.files.length === 0) {
-        const idx = list.findIndex(m => m.id === itemId);
-        if (idx !== -1) list.splice(idx, 1);
+    try {
+        await functions.httpsCallable('adminDeleteMemoryFile')({
+            slug: adminRoom, key: adminKey, id: itemId, fileIndex
+        });
+        showToast('삭제되었습니다.');
+        await loadMemories();
+    } catch (err) {
+        console.error(err);
+        alert(err.message || '삭제하지 못했습니다.');
     }
-
-    saveMemories(list);
-    renderDirectGallery();
-    renderCards();
-    showToast("갤러리에서 삭제되었습니다.");
 }
 
 // =========================================
