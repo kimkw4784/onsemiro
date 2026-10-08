@@ -1,6 +1,7 @@
 // order.js
 
 let currentSelectedPlan = 'digital';
+let currentPayMethod = 'CARD';   // CARD(카드·간편결제) / TRANSFER(계좌이체) / MOBILE_PHONE(휴대폰)
 const PLAN_PRICES = {
     digital: 19500,   // 화면 표시용 (실제 결제 금액은 서버 가격표로 정해짐)
     archive: 49000
@@ -25,6 +26,7 @@ function getSelectedPetType() {
 // 모달 열기 (빌더에 입력된 최신 정보 및 사진 동기화)
 function openOrderModal(planType = 'digital') {
     currentSelectedPlan = planType;
+    currentPayMethod = 'CARD';
 
     // 기존 모달이 남아있다면 제거
     const oldModal = document.getElementById('orderModal');
@@ -81,7 +83,7 @@ function openOrderModal(planType = 'digital') {
 
                     <div class="form-group">
                         <label class="form-label">선택 플랜</label>
-                                                <div class="plan-card-group">
+                        <div class="plan-card-group" id="planCardGroup">
                             <label class="plan-card ${currentSelectedPlan === 'digital' ? 'active' : ''}" onclick="selectPlanInModal(this, 'digital')">
                                 <input type="radio" name="orderPlan" value="digital" ${currentSelectedPlan === 'digital' ? 'checked' : ''}>
                                 <div class="plan-card-content">
@@ -102,6 +104,33 @@ function openOrderModal(planType = 'digital') {
                                     </div>
                                     <div class="plan-price">49,000<span>원</span></div>
                                     <p class="plan-desc">50GB · 영상까지 넉넉한 대용량</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">결제 수단</label>
+                        <div class="plan-card-group" id="payMethodGroup" style="grid-template-columns: repeat(3, 1fr);">
+                            <label class="plan-card active" onclick="selectPayMethod(this, 'CARD')">
+                                <input type="radio" name="payMethod" value="CARD" checked>
+                                <div class="plan-card-content">
+                                    <span class="plan-name">카드·간편결제</span>
+                                    <p class="plan-desc">카카오페이·토스페이 등</p>
+                                </div>
+                            </label>
+                            <label class="plan-card" onclick="selectPayMethod(this, 'TRANSFER')">
+                                <input type="radio" name="payMethod" value="TRANSFER">
+                                <div class="plan-card-content">
+                                    <span class="plan-name">계좌이체</span>
+                                    <p class="plan-desc">내 계좌에서 바로</p>
+                                </div>
+                            </label>
+                            <label class="plan-card" onclick="selectPayMethod(this, 'MOBILE_PHONE')">
+                                <input type="radio" name="payMethod" value="MOBILE_PHONE">
+                                <div class="plan-card-content">
+                                    <span class="plan-name">휴대폰</span>
+                                    <p class="plan-desc">통신요금과 함께</p>
                                 </div>
                             </label>
                         </div>
@@ -134,7 +163,7 @@ function closeOrderModal() {
 // 플랜 선택 토글
 function selectPlanInModal(cardElement, planValue) {
     currentSelectedPlan = planValue;
-    document.querySelectorAll('.plan-card').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('#planCardGroup .plan-card').forEach(el => el.classList.remove('active'));
     cardElement.classList.add('active');
 
     const radio = cardElement.querySelector('input[type="radio"]');
@@ -144,6 +173,16 @@ function selectPlanInModal(cardElement, planValue) {
     if (submitBtn) {
         submitBtn.innerText = `${PLAN_PRICES[planValue].toLocaleString()}원 결제 및 생성하기`;
     }
+}
+
+// 결제 수단 선택 토글
+function selectPayMethod(cardElement, method) {
+    currentPayMethod = method;
+    document.querySelectorAll('#payMethodGroup .plan-card').forEach(el => el.classList.remove('active'));
+    cardElement.classList.add('active');
+
+    const radio = cardElement.querySelector('input[type="radio"]');
+    if (radio) radio.checked = true;
 }
 
 // 폼 최종 제출 → 서버에 주문 등록 → 토스 결제창 열기
@@ -212,7 +251,7 @@ async function handleOrderSubmit(event) {
         const payment = tossPayments.payment({ customerKey: TossPayments.ANONYMOUS });
 
         await payment.requestPayment({
-            method: 'CARD',
+            method: currentPayMethod,   // 선택한 결제 수단의 결제창 열기
             amount: { currency: 'KRW', value: order.amount },
             orderId: order.orderId,
             orderName: order.orderName,
