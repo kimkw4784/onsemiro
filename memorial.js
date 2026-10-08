@@ -189,16 +189,19 @@ function createFloatingParticle(targetEl, type) {
 // =========================================
 // 무지개 우체통 (방명록 격리 저장)
 // =========================================
-function getLettersKey() {
-    return `letters_${activeRoomSlug}`;
-}
-
-function loadLetters() {
+// 공개된 편지만 불러오기 (보안 규칙상 'approved' 편지만 읽을 수 있음)
+async function loadLetters() {
     const list = document.getElementById('letterList');
     if (!list) return;
 
-    const saved = localStorage.getItem(getLettersKey());
-    const letters = saved ? JSON.parse(saved) : [];
+    let letters = [];
+    try {
+        const snap = await db.collection('memorials').doc(activeRoomSlug)
+            .collection('letters').where('status', '==', 'approved').get();
+        letters = snap.docs.map(doc => doc.data());
+    } catch (err) {
+        console.error('편지 불러오기 실패:', err);
+    }
 
     if (letters.length === 0) {
         list.innerHTML = `
@@ -209,53 +212,57 @@ function loadLetters() {
         return;
     }
 
-    list.innerHTML = letters.map(letter => `
-        <div class="letter-card">
-            <div class="letter-header">
-                <span class="letter-author">${letter.relation} ${letter.name}</span>
-                <span class="letter-date">${letter.date}</span>
+    // 최신 편지가 위로
+    letters.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+
+    list.innerHTML = letters.map(letter => {
+        const d = letter.createdAt?.toDate?.();
+        const date = d ? `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getDate()).padStart(2, '0')}.` : '';
+        return `
+            <div class="letter-card">
+                <div class="letter-header">
+                    <span class="letter-author">${escapeHtml(letter.relation)} ${escapeHtml(letter.name)}</span>
+                    <span class="letter-date">${date}</span>
+                </div>
+                <p class="letter-content">${escapeHtml(letter.message).replace(/\n/g, '<br>')}</p>
             </div>
-            <p class="letter-content">${letter.msg}</p>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
-function handleLetterSubmit(e) {
+// 편지 보내기 → 보호자 확인 대기 상태로 저장
+async function handleLetterSubmit(e) {
     e.preventDefault();
     const nameInput = document.getElementById('letterName');
     const relationInput = document.getElementById('letterRelation');
     const msgInput = document.getElementById('letterMsg');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
 
-    const name = nameInput.value.trim();
-    const relation = relationInput.value.trim();
-    const msg = msgInput.value.trim();
-    if (!name || !relation || !msg) return;
+    const name = nameInput.value.trim().slice(0, 20);
+    const relation = relationInput.value.trim().slice(0, 20);
+    const message = msgInput.value.trim().slice(0, 1000);
+    if (!name || !relation || !message) return;
 
-    const today = new Date();
-    const currentDate = `${today.getFullYear()}. ${String(today.getMonth() + 1).padStart(2, '0')}. ${String(today.getDate()).padStart(2, '0')}.`;
+    if (submitBtn) submitBtn.disabled = true;
+    try {
+        await db.collection('memorials').doc(activeRoomSlug).collection('letters').add({
+            name,
+            relation,
+            message,
+            status: 'pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-    const newLetter = {
-        id: 'LET-' + Date.now(),
-        name,
-        relation,
-        msg,
-        date: currentDate
-    };
-
-    const saved = localStorage.getItem(getLettersKey());
-    const letters = saved ? JSON.parse(saved) : [];
-    letters.unshift(newLetter);
-    localStorage.setItem(getLettersKey(), JSON.stringify(letters));
-
-    // 전체 어드민 호환용
-    localStorage.setItem('memorial_letters', JSON.stringify(letters));
-
-    loadLetters();
-
-    nameInput.value = '';
-    relationInput.value = '';
-    msgInput.value = '';
-    showToast("소중한 마음이 우체통에 고이 전해졌습니다.");
+        nameInput.value = '';
+        relationInput.value = '';
+        msgInput.value = '';
+        showToast('편지가 전해졌어요. 보호자님 확인 후 우체통에 걸립니다.');
+    } catch (err) {
+        console.error('편지 저장 실패:', err);
+        alert('편지를 보내지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
+    }
 }
 
 // =========================================
@@ -438,29 +445,39 @@ function renderMemorial(memorial, adminKey) {
     // 관리자 버튼: 이 기기가 관리자 키를 기억하고 있고, 서버에서 확인되면 표시
     showAdminButtonIfVerified(adminKey);
 
-    // 발자취 타임라인 (Firestore 연결 전까지 기본 문구 + 이 브라우저에 저장된 기록)
-    const tlList = document.getElementById('memorialTimelineList');
-    if (tlList) {
-        const rawTL = localStorage.getItem(`timeline_${activeRoomSlug}`);
-        let tlData = rawTL ? JSON.parse(rawTL) : [
-            {
-                date: meet || '2025. 09. 18.',
-                story: `손바닥만 하던 ${callName(petName)}가 처음 우리 집에 오던 날, 온 세상이 따뜻해졌어.`
-            },
-            {
-                date: farewell || '2026. 09. 17.',
-                story: '가족들의 품에서 조용히 눈을 감고, 가장 빛나는 별이 된 날.'
-            }
-        ];
+    // 발자취 타임라인
+    loadTimeline();
+}
 
-        tlData.sort((a, b) => (parseInt(a.date.replace(/[^\d]/g, ''), 10) || 0) - (parseInt(b.date.replace(/[^\d]/g, ''), 10) || 0));
-        tlList.innerHTML = tlData.map(item => `
-            <div class="timeline-item">
-                <span class="timeline-date">${escapeHtml(item.date)}</span>
-                <p class="timeline-text">${escapeHtml(item.story)}</p>
-            </div>
-        `).join('');
+// 발자취 불러오기 (날짜 순으로 정렬)
+async function loadTimeline() {
+    const tlList = document.getElementById('memorialTimelineList');
+    if (!tlList) return;
+
+    let items = [];
+    try {
+        const snap = await db.collection('memorials').doc(activeRoomSlug).collection('timeline').get();
+        items = snap.docs.map(doc => doc.data());
+    } catch (err) {
+        console.error('발자취 불러오기 실패:', err);
     }
+
+    if (items.length === 0) {
+        tlList.innerHTML = `
+            <div style="text-align:center; padding: 24px 0; color: var(--text-muted); font-size: 13px;">
+                아직 기록된 발자취가 없습니다.
+            </div>
+        `;
+        return;
+    }
+
+    items.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    tlList.innerHTML = items.map(item => `
+        <div class="timeline-item">
+            <span class="timeline-date">${formatIsoDate(item.date)}</span>
+            <p class="timeline-text">${escapeHtml(item.story)}</p>
+        </div>
+    `).join('');
 }
 
 // 관리자 버튼 표시 여부 확인

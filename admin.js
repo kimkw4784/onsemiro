@@ -79,10 +79,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     renderCards();
     renderDirectGallery();
-    renderAdminTimeline();
-    renderAdminPostbox();
     updateMainTabBadges();
     loadMemorialInfo(adminMemorial);
+
+    // 발자취·우체통은 서버에서 불러옴
+    loadTimeline();
+    loadLetters();
 
     document.querySelector('.admin-container')?.classList.remove('is-verifying');
 });
@@ -155,17 +157,17 @@ function updateMainTabBadges() {
     }
 
     // 3) 발자취 개수
-    const timelineList = getTimelineList();
     const badgeTimeline = document.getElementById('badgeTimelineMain');
     if (badgeTimeline) {
-        badgeTimeline.innerText = timelineList.length;
+        badgeTimeline.innerText = timelineCache.length;
     }
 
-    // 4) 우체통 편지 개수
-    const letters = getMemorialLetters();
+    // 4) 우체통: 확인 대기 중인 편지 개수
+    const pendingLetters = lettersCache.filter(l => l.status === 'pending').length;
     const badgePostbox = document.getElementById('badgePostboxMain');
     if (badgePostbox) {
-        badgePostbox.innerText = letters.length;
+        badgePostbox.innerText = pendingLetters;
+        badgePostbox.classList.toggle('has-items', pendingLetters > 0);
     }
 }
 
@@ -183,9 +185,9 @@ function saveMemories(list) {
 
 function setFilter(filter) {
     currentFilter = filter;
-    document.querySelectorAll('.filter-tab').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('#panel-media .filter-tab').forEach(btn => btn.classList.remove('active'));
 
-    const clickedBtn = Array.from(document.querySelectorAll('.filter-tab')).find(btn =>
+    const clickedBtn = Array.from(document.querySelectorAll('#panel-media .filter-tab')).find(btn =>
         btn.getAttribute('onclick')?.includes(`'${filter}'`)
     );
     if (clickedBtn) clickedBtn.classList.add('active');
@@ -681,103 +683,93 @@ function deleteGalleryItem(itemId, fileIndex) {
 // =========================================
 // 3. 발자취 타임라인 관리 로직 (CRUD)
 // =========================================
-function getTimelineList() {
-    const raw = localStorage.getItem('memorial_timeline_list');
-    if (raw) return JSON.parse(raw);
+let timelineCache = [];   // 서버에서 불러온 발자취
+let lettersCache = [];    // 서버에서 불러온 편지
+let currentLetterFilter = 'pending';
 
-    // 기본 문구는 서버에서 확인한 추모관 정보로 만듦 (발자취 저장은 다음 단계에서 서버로 이동)
-    const order = adminMemorial || {};
-    const name = order.petName || '아이';
+// 화면에 넣기 전에 HTML 특수문자를 바꿔서, 입력값에 섞인 태그가 실행되지 않게 함
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
-    const defaultList = [
-        {
-            id: 'TL-1',
-            date: normalizeDate(order.meetDate) || '2025. 09. 18.',
-            story: `손바닥만 하던 ${callName(name)}가 처음 우리 집에 오던 날, 온 세상이 따뜻해졌어.`
-        },
-        {
-            id: 'TL-2',
-            date: normalizeDate(order.farewellDate) || '2026. 09. 17.',
-            story: '가족들의 품에서 조용히 눈을 감고, 가장 빛나는 별이 된 날.'
-        }
-    ];
-    localStorage.setItem('memorial_timeline_list', JSON.stringify(defaultList));
-    return defaultList;
+// 발자취 목록 불러오기 (발자취는 공개 정보라 바로 읽을 수 있음)
+async function loadTimeline() {
+    try {
+        const snap = await db.collection('memorials').doc(adminRoom).collection('timeline').get();
+        timelineCache = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (err) {
+        console.error('발자취 불러오기 실패:', err);
+        timelineCache = [];
+    }
+    renderAdminTimeline();
 }
 
 function renderAdminTimeline() {
-    const list = getTimelineList();
     const container = document.getElementById('adminTimelineList');
     if (!container) return;
 
+    const list = [...timelineCache].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
     if (list.length === 0) {
         container.innerHTML = `<div class="empty-state" style="padding: 24px;">등록된 발자취가 없습니다.</div>`;
-        return;
+    } else {
+        container.innerHTML = list.map(item => `
+            <div class="admin-timeline-item" id="tlItem-${item.id}">
+                <div class="admin-tl-meta">
+                    <span class="admin-tl-date">${normalizeDate(item.date)}</span>
+                    <span class="admin-tl-text">${escapeHtml(item.story)}</span>
+                </div>
+                <div class="admin-tl-actions">
+                    <button type="button" class="btn-tl-edit" onclick="startEditTimeline('${item.id}')">수정</button>
+                    <button type="button" class="btn-tl-delete" onclick="deleteTimelineItem('${item.id}')">삭제</button>
+                </div>
+            </div>
+        `).join('');
     }
-
-    list.sort((a, b) => {
-        const numA = parseInt(a.date.replace(/[^\d]/g, ''), 10) || 0;
-        const numB = parseInt(b.date.replace(/[^\d]/g, ''), 10) || 0;
-        return numA - numB;
-    });
-
-    container.innerHTML = list.map(item => `
-        <div class="admin-timeline-item" id="tlItem-${item.id}">
-            <div class="admin-tl-meta">
-                <span class="admin-tl-date">${item.date}</span>
-                <span class="admin-tl-text">${item.story}</span>
-            </div>
-            <div class="admin-tl-actions">
-                <button type="button" class="btn-tl-edit" onclick="startEditTimeline('${item.id}')">수정</button>
-                <button type="button" class="btn-tl-delete" onclick="deleteTimelineItem('${item.id}')">삭제</button>
-            </div>
-        </div>
-    `).join('');
 
     updateMainTabBadges();
 }
 
-function handleAddTimeline(e) {
+async function handleAddTimeline(e) {
     e.preventDefault();
     const dateInput = document.getElementById('timelineDate');
     const storyInput = document.getElementById('timelineStory');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
 
-    const formattedDate = normalizeDate(dateInput.value);
-    const storyVal = storyInput.value.trim();
+    const date = dateInput.value;
+    const story = storyInput.value.trim();
+    if (!date || !story) return;
 
-    if (!formattedDate || !storyVal) return;
-
-    const list = getTimelineList();
-    list.push({
-        id: 'TL-' + Date.now(),
-        date: formattedDate,
-        story: storyVal
-    });
-
-    localStorage.setItem('memorial_timeline_list', JSON.stringify(list));
-    renderAdminTimeline();
-    showToast("발자취가 등록되었습니다.");
-
-    dateInput.value = '';
-    storyInput.value = '';
+    if (submitBtn) submitBtn.disabled = true;
+    try {
+        await functions.httpsCallable('adminSaveTimeline')({ slug: adminRoom, key: adminKey, date, story });
+        dateInput.value = '';
+        storyInput.value = '';
+        showToast('발자취가 등록되었습니다.');
+        await loadTimeline();
+    } catch (err) {
+        console.error(err);
+        alert(err.message || '발자취를 등록하지 못했습니다.');
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
+    }
 }
 
 function startEditTimeline(id) {
-    const list = getTimelineList();
-    const target = list.find(item => item.id === id);
-    if (!target) return;
-
+    const target = timelineCache.find(item => item.id === id);
     const itemEl = document.getElementById(`tlItem-${id}`);
-    if (!itemEl) return;
+    if (!target || !itemEl) return;
 
     itemEl.classList.add('editing');
-    const nums = target.date.replace(/[^\d]/g, '');
-    const pickerVal = `${nums.slice(0, 4)}-${nums.slice(4, 6)}-${nums.slice(6, 8)}`;
-
     itemEl.innerHTML = `
         <form class="edit-mode-form" onsubmit="saveEditTimeline(event, '${id}')">
-            <input type="date" id="editDate-${id}" class="edit-input-date" value="${pickerVal}" required>
-            <input type="text" id="editStory-${id}" class="edit-input-story" value="${target.story}" required>
+            <input type="date" id="editDate-${id}" class="edit-input-date" value="${escapeHtml(target.date)}" required>
+            <input type="text" id="editStory-${id}" class="edit-input-story" value="${escapeHtml(target.story)}" maxlength="200" required>
             <div class="edit-action-row">
                 <button type="submit" class="btn-edit-save">완료</button>
                 <button type="button" class="btn-edit-cancel" onclick="renderAdminTimeline()">취소</button>
@@ -786,91 +778,143 @@ function startEditTimeline(id) {
     `;
 }
 
-function saveEditTimeline(e, id) {
+async function saveEditTimeline(e, id) {
     e.preventDefault();
-    const dateVal = document.getElementById(`editDate-${id}`).value;
-    const storyVal = document.getElementById(`editStory-${id}`).value.trim();
+    const date = document.getElementById(`editDate-${id}`).value;
+    const story = document.getElementById(`editStory-${id}`).value.trim();
+    if (!date || !story) return;
 
-    if (!dateVal || !storyVal) return;
-
-    let list = getTimelineList();
-    const idx = list.findIndex(item => item.id === id);
-    if (idx !== -1) {
-        list[idx].date = normalizeDate(dateVal);
-        list[idx].story = storyVal;
-        localStorage.setItem('memorial_timeline_list', JSON.stringify(list));
-        showToast("발자취가 수정되었습니다.");
-    }
-
-    renderAdminTimeline();
-}
-
-function deleteTimelineItem(id) {
-    if (!confirm("이 발자취를 삭제하시겠습니까?")) return;
-    let list = getTimelineList();
-    list = list.filter(item => item.id !== id);
-    localStorage.setItem('memorial_timeline_list', JSON.stringify(list));
-    renderAdminTimeline();
-    showToast("발자취가 삭제되었습니다.");
-}
-
-// =========================================
-// 4. 무지개 우체통 관리 로직
-// =========================================
-function getMemorialLetters() {
-    const saved = localStorage.getItem('memorial_letters');
-    if (!saved) return [];
     try {
-        const list = JSON.parse(saved);
-        return list.map((item, idx) => ({
-            ...item,
-            id: item.id || `LET-${idx + 1}`
-        }));
-    } catch (e) {
-        return [];
+        await functions.httpsCallable('adminSaveTimeline')({ slug: adminRoom, key: adminKey, id, date, story });
+        showToast('발자취가 수정되었습니다.');
+        await loadTimeline();
+    } catch (err) {
+        console.error(err);
+        alert(err.message || '발자취를 수정하지 못했습니다.');
     }
+}
+
+async function deleteTimelineItem(id) {
+    if (!confirm('이 발자취를 삭제하시겠습니까?')) return;
+    try {
+        await functions.httpsCallable('adminDeleteTimeline')({ slug: adminRoom, key: adminKey, id });
+        showToast('발자취가 삭제되었습니다.');
+        await loadTimeline();
+    } catch (err) {
+        console.error(err);
+        alert(err.message || '발자취를 삭제하지 못했습니다.');
+    }
+}
+
+// =========================================
+// 4. 무지개 우체통 관리 (확인 대기 / 공개됨 / 숨김)
+// =========================================
+async function loadLetters() {
+    try {
+        const result = await functions.httpsCallable('adminListLetters')({ slug: adminRoom, key: adminKey });
+        lettersCache = result.data.letters || [];
+    } catch (err) {
+        console.error('편지 불러오기 실패:', err);
+        lettersCache = [];
+    }
+    renderAdminPostbox();
+}
+
+function setLetterFilter(filter) {
+    currentLetterFilter = filter;
+    document.querySelectorAll('#panel-postbox .filter-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+    renderAdminPostbox();
+}
+
+function formatLetterDate(ms) {
+    if (!ms) return '';
+    const d = new Date(ms);
+    return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getDate()).padStart(2, '0')}.`;
 }
 
 function renderAdminPostbox() {
-    const list = getMemorialLetters();
-    const countEl = document.getElementById('postboxCount');
     const container = document.getElementById('adminPostboxList');
 
-    if (countEl) countEl.innerText = list.length;
+    const counts = { pending: 0, approved: 0, excluded: 0 };
+    lettersCache.forEach(l => { if (counts[l.status] !== undefined) counts[l.status]++; });
+    const setCount = (id, n) => { const el = document.getElementById(id); if (el) el.innerText = n; };
+    setCount('countLetterPending', counts.pending);
+    setCount('countLetterApproved', counts.approved);
+    setCount('countLetterExcluded', counts.excluded);
+
     if (!container) return;
 
+    const list = lettersCache.filter(l => l.status === currentLetterFilter);
+    const emptyText = {
+        pending: '확인을 기다리는 편지가 없습니다.',
+        approved: '추모관에 공개된 편지가 없습니다.',
+        excluded: '숨긴 편지가 없습니다.'
+    }[currentLetterFilter];
+
     if (list.length === 0) {
-        container.innerHTML = `<div class="empty-state" style="padding: 24px;">남겨진 편지가 없습니다.</div>`;
+        container.innerHTML = `<div class="empty-state" style="padding: 24px;">${emptyText}</div>`;
         updateMainTabBadges();
         return;
     }
 
-    container.innerHTML = list.map(letter => `
-        <div class="admin-postbox-card" id="postbox-${letter.id}">
-            <div class="postbox-card-top">
-                <div class="postbox-author-info">
-                    <span class="postbox-author-tag">${letter.relation}</span>
-                    <strong class="postbox-author-name">${letter.name}</strong>
-                    <span class="postbox-date">${letter.date}</span>
+    container.innerHTML = list.map(letter => {
+        const actions = {
+            pending: `
+                <button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'approved')">공개하기</button>
+                <button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'excluded')">숨기기</button>`,
+            approved: `
+                <button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'excluded')">숨기기</button>`,
+            excluded: `
+                <button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'approved')">다시 공개</button>`
+        }[letter.status] || '';
+
+        return `
+            <div class="admin-postbox-card" id="postbox-${letter.id}">
+                <div class="postbox-card-top">
+                    <div class="postbox-author-info">
+                        <span class="postbox-author-tag">${escapeHtml(letter.relation)}</span>
+                        <strong class="postbox-author-name">${escapeHtml(letter.name)}</strong>
+                        <span class="postbox-date">${formatLetterDate(letter.createdAt)}</span>
+                    </div>
+                    <div class="admin-tl-actions">
+                        ${actions}
+                        <button type="button" class="btn-postbox-delete" onclick="deletePostboxLetter('${letter.id}')">삭제</button>
+                    </div>
                 </div>
-                <button type="button" class="btn-postbox-delete" onclick="deletePostboxLetter('${letter.id}')">삭제</button>
+                <p class="postbox-msg-content">${escapeHtml(letter.message).replace(/\n/g, '<br>')}</p>
             </div>
-            <p class="postbox-msg-content">${letter.msg}</p>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     updateMainTabBadges();
 }
 
-function deletePostboxLetter(letterId) {
-    if (!confirm("이 편지를 우체통에서 완전히 삭제하시겠습니까?")) return;
+async function changeLetterStatus(id, status) {
+    try {
+        await functions.httpsCallable('adminUpdateLetter')({ slug: adminRoom, key: adminKey, id, status });
+        const target = lettersCache.find(l => l.id === id);
+        if (target) target.status = status;
+        renderAdminPostbox();
+        showToast(status === 'approved' ? '편지를 추모관에 공개했습니다.' : '편지를 숨겼습니다.');
+    } catch (err) {
+        console.error(err);
+        alert(err.message || '상태를 바꾸지 못했습니다.');
+    }
+}
 
-    let list = getMemorialLetters();
-    list = list.filter(item => item.id !== letterId);
-
-    localStorage.setItem('memorial_letters', JSON.stringify(list));
-    renderAdminPostbox();
-    showToast("편지가 삭제되었습니다.");
+async function deletePostboxLetter(id) {
+    if (!confirm('이 편지를 우체통에서 완전히 삭제하시겠습니까?\n삭제한 편지는 되돌릴 수 없습니다.')) return;
+    try {
+        await functions.httpsCallable('adminUpdateLetter')({ slug: adminRoom, key: adminKey, id, remove: true });
+        lettersCache = lettersCache.filter(l => l.id !== id);
+        renderAdminPostbox();
+        showToast('편지가 삭제되었습니다.');
+    } catch (err) {
+        console.error(err);
+        alert(err.message || '편지를 삭제하지 못했습니다.');
+    }
 }
 
 function showToast(message) {

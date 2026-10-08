@@ -48,6 +48,14 @@ function toIsoDate(value) {
     return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
 }
 
+// 받침이 있으면 '이'를 붙여 부르는 이름 (하임 → 하임이, 코코 → 코코)
+function callName(name) {
+    if (!name) return "";
+    const code = name.charCodeAt(name.length - 1);
+    if (code < 0xAC00 || code > 0xD7A3) return name;
+    return (code - 0xAC00) % 28 > 0 ? name + "이" : name;
+}
+
 // 헷갈리는 글자(0, O, 1, I 등)를 뺀 6자리 추모관 주소
 function generateSlug() {
     const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -257,6 +265,23 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY] }, async (request) 
         createdAt: FieldValue.serverTimestamp()
     });
 
+    // 기본 발자취 두 개 (만난 날, 별이 된 날) - 관리자 화면에서 수정·삭제 가능
+    const timelineRef = db.collection("memorials").doc(slug).collection("timeline");
+    if (draft.meetDate) {
+        batch.set(timelineRef.doc(), {
+            date: draft.meetDate,
+            story: `손바닥만 하던 ${callName(draft.petName)}가 처음 우리 집에 오던 날, 온 세상이 따뜻해졌어.`,
+            createdAt: FieldValue.serverTimestamp()
+        });
+    }
+    if (draft.farewellDate) {
+        batch.set(timelineRef.doc(), {
+            date: draft.farewellDate,
+            story: "가족들의 품에서 조용히 눈을 감고, 가장 빛나는 별이 된 날.",
+            createdAt: FieldValue.serverTimestamp()
+        });
+    }
+
     batch.update(orderRef, {
         status: "paid",
         slug,
@@ -376,4 +401,83 @@ exports.updateMemorialInfo = onCall(async (request) => {
 
     const saved = await ref.get();
     return { memorial: pickMemorial(saved.data()) };
+});
+
+
+// =========================================
+// 5. 발자취 등록·수정·삭제 (관리자)
+// =========================================
+exports.adminSaveTimeline = onCall(async (request) => {
+    const { slug, key, id } = request.data || {};
+    await assertAdmin(slug, key);
+
+    const date = String(request.data?.date || "");
+    const story = cleanText(request.data?.story, 200);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !story) {
+        throw new HttpsError("invalid-argument", "날짜와 내용을 확인해 주세요.");
+    }
+
+    const col = db.collection("memorials").doc(slug).collection("timeline");
+    if (id) {
+        const ref = col.doc(String(id));
+        if (!(await ref.get()).exists) {
+            throw new HttpsError("not-found", "발자취를 찾을 수 없습니다.");
+        }
+        await ref.update({ date, story });
+        return { id: ref.id };
+    }
+
+    const ref = await col.add({ date, story, createdAt: FieldValue.serverTimestamp() });
+    return { id: ref.id };
+});
+
+exports.adminDeleteTimeline = onCall(async (request) => {
+    const { slug, key, id } = request.data || {};
+    await assertAdmin(slug, key);
+    if (!id) throw new HttpsError("invalid-argument", "삭제할 발자취를 확인해 주세요.");
+
+    await db.collection("memorials").doc(slug).collection("timeline").doc(String(id)).delete();
+    return { ok: true };
+});
+
+// =========================================
+// 6. 우체통 편지 목록·상태 변경 (관리자)
+// - 방문객에게는 '공개(approved)' 편지만 보이고, 관리자는 전체를 봄
+// =========================================
+exports.adminListLetters = onCall(async (request) => {
+    const { slug, key } = request.data || {};
+    await assertAdmin(slug, key);
+
+    const snap = await db.collection("memorials").doc(slug).collection("letters").get();
+    const letters = snap.docs.map((doc) => {
+        const d = doc.data();
+        return {
+            id: doc.id,
+            name: d.name || "",
+            relation: d.relation || "",
+            message: d.message || "",
+            status: d.status || "pending",
+            createdAt: d.createdAt ? d.createdAt.toMillis() : 0
+        };
+    });
+    letters.sort((a, b) => b.createdAt - a.createdAt);
+    return { letters };
+});
+
+exports.adminUpdateLetter = onCall(async (request) => {
+    const { slug, key, id, status, remove } = request.data || {};
+    await assertAdmin(slug, key);
+    if (!id) throw new HttpsError("invalid-argument", "편지를 확인해 주세요.");
+
+    const ref = db.collection("memorials").doc(slug).collection("letters").doc(String(id));
+
+    if (remove) {
+        await ref.delete();
+        return { ok: true };
+    }
+    if (!["pending", "approved", "excluded"].includes(status)) {
+        throw new HttpsError("invalid-argument", "상태 값이 올바르지 않습니다.");
+    }
+    await ref.update({ status, reviewedAt: FieldValue.serverTimestamp() });
+    return { ok: true };
 });

@@ -137,13 +137,23 @@
         <!-- 탭 4: 우체통 관리 패널 -->
         <section id="panel-postbox" class="admin-tab-panel">
             <div class="panel-desc-box">
-                <p class="panel-sub-desc">지인과 가족분들이 남겨주신 편지를 확인하고 정리할 수 있습니다.</p>
+                <p class="panel-sub-desc">지인과 가족분들이 남겨주신 편지입니다. 공개한 편지만 추모관 우체통에 보입니다.</p>
+            </div>
+
+            <div class="filter-tabs">
+                <button type="button" class="filter-tab active" data-filter="pending"
+                    onclick="setLetterFilter('pending')">
+                    확인 대기 중 <span id="countLetterPending" class="badge">0</span>
+                </button>
+                <button type="button" class="filter-tab" data-filter="approved" onclick="setLetterFilter('approved')">
+                    공개됨 <span id="countLetterApproved" class="badge">0</span>
+                </button>
+                <button type="button" class="filter-tab" data-filter="excluded" onclick="setLetterFilter('excluded')">
+                    숨김 <span id="countLetterExcluded" class="badge">0</span>
+                </button>
             </div>
 
             <div class="admin-card-box">
-                <div class="postbox-header-row">
-                    <span class="postbox-total-text">총 <strong id="postboxCount">0</strong>개의 편지</span>
-                </div>
                 <div class="postbox-admin-list" id="adminPostboxList"></div>
             </div>
         </section>
