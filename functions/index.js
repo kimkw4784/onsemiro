@@ -204,7 +204,7 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY] }, async (request) 
     }
 
     // 토스페이먼츠에 결제 승인 요청 (시크릿 키는 서버에서만 사용)
-    const authorization = "Basic " + Buffer.from(`${TOSS_SECRET_KEY.value()}:`).toString("base64");
+    const authorization = "Basic " + Buffer.from(`${TOSS_SECRET_KEY.value().trim()}:`).toString("base64");
     const response = await fetch("https://api.tosspayments.com/v1/payments/confirm", {
         method: "POST",
         headers: { Authorization: authorization, "Content-Type": "application/json" },
@@ -278,4 +278,102 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY] }, async (request) 
         petName: draft.petName,
         applicantName: order.applicant?.name || ""
     };
+});
+
+
+// =========================================
+// 관리자 공통: 관리자 키 확인
+// =========================================
+async function assertAdmin(slug, key) {
+    const denied = new HttpsError("permission-denied", "관리자 링크가 올바르지 않습니다.");
+
+    if (typeof slug !== "string" || !/^[A-Z0-9]{6}$/.test(slug)) throw denied;
+    if (typeof key !== "string" || key.length < 20 || key.length > 100) throw denied;
+
+    const snap = await db.collection("secrets").doc(slug).get();
+    if (!snap.exists) throw denied;
+
+    const expected = Buffer.from(snap.data().adminKeyHash || "", "hex");
+    const actual = Buffer.from(hashKey(key), "hex");
+
+    // 글자를 하나씩 비교하는 시간 차이로 키를 추측하지 못하도록 일정한 시간으로 비교
+    if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) {
+        throw denied;
+    }
+}
+
+// 화면으로 돌려줄 추모관 정보만 골라내기 (서버 전용 값·시간 객체 제외)
+function pickMemorial(m) {
+    return {
+        petName: m.petName || "",
+        petType: m.petType || "dog",
+        meetDate: m.meetDate || "",
+        farewellDate: m.farewellDate || "",
+        quote: m.quote || "",
+        gifts: m.gifts || ["", ""],
+        bgm: m.bgm || "piano",
+        photoUrl: m.photoUrl || "",
+        plan: m.plan || "digital",
+        counts: m.counts || {}
+    };
+}
+
+// =========================================
+// 3. 관리자 확인 (관리자 화면 입장, 추모관의 관리자 버튼 표시 여부)
+// =========================================
+exports.verifyAdmin = onCall(async (request) => {
+    const { slug, key } = request.data || {};
+    await assertAdmin(slug, key);
+
+    const snap = await db.collection("memorials").doc(slug).get();
+    if (!snap.exists) {
+        throw new HttpsError("not-found", "추모관을 찾을 수 없습니다.");
+    }
+    return { memorial: pickMemorial(snap.data()) };
+});
+
+// =========================================
+// 4. 추모관 기본 정보 수정 (관리자 화면 '추모관 정보' 탭)
+// =========================================
+exports.updateMemorialInfo = onCall(async (request) => {
+    const { slug, key } = request.data || {};
+    const info = request.data?.info || {};
+    await assertAdmin(slug, key);
+
+    const petName = cleanText(info.petName, 20);
+    if (!petName) {
+        throw new HttpsError("invalid-argument", "아이 이름을 입력해 주세요.");
+    }
+
+    const isoDate = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? v : "");
+    const meetDate = isoDate(info.meetDate);
+    const farewellDate = isoDate(info.farewellDate);
+    if (meetDate && farewellDate && farewellDate < meetDate) {
+        throw new HttpsError("invalid-argument", "별이 된 날이 처음 만난 날보다 앞서 있습니다.");
+    }
+
+    const update = {
+        petName,
+        petType: PET_TYPES.includes(info.petType) ? info.petType : "dog",
+        meetDate,
+        farewellDate,
+        quote: cleanText(info.quote, 100),
+        gifts: [cleanText(info.gift1, 15), cleanText(info.gift2, 15)],
+        bgm: BGM_KEYS.includes(info.bgm) ? info.bgm : "piano",
+        updatedAt: FieldValue.serverTimestamp()
+    };
+
+    // 대표 사진을 새로 고른 경우에만 Storage에 다시 저장
+    if (typeof info.photo === "string" && info.photo.startsWith("data:image/")) {
+        if (info.photo.length > 700000) {
+            throw new HttpsError("invalid-argument", "사진 용량이 너무 큽니다. 다른 사진으로 시도해 주세요.");
+        }
+        update.photoUrl = await saveProfilePhoto(slug, info.photo);
+    }
+
+    const ref = db.collection("memorials").doc(slug);
+    await ref.update(update);
+
+    const saved = await ref.get();
+    return { memorial: pickMemorial(saved.data()) };
 });

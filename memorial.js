@@ -435,12 +435,8 @@ function renderMemorial(memorial, adminKey) {
     // 사진 모으기 링크
     document.getElementById('galleryUploadBtn').href = `upload.html?room=${activeRoomSlug}`;
 
-    // 관리자 버튼은 관리자 링크(&key=...)로 들어온 경우에만 표시
-    const adminBtn = document.getElementById('adminFloatingBtn');
-    if (adminBtn && adminKey) {
-        adminBtn.href = `admin.html?room=${activeRoomSlug}&key=${encodeURIComponent(adminKey)}`;
-        adminBtn.style.display = 'inline-flex';
-    }
+    // 관리자 버튼: 이 기기가 관리자 키를 기억하고 있고, 서버에서 확인되면 표시
+    showAdminButtonIfVerified(adminKey);
 
     // 발자취 타임라인 (Firestore 연결 전까지 기본 문구 + 이 브라우저에 저장된 기록)
     const tlList = document.getElementById('memorialTimelineList');
@@ -464,6 +460,38 @@ function renderMemorial(memorial, adminKey) {
                 <p class="timeline-text">${escapeHtml(item.story)}</p>
             </div>
         `).join('');
+    }
+}
+
+// 관리자 버튼 표시 여부 확인
+// - 주소의 key 또는 이 기기에 기억된 키를 서버에 확인해서 맞을 때만 버튼 표시
+async function showAdminButtonIfVerified(urlKey) {
+    const storageKey = `onsemiro_admin_${activeRoomSlug}`;
+    let storedKey = '';
+    try { storedKey = localStorage.getItem(storageKey) || ''; } catch (e) { /* 무시 */ }
+
+    const key = urlKey || storedKey;
+    if (!key) return;
+
+    try {
+        await functions.httpsCallable('verifyAdmin')({ slug: activeRoomSlug, key });
+    } catch (err) {
+        // 키가 틀렸거나 재발급된 경우: 기억해 둔 예전 키 정리
+        if (!urlKey) {
+            try { localStorage.removeItem(storageKey); } catch (e) { /* 무시 */ }
+        }
+        return;
+    }
+
+    try { localStorage.setItem(storageKey, key); } catch (e) { /* 무시 */ }
+
+    // 주소에 키가 있었다면 지워서, 이 화면을 공유하거나 캡처해도 키가 드러나지 않게 함
+    if (urlKey) history.replaceState(null, '', `memorial.html?room=${activeRoomSlug}`);
+
+    const adminBtn = document.getElementById('adminFloatingBtn');
+    if (adminBtn) {
+        adminBtn.href = `admin.html?room=${activeRoomSlug}`;
+        adminBtn.style.display = 'inline-flex';
     }
 }
 

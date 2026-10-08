@@ -1216,3 +1216,38 @@
         gap: 4px;
     }
 }
+
+/* =========================================
+   관리자 확인 중 / 잠김 화면
+========================================= */
+.admin-container.is-verifying {
+    visibility: hidden;
+}
+
+.admin-locked {
+    text-align: center;
+    padding: 120px 20px;
+}
+
+.admin-locked .admin-main-desc {
+    line-height: 1.7;
+    word-break: keep-all;
+}
+
+.admin-locked-btn {
+    display: inline-block;
+    margin-top: 28px;
+    text-decoration: none;
+}
+
+.link-btn-muted {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text-sub, #7A7269);
+    opacity: 0.8;
+    display: block;
+    margin: 14px auto 0;
+    font-size: 12px;
+}

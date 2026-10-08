@@ -19,25 +19,99 @@ function normalizeDate(dateStr) {
     return dateStr.trim();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const rawData = localStorage.getItem('recentMemorialOrder');
-    if (rawData) {
-        try {
-            const order = JSON.parse(rawData);
-            const nameEl = document.getElementById('adminPetName');
-            if (nameEl) nameEl.innerText = order.petName || '아이';
-        } catch (e) {
-            console.error(e);
-        }
+// =========================================
+// 관리자 인증 상태
+// - 관리자 링크(?room=...&key=...)로 한 번 들어오면 이 기기에 키를 기억하고,
+//   이후에는 주소에 키가 없어도 관리자 화면과 추모관의 관리자 버튼을 쓸 수 있음
+// =========================================
+const ADMIN_KEY_PREFIX = 'onsemiro_admin_';
+let adminRoom = '';
+let adminKey = '';
+let adminMemorial = null;
+
+function getStoredAdminKey(room) {
+    try { return localStorage.getItem(ADMIN_KEY_PREFIX + room) || ''; } catch (e) { return ''; }
+}
+
+function storeAdminKey(room, key) {
+    try { localStorage.setItem(ADMIN_KEY_PREFIX + room, key); } catch (e) { /* 저장 실패 시 무시 */ }
+}
+
+function clearAdminKey(room) {
+    try { localStorage.removeItem(ADMIN_KEY_PREFIX + room); } catch (e) { /* 무시 */ }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const params = new URLSearchParams(window.location.search);
+    const room = (params.get('room') || '').trim().toUpperCase();
+    const urlKey = params.get('key') || '';
+    const key = urlKey || getStoredAdminKey(room);
+
+    if (!room || !key) {
+        showAdminLocked();
+        return;
     }
+
+    // 서버에 관리자 키 확인
+    try {
+        const result = await functions.httpsCallable('verifyAdmin')({ slug: room, key });
+        adminMemorial = result.data.memorial;
+    } catch (err) {
+        console.error('관리자 확인 실패:', err);
+        if (!urlKey) clearAdminKey(room); // 기기에 남아 있던 예전 키는 정리
+        showAdminLocked();
+        return;
+    }
+
+    adminRoom = room;
+    adminKey = key;
+    storeAdminKey(room, key);
+
+    // 주소창에서 키를 지워 화면 공유·방문 기록에 남지 않게 함
+    if (urlKey) history.replaceState(null, '', `admin.html?room=${room}`);
+
+    const nameEl = document.getElementById('adminPetName');
+    if (nameEl) nameEl.innerText = adminMemorial.petName || '아이';
+
+    // "추모관 메인으로 이동" → 공개 추모관 주소 (이 기기는 관리자 키를 기억하므로 관리자 버튼이 보임)
+    const backLink = document.querySelector('.admin-footer-links .link-btn');
+    if (backLink) backLink.href = `memorial.html?room=${room}`;
 
     renderCards();
     renderDirectGallery();
     renderAdminTimeline();
     renderAdminPostbox();
     updateMainTabBadges();
-    loadMemorialInfo();
+    loadMemorialInfo(adminMemorial);
+
+    document.querySelector('.admin-container')?.classList.remove('is-verifying');
 });
+
+// 관리자 키가 없거나 틀렸을 때
+function showAdminLocked() {
+    const container = document.querySelector('.admin-container');
+    if (!container) return;
+    container.classList.remove('is-verifying');
+    container.innerHTML = `
+        <div class="admin-locked">
+            <span class="header-tag">FAMILY ARCHIVE ADMIN</span>
+            <h1 class="admin-main-title">관리자 링크로 들어와 주세요</h1>
+            <p class="admin-main-desc">
+                이 화면은 보호자님만 열 수 있습니다.<br>
+                추모관 개설 때 알림톡으로 보내드린 <strong>관리자 주소</strong>를 눌러 들어와 주세요.
+            </p>
+            <a href="index.html" class="btn-timeline-add admin-locked-btn">온새미로 메인으로</a>
+        </div>
+    `;
+}
+
+// 이 기기에서 관리자 모드 해제
+function forgetThisDevice() {
+    const ok = confirm('이 기기에서 관리자 모드를 해제할까요?\n다시 관리하려면 알림톡으로 받으신 관리자 주소로 들어와야 합니다.');
+    if (!ok) return;
+    clearAdminKey(adminRoom);
+    window.location.href = `memorial.html?room=${adminRoom}`;
+}
 
 // =========================================
 // 0. 메인 5단 탭 전환 및 배지 동기화
@@ -611,8 +685,8 @@ function getTimelineList() {
     const raw = localStorage.getItem('memorial_timeline_list');
     if (raw) return JSON.parse(raw);
 
-    const orderRaw = localStorage.getItem('recentMemorialOrder');
-    const order = orderRaw ? JSON.parse(orderRaw) : {};
+    // 기본 문구는 서버에서 확인한 추모관 정보로 만듦 (발자취 저장은 다음 단계에서 서버로 이동)
+    const order = adminMemorial || {};
     const name = order.petName || '아이';
 
     const defaultList = [
@@ -812,56 +886,29 @@ function showToast(message) {
 // =========================================
 // 5. 추모관 정보 수정
 // -----------------------------------------
-// ※ 지금은 화면 확인용으로 localStorage(recentMemorialOrder)를 읽고 씁니다.
-//   Firebase 연결 단계에서 loadMemorialInfo / saveMemorialInfo 두 함수의
-//   안쪽만 Firestore 읽기 + Cloud Functions 호출로 바꿀 예정입니다.
+// 서버(verifyAdmin)에서 받은 정보로 채우고, 저장은 updateMemorialInfo 함수로 처리
 // =========================================
 
 let infoOriginal = null;   // 불러온 당시 값 (변경 여부 비교용)
 let infoPetType = 'dog';
 let infoPhotoData = '';
 
-// 예전 주문 데이터의 BGM 제목 → 새 키 값으로 변환
-const BGM_LEGACY_MAP = {
-    '별빛 아래 너와 나 (잔잔한 피아노)': 'piano',
-    '따뜻한 봄날의 산책 (어쿠스틱 기타)': 'guitar',
-    '영원한 안식처 (서정적인 오르골)': 'musicbox',
-    '음악 없음 (조용한 추모)': 'none'
-};
+function loadMemorialInfo(memorial) {
+    const m = memorial || {};
+    const gifts = m.gifts || [];
 
-// "2013. 05. 10." ↔ "2013-05-10" (date input 형식) 변환
-function toInputDate(str) {
-    if (!str) return '';
-    const d = str.replace(/[^\d]/g, '');
-    return d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}` : '';
-}
+    infoPetType = m.petType || 'dog';
+    infoPhotoData = m.photoUrl || '';
 
-function fromInputDate(str) {
-    if (!str) return '';
-    const [y, m, d] = str.split('-');
-    return `${y}. ${m}. ${d}.`;
-}
+    document.getElementById('infoPetName').value = m.petName || '';
+    document.getElementById('infoMeetDate').value = m.meetDate || '';
+    document.getElementById('infoFarewellDate').value = m.farewellDate || '';
+    document.getElementById('infoQuote').value = m.quote || '';
+    document.getElementById('infoGift1').value = gifts[0] || '';
+    document.getElementById('infoGift2').value = gifts[1] || '';
+    document.getElementById('infoBgm').value = m.bgm || 'piano';
 
-function loadMemorialInfo() {
-    let order = {};
-    try {
-        order = JSON.parse(localStorage.getItem('recentMemorialOrder') || '{}');
-    } catch (e) {
-        console.error(e);
-    }
-
-    infoPetType = order.petType || 'dog';
-    infoPhotoData = order.petPhoto || '';
-
-    document.getElementById('infoPetName').value = order.petName || '';
-    document.getElementById('infoMeetDate').value = toInputDate(order.meetDate);
-    document.getElementById('infoFarewellDate').value = toInputDate(order.farewellDate);
-    document.getElementById('infoQuote').value = order.quote || '';
-    document.getElementById('infoGift1').value = order.gift1 || '';
-    document.getElementById('infoGift2').value = order.gift2 || '';
-    document.getElementById('infoBgm').value = BGM_LEGACY_MAP[order.bgm] || order.bgm || 'piano';
-
-    document.getElementById('infoHeritageNotice').hidden = order.plan !== 'heritage';
+    document.getElementById('infoHeritageNotice').hidden = m.plan !== 'heritage';
 
     renderInfoAvatar();
     renderInfoPetType();
@@ -905,7 +952,29 @@ function selectInfoPetType(type) {
     markInfoDirty();
 }
 
-// 대표 사진 교체 (기존 compressImage 함수 재사용)
+// 대표 사진용 압축 (최대 800px, 추모관 원형 사진에 충분한 크기)
+function compressProfilePhoto(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const scale = Math.min(1, 800 / Math.max(img.width, img.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(img.width * scale);
+                canvas.height = Math.round(img.height * scale);
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// 대표 사진 교체
 async function handleInfoPhoto(input) {
     const file = input.files[0];
     if (!file) return;
@@ -914,8 +983,13 @@ async function handleInfoPhoto(input) {
         input.value = '';
         return;
     }
-    const result = await compressImage(file);
-    infoPhotoData = result.data;
+    try {
+        infoPhotoData = await compressProfilePhoto(file);
+    } catch (e) {
+        alert('사진을 불러오지 못했습니다. 다른 사진으로 시도해 주세요.');
+        input.value = '';
+        return;
+    }
     renderInfoAvatar();
     markInfoDirty();
     input.value = '';
@@ -948,7 +1022,7 @@ function markInfoDirty() {
     document.getElementById('btnInfoSave').disabled = !isDirty;
 }
 
-function saveMemorialInfo() {
+async function saveMemorialInfo() {
     const values = collectInfoValues();
 
     if (!values.petName) {
@@ -961,30 +1035,34 @@ function saveMemorialInfo() {
         return;
     }
 
-    // ---- (임시) localStorage 저장 → 나중에 Cloud Functions 호출로 교체 ----
-    let order = {};
-    try {
-        order = JSON.parse(localStorage.getItem('recentMemorialOrder') || '{}');
-    } catch (e) { /* 빈 값으로 진행 */ }
-
-    Object.assign(order, values, {
-        meetDate: fromInputDate(values.meetDate),
-        farewellDate: fromInputDate(values.farewellDate)
-    });
+    const saveBtn = document.getElementById('btnInfoSave');
+    saveBtn.disabled = true;
+    saveBtn.innerText = '저장하는 중...';
 
     try {
-        localStorage.setItem('recentMemorialOrder', JSON.stringify(order));
-    } catch (e) {
-        alert('저장 공간이 부족해 저장하지 못했습니다. 사진 크기를 줄여 다시 시도해 주세요.');
-        return;
+        const { petPhoto, ...rest } = values;
+        const result = await functions.httpsCallable('updateMemorialInfo')({
+            slug: adminRoom,
+            key: adminKey,
+            info: {
+                ...rest,
+                // 새로 고른 사진(data:...)일 때만 보내고, 기존 사진 주소는 보내지 않음
+                photo: petPhoto && petPhoto.startsWith('data:') ? petPhoto : ''
+            }
+        });
+
+        adminMemorial = result.data.memorial;
+        loadMemorialInfo(adminMemorial);
+
+        const nameEl = document.getElementById('adminPetName');
+        if (nameEl) nameEl.innerText = adminMemorial.petName;
+
+        showToast('추모관 정보를 저장했습니다.');
+    } catch (err) {
+        console.error('정보 저장 실패:', err);
+        alert(err.message || '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        markInfoDirty();
+    } finally {
+        saveBtn.innerText = '변경 내용 저장';
     }
-    // ---------------------------------------------------------------
-
-    // 상단 제목 이름도 함께 갱신
-    const nameEl = document.getElementById('adminPetName');
-    if (nameEl) nameEl.innerText = values.petName;
-
-    infoOriginal = values;
-    markInfoDirty();
-    showToast('추모관 정보를 저장했습니다.');
 }

@@ -171,7 +171,7 @@ function renderOrder(orderData) {
     const adminInput = document.getElementById('adminSecretLinkInput');
     if (adminInput) {
         adminInput.value = adminKey
-            ? `${BASE_DOMAIN}/memorial.html?room=${slug}&key=${adminKey}`
+            ? `${BASE_DOMAIN}/admin.html?room=${slug}&key=${adminKey}`
             : '알림톡으로 보내드린 관리자 주소를 확인해 주세요.';
     }
 
