@@ -26,8 +26,8 @@ const UPLOAD_LIMITS = {
     maxFilesPerMemory: 10,
     imageBytes: 30 * 1024 * 1024,        // 사진 1장 (압축 후라 넉넉함)
     videoBytes: 500 * 1024 * 1024,       // 영상 1개
-    thumbBytes: 2 * 1024 * 1024,         // 영상 썸네일
-    memorialBytes: 20 * 1024 * 1024 * 1024 // 추모관 1곳 전체
+    thumbBytes: 2 * 1024 * 1024          // 영상 썸네일
+    // 추모관 전체 한도는 요금제별 (PLANS.storageBytes)
 };
 const IMAGE_TYPES = ["image/webp", "image/jpeg", "image/png", "image/gif"];
 const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
@@ -39,9 +39,15 @@ setGlobalOptions({ region: "asia-northeast3", maxInstances: 10 });
 // 가격표 - 금액은 오직 서버의 이 표로만 정해짐
 // =========================================
 const PLANS = {
-    digital: { price: 19500, name: "디지털 소장권" },
-    heritage: { price: 59000, name: "헤리티지 패키지" }
+    digital: { price: 19500, name: "디지털 소장권", storageBytes: 20 * 1024 * 1024 * 1024 },
+    archive: { price: 49000, name: "평생 아카이브", storageBytes: 50 * 1024 * 1024 * 1024 }
 };
+
+// 요금제별 저장 한도 (예전 테스트용 heritage 추모관은 평생 아카이브와 같은 한도)
+function storageLimitOf(plan) {
+    if (plan === "heritage") return PLANS.archive.storageBytes;
+    return (PLANS[plan] || PLANS.digital).storageBytes;
+}
 
 const PET_TYPES = ["dog", "cat", "small"];
 const BGM_KEYS = ["piano", "guitar", "musicbox", "none"];
@@ -392,7 +398,9 @@ function pickMemorial(m) {
         bgm: m.bgm || "piano",
         photoUrl: m.photoUrl || "",
         plan: m.plan || "digital",
-        counts: m.counts || {}
+        counts: m.counts || {},
+        storageBytes: m.storageBytes || 0,
+        storageLimit: storageLimitOf(m.plan)
     };
 }
 
@@ -628,8 +636,11 @@ exports.createMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) => 
     });
 
     const used = memorialSnap.data().storageBytes || 0;
-    if (used + totalBytes > UPLOAD_LIMITS.memorialBytes) {
-        throw new HttpsError("resource-exhausted", "추모관 저장 공간이 가득 찼습니다. 보호자님께 문의해 주세요.");
+    const limit = storageLimitOf(memorialSnap.data().plan);
+    if (used + totalBytes > limit) {
+        throw new HttpsError("resource-exhausted", isDirect
+            ? "추모관 저장 공간이 부족합니다. 확인 대기 중이거나 필요 없는 사진·영상을 정리해 주세요."
+            : "추모관 저장 공간이 가득 찼습니다. 보호자님께 문의해 주세요.");
     }
 
     const memoryRef = memorialRef.collection("memories").doc();
@@ -751,7 +762,14 @@ exports.adminListMemories = onCall(async (request) => {
         })
         .filter((m) => m.status !== "uploading");
     memories.sort((a, b) => b.createdAt - a.createdAt);
-    return { memories };
+
+    // 저장 공간 사용량도 함께 전달 (관리자 화면 표시용)
+    const memorial = (await db.collection("memorials").doc(slug).get()).data() || {};
+    return {
+        memories,
+        storageBytes: memorial.storageBytes || 0,
+        storageLimit: storageLimitOf(memorial.plan)
+    };
 });
 
 // 관리자: 검수 결정 (선택한 파일만 전시 / 전부 제외 / 다시 검수)

@@ -3,7 +3,7 @@
 let currentSelectedPlan = 'digital';
 const PLAN_PRICES = {
     digital: 19500,   // 화면 표시용 (실제 결제 금액은 서버 가격표로 정해짐)
-    heritage: 59000
+    archive: 49000
 };
 
 // 토스페이먼츠 클라이언트 키 설정 (테스트용 키)
@@ -81,7 +81,7 @@ function openOrderModal(planType = 'digital') {
 
                     <div class="form-group">
                         <label class="form-label">선택 플랜</label>
-                        <div class="plan-card-group">
+                                                <div class="plan-card-group">
                             <label class="plan-card ${currentSelectedPlan === 'digital' ? 'active' : ''}" onclick="selectPlanInModal(this, 'digital')">
                                 <input type="radio" name="orderPlan" value="digital" ${currentSelectedPlan === 'digital' ? 'checked' : ''}>
                                 <div class="plan-card-content">
@@ -90,18 +90,18 @@ function openOrderModal(planType = 'digital') {
                                         <span class="plan-badge">인기</span>
                                     </div>
                                     <div class="plan-price">19,500<span>원</span></div>
-                                    <p class="plan-desc">온 가족을 위한 평생 아카이브</p>
+                                    <p class="plan-desc">20GB · 사진과 영상을 담는 웹 추모관</p>
                                 </div>
                             </label>
 
-                            <label class="plan-card ${currentSelectedPlan === 'heritage' ? 'active' : ''}" onclick="selectPlanInModal(this, 'heritage')">
-                                <input type="radio" name="orderPlan" value="heritage" ${currentSelectedPlan === 'heritage' ? 'checked' : ''}>
+                            <label class="plan-card ${currentSelectedPlan === 'archive' ? 'active' : ''}" onclick="selectPlanInModal(this, 'archive')">
+                                <input type="radio" name="orderPlan" value="archive" ${currentSelectedPlan === 'archive' ? 'checked' : ''}>
                                 <div class="plan-card-content">
                                     <div class="plan-card-top">
-                                        <span class="plan-name">헤리티지 패키지</span>
+                                        <span class="plan-name">평생 아카이브</span>
                                     </div>
-                                    <div class="plan-price">59,000<span>원</span></div>
-                                    <p class="plan-desc">평생 아카이브 + 유골함 부착 명판</p>
+                                    <div class="plan-price">49,000<span>원</span></div>
+                                    <p class="plan-desc">50GB · 영상까지 넉넉한 대용량</p>
                                 </div>
                             </label>
                         </div>

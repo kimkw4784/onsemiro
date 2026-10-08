@@ -181,12 +181,29 @@ async function loadMemories() {
     try {
         const result = await functions.httpsCallable('adminListMemories')({ slug: adminRoom, key: adminKey });
         memoriesCache = result.data.memories || [];
+        renderStorageUsage(result.data.storageBytes, result.data.storageLimit);
     } catch (err) {
         console.error('추억 불러오기 실패:', err);
         memoriesCache = [];
     }
     renderCards();
     renderDirectGallery();
+}
+
+// 저장 공간 사용량 표시 (예: 3.2GB / 20GB)
+function renderStorageUsage(used, limit) {
+    const textEl = document.getElementById('storageUsageText');
+    const barEl = document.getElementById('storageUsageBar');
+    if (!textEl || !barEl || !limit) return;
+
+    const GB = 1024 * 1024 * 1024;
+    const usedGb = used / GB;
+    const usedText = usedGb < 0.1 ? `${Math.max(0, Math.round(used / (1024 * 1024)))}MB` : `${usedGb.toFixed(1)}GB`;
+    const percent = Math.min(100, (used / limit) * 100);
+
+    textEl.innerText = `${usedText} / ${Math.round(limit / GB)}GB 사용 중`;
+    barEl.style.width = `${percent}%`;
+    barEl.style.background = percent >= 90 ? '#C0704A' : 'var(--accent-brown, #B89065)';
 }
 
 function setFilter(filter) {
@@ -837,7 +854,6 @@ function loadMemorialInfo(memorial) {
     document.getElementById('infoGift2').value = gifts[1] || '';
     document.getElementById('infoBgm').value = m.bgm || 'piano';
 
-    document.getElementById('infoHeritageNotice').hidden = m.plan !== 'heritage';
 
     renderInfoAvatar();
     renderInfoPetType();

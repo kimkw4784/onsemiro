@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title>추모관 통합 관리 | 온새미로</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -58,6 +59,20 @@
         <section id="panel-direct" class="admin-tab-panel active">
             <div class="panel-desc-box">
                 <p class="panel-sub-desc">보호자님이 직접 올리시는 사진과 영상은 검수 절차 없이 추모관 갤러리에 즉시 공개됩니다.</p>
+            </div>
+
+            <!-- 저장 공간 사용량 -->
+            <div class="storage-usage" id="storageUsage" style="margin: 0 4px 16px;">
+                <div
+                    style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-sub, #7A7269); margin-bottom:6px;">
+                    <span>저장 공간</span>
+                    <span id="storageUsageText">불러오는 중...</span>
+                </div>
+                <div style="height:6px; background:#EFE9E0; border-radius:3px; overflow:hidden;">
+                    <div id="storageUsageBar"
+                        style="height:100%; width:0%; background:var(--accent-brown, #B89065); border-radius:3px; transition:width 0.3s;">
+                    </div>
+                </div>
             </div>
 
             <!-- 업로드 드롭존 & 인풋 -->
@@ -254,14 +269,6 @@
                             <option value="none">음악 없음 (조용한 추모)</option>
                         </select>
                     </div>
-                </div>
-
-                <!-- 헤리티지 패키지 이용자에게만 노출 -->
-                <div class="info-heritage-notice" id="infoHeritageNotice" hidden>
-                    <span class="info-notice-icon" aria-hidden="true"><iconify-icon icon="noto:placard"
-                            aria-hidden="true"></iconify-icon></span>
-                    <p>이름과 날짜를 바꿔도 이미 제작 중인 <strong>명판 각인 내용은 변경되지 않습니다.</strong>
-                        명판 수정이 필요하시면 고객센터로 문의해 주세요.</p>
                 </div>
 
                 <!-- 저장 바 -->
