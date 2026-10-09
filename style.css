@@ -2347,10 +2347,44 @@ body {
     overscroll-behavior: contain;
 }
 
-/* 입력칸을 터치하면 안내 글자(placeholder) 숨기기 */
+/* 안내 글자(placeholder): 입력값과 확실히 구분되도록 연한 회색 */
+input::placeholder,
+textarea::placeholder {
+    color: #C4BDB3;
+    opacity: 1;
+}
+
+/* 입력칸을 터치하면 안내 글자 숨기기 */
 input:focus::placeholder,
 textarea:focus::placeholder {
     color: transparent;
+}
+
+/* 빌더 미입력 안내 */
+.builder-guide-notice {
+    background: #FAF3E8;
+    border: 1px solid rgba(212, 163, 115, 0.45);
+    color: #8C6A48;
+    font-size: 13px;
+    line-height: 1.5;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    word-break: keep-all;
+}
+
+.builder-guide-notice.show {
+    animation: builder-guide-pulse 0.9s ease-out;
+}
+
+@keyframes builder-guide-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(212, 163, 115, 0.55);
+    }
+
+    100% {
+        box-shadow: 0 0 0 12px rgba(212, 163, 115, 0);
+    }
 }
 
 /* 버튼 안 로딩 표시 */

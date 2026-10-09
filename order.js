@@ -23,8 +23,48 @@ function getSelectedPetType() {
     return match ? match[1] : 'dog';
 }
 
+// 빌더에 아이 이름을 직접 입력했는지 확인 (예시값 '코코' 그대로면 미입력으로 봄)
+function isBuilderFilled() {
+    const nameEl = document.getElementById('petNameInput');
+    if (!nameEl) return true;
+    return nameEl.value.trim() !== '' && nameEl.dataset.isDefault !== '1';
+}
+
+// 빌더로 안내: 부드럽게 스크롤하고 안내 문구를 잠깐 보여준 뒤 이름 칸에 커서
+function guideToBuilder() {
+    const formBox = document.querySelector('.builder-form-box');
+    if (!formBox) return;
+
+    let notice = document.getElementById('builderGuideNotice');
+    if (!notice) {
+        notice = document.createElement('div');
+        notice.id = 'builderGuideNotice';
+        notice.className = 'builder-guide-notice';
+        notice.setAttribute('role', 'status');
+        notice.innerText = '먼저 우리 아이의 정보를 입력해 주세요. 입력한 모습 그대로 추모관이 만들어져요.';
+        formBox.prepend(notice);
+    }
+    notice.classList.remove('show');
+    void notice.offsetWidth;
+    notice.classList.add('show');
+
+    const top = formBox.getBoundingClientRect().top + window.scrollY - 90;
+    window.scrollTo({ top, behavior: 'smooth' });
+
+    setTimeout(() => {
+        const nameEl = document.getElementById('petNameInput');
+        if (nameEl) nameEl.focus({ preventScroll: true });
+    }, 600);
+}
+
 // 모달 열기 (빌더에 입력된 최신 정보 및 사진 동기화)
 function openOrderModal(planType = 'digital') {
+    // 빌더를 건드리지 않고 요금제 버튼을 누른 경우: 먼저 정보 입력 안내
+    if (!isBuilderFilled()) {
+        guideToBuilder();
+        return;
+    }
+
     currentSelectedPlan = planType;
     currentPayMethod = 'CARD';
 

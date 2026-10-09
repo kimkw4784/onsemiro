@@ -1062,6 +1062,13 @@ body {
     }
 }
 
+/* 안내 글자(placeholder): 입력값과 확실히 구분되도록 연한 회색 */
+input::placeholder,
+textarea::placeholder {
+    color: #C4BDB3;
+    opacity: 1;
+}
+
 /* 입력칸을 터치하면 안내 글자(placeholder) 숨기기 */
 input:focus::placeholder,
 textarea:focus::placeholder {
