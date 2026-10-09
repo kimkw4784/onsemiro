@@ -118,7 +118,7 @@ function openOrderModal(planType = 'digital') {
 
                     <div class="form-group">
                         <label class="form-label" for="applicantPhone">휴대폰 번호 (알림톡 수신용)</label>
-                        <input type="tel" id="applicantPhone" class="form-input" placeholder="예: 01012345678 (- 없이 입력)" required>
+                        <input type="tel" id="applicantPhone" class="form-input" placeholder="예: 010-1234-5678" inputmode="numeric" autocomplete="tel" required>
                     </div>
 
                     <div class="form-group">
