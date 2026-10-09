@@ -42,6 +42,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error('주문 정보 저장 실패:', e);
             }
 
+            // 결제한 이 기기는 바로 관리자로 기억 (추모관에서 관리자 버튼이 보이게)
+            if (result.adminKey && result.slug) {
+                try {
+                    localStorage.setItem(`onsemiro_admin_${result.slug}`, result.adminKey);
+                } catch (e) { /* 저장 실패 시 무시 */ }
+            }
+
             // 주소창의 결제 정보를 지워서 새로고침 시 다시 승인 요청하지 않도록
             history.replaceState(null, '', 'complete.html');
 

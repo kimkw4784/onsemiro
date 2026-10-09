@@ -163,12 +163,11 @@ function updateMainTabBadges() {
         badgeTimeline.innerText = timelineCache.length;
     }
 
-    // 4) 우체통: 확인 대기 중인 편지 개수
-    const pendingLetters = lettersCache.filter(l => l.status === 'pending').length;
+    // 4) 우체통: 추모관에 공개 중인 편지 개수
+    const publicLetters = lettersCache.filter(l => l.status === 'approved').length;
     const badgePostbox = document.getElementById('badgePostboxMain');
     if (badgePostbox) {
-        badgePostbox.innerText = pendingLetters;
-        badgePostbox.classList.toggle('has-items', pendingLetters > 0);
+        badgePostbox.innerText = publicLetters;
     }
 }
 
@@ -587,7 +586,7 @@ async function deleteGalleryItem(itemId, fileIndex) {
 // =========================================
 let timelineCache = [];   // 서버에서 불러온 발자취
 let lettersCache = [];    // 서버에서 불러온 편지
-let currentLetterFilter = 'pending';
+let currentLetterFilter = 'approved';
 
 // 화면에 넣기 전에 HTML 특수문자를 바꿔서, 입력값에 섞인 태그가 실행되지 않게 함
 function escapeHtml(value) {
@@ -709,7 +708,9 @@ async function deleteTimelineItem(id) {
 }
 
 // =========================================
-// 4. 무지개 우체통 관리 (확인 대기 / 공개됨 / 숨김)
+// 4. 무지개 우체통 관리 (공개 중 / 숨김)
+// - 편지는 쓰는 즉시 공개되고, 보호자는 숨기거나 삭제할 수 있음
+// - 예전 방식(확인 대기)으로 들어온 편지는 '숨김'에서 공개할 수 있게 함
 // =========================================
 async function loadLetters() {
     try {
@@ -739,21 +740,17 @@ function formatLetterDate(ms) {
 function renderAdminPostbox() {
     const container = document.getElementById('adminPostboxList');
 
-    const counts = { pending: 0, approved: 0, excluded: 0 };
-    lettersCache.forEach(l => { if (counts[l.status] !== undefined) counts[l.status]++; });
+    const isHidden = (l) => l.status !== 'approved';
     const setCount = (id, n) => { const el = document.getElementById(id); if (el) el.innerText = n; };
-    setCount('countLetterPending', counts.pending);
-    setCount('countLetterApproved', counts.approved);
-    setCount('countLetterExcluded', counts.excluded);
+    setCount('countLetterApproved', lettersCache.filter(l => !isHidden(l)).length);
+    setCount('countLetterExcluded', lettersCache.filter(isHidden).length);
 
     if (!container) return;
 
-    const list = lettersCache.filter(l => l.status === currentLetterFilter);
-    const emptyText = {
-        pending: '확인을 기다리는 편지가 없습니다.',
-        approved: '추모관에 공개된 편지가 없습니다.',
-        excluded: '숨긴 편지가 없습니다.'
-    }[currentLetterFilter];
+    const list = lettersCache.filter(l => currentLetterFilter === 'approved' ? !isHidden(l) : isHidden(l));
+    const emptyText = currentLetterFilter === 'approved'
+        ? '아직 도착한 편지가 없습니다.'
+        : '숨긴 편지가 없습니다.';
 
     if (list.length === 0) {
         container.innerHTML = `<div class="empty-state" style="padding: 24px;">${emptyText}</div>`;
@@ -762,15 +759,9 @@ function renderAdminPostbox() {
     }
 
     container.innerHTML = list.map(letter => {
-        const actions = {
-            pending: `
-                <button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'approved')">공개하기</button>
-                <button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'excluded')">숨기기</button>`,
-            approved: `
-                <button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'excluded')">숨기기</button>`,
-            excluded: `
-                <button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'approved')">다시 공개</button>`
-        }[letter.status] || '';
+        const actions = letter.status === 'approved'
+            ? `<button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'excluded')">숨기기</button>`
+            : `<button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'approved')">공개하기</button>`;
 
         return `
             <div class="admin-postbox-card" id="postbox-${letter.id}">

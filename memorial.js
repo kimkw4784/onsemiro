@@ -249,14 +249,15 @@ async function handleLetterSubmit(e) {
             name,
             relation,
             message,
-            status: 'pending',
+            status: 'approved',   // 바로 공개 (보호자는 관리자 화면에서 숨기거나 삭제 가능)
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
         nameInput.value = '';
         relationInput.value = '';
         msgInput.value = '';
-        showToast('편지가 전해졌어요. 보호자님 확인 후 우체통에 걸립니다.');
+        showToast('소중한 마음이 무지개 우체통에 걸렸어요.');
+        await loadLetters();
     } catch (err) {
         console.error('편지 저장 실패:', err);
         alert('편지를 보내지 못했습니다. 잠시 후 다시 시도해 주세요.');

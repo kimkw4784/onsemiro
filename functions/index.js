@@ -13,6 +13,9 @@ const db = getFirestore();
 // 토스 시크릿 키 (Firebase 비밀 값 보관함에서 꺼내 씀 - 코드에는 절대 적지 않음)
 const TOSS_SECRET_KEY = defineSecret("TOSS_SECRET_KEY");
 
+// 운영자 전용 비밀번호 (관리자 링크 재발급 등 운영자 기능에만 사용)
+const OPERATOR_KEY = defineSecret("OPERATOR_KEY");
+
 // Cloudflare R2 (사진·영상 저장소) 접근 정보
 const R2_ACCESS_KEY_ID = defineSecret("R2_ACCESS_KEY_ID");
 const R2_SECRET_ACCESS_KEY = defineSecret("R2_SECRET_ACCESS_KEY");
@@ -329,7 +332,7 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS] }, a
     if (draft.meetDate) {
         batch.set(timelineRef.doc(), {
             date: draft.meetDate,
-            story: `손바닥만 하던 ${callName(draft.petName)}가 처음 우리 집에 오던 날, 온 세상이 따뜻해졌어.`,
+            story: `${callName(draft.petName)}가 우리 가족이 된 날. 그날부터 모든 날이 선물이었어.`,
             createdAt: FieldValue.serverTimestamp()
         });
     }
@@ -846,4 +849,65 @@ exports.adminDeleteMemoryFile = onCall({ secrets: R2_SECRETS }, async (request) 
     }
     await memorialRef.update({ storageBytes: FieldValue.increment(-freed) });
     return { ok: true };
+});
+
+// =========================================
+// 운영자 기능 (고객 문의 대응용)
+// - 브라우저 콘솔에서 운영자 비밀번호와 함께 호출
+// =========================================
+function assertOperator(key) {
+    const expected = Buffer.from(OPERATOR_KEY.value().trim());
+    const actual = Buffer.from(String(key || ""));
+    if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) {
+        throw new HttpsError("permission-denied", "운영자 인증에 실패했습니다.");
+    }
+}
+
+// 휴대폰 번호로 주문 찾기 (본인 확인용)
+exports.operatorFindOrders = onCall({ secrets: [OPERATOR_KEY] }, async (request) => {
+    assertOperator(request.data?.operatorKey);
+
+    const phone = String(request.data?.phone || "").replace(/[^\d]/g, "");
+    if (!/^01\d{8,9}$/.test(phone)) {
+        throw new HttpsError("invalid-argument", "휴대폰 번호를 확인해 주세요.");
+    }
+
+    const snap = await db.collection("orders").where("applicant.phone", "==", phone).get();
+    const orders = snap.docs
+        .map((doc) => {
+            const d = doc.data();
+            return {
+                orderId: doc.id,
+                status: d.status,
+                slug: d.slug || "",
+                applicantName: d.applicant?.name || "",
+                petName: d.memorialDraft?.petName || "",
+                plan: d.plan,
+                createdAt: d.createdAt ? d.createdAt.toDate().toISOString() : ""
+            };
+        })
+        .filter((o) => o.status === "paid");
+    return { orders };
+});
+
+// 관리자 링크 재발급 (예전 링크는 즉시 무효)
+exports.operatorReissueAdminKey = onCall({ secrets: [OPERATOR_KEY] }, async (request) => {
+    assertOperator(request.data?.operatorKey);
+
+    const slug = String(request.data?.slug || "").toUpperCase();
+    if (!/^[A-Z0-9]{6}$/.test(slug)) {
+        throw new HttpsError("invalid-argument", "추모관 주소를 확인해 주세요.");
+    }
+    const secretRef = db.collection("secrets").doc(slug);
+    if (!(await secretRef.get()).exists) {
+        throw new HttpsError("not-found", "추모관을 찾을 수 없습니다.");
+    }
+
+    const adminKey = crypto.randomBytes(24).toString("base64url");
+    await secretRef.update({
+        adminKeyHash: hashKey(adminKey),
+        reissuedAt: FieldValue.serverTimestamp()
+    });
+
+    return { adminLink: `https://onsemiro.me/admin.html?room=${slug}&key=${adminKey}` };
 });
