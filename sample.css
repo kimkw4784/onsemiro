@@ -1061,3 +1061,9 @@ body {
         text-align: left;
     }
 }
+
+/* 입력칸을 터치하면 안내 글자(placeholder) 숨기기 */
+input:focus::placeholder,
+textarea:focus::placeholder {
+    color: transparent;
+}

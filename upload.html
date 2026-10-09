@@ -49,9 +49,9 @@
                         <span class="file-upload-icon"><iconify-icon icon="noto:camera"
                                 aria-hidden="true"></iconify-icon></span>
                         <div class="file-upload-text">사진 또는 영상을 선택하거나 터치해 주세요</div>
-                        <div class="file-upload-sub">JPG, PNG, GIF, MP4, MOV 파일 지원</div>
+                        <div class="file-upload-sub">JPG, PNG, HEIC, GIF, MP4, MOV 파일 지원</div>
                     </div>
-                    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.mp4,.mov" multiple
+                    <input type="file" id="fileInput" accept="image/*,video/*,.heic,.heif" multiple
                         onchange="handleFileSelect(event)">
 
                     <div class="file-upload-tip">

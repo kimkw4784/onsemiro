@@ -897,33 +897,26 @@ function selectInfoPetType(type) {
     markInfoDirty();
 }
 
-// 대표 사진용 압축 (최대 800px, 추모관 원형 사진에 충분한 크기)
-function compressProfilePhoto(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const scale = Math.min(1, 800 / Math.max(img.width, img.height));
-                const canvas = document.createElement('canvas');
-                canvas.width = Math.round(img.width * scale);
-                canvas.height = Math.round(img.height * scale);
-                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                resolve(canvas.toDataURL('image/jpeg', 0.85));
-            };
-            img.onerror = reject;
-            img.src = e.target.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
+// 대표 사진용 압축 (최대 800px) - HEIC 사진도 자동 변환 (media-upload.js의 decodeImageFile 사용)
+async function compressProfilePhoto(file) {
+    const { img, url } = await decodeImageFile(file);
+    try {
+        const scale = Math.min(1, 800 / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/jpeg', 0.85);
+    } finally {
+        URL.revokeObjectURL(url);
+    }
 }
 
 // 대표 사진 교체
 async function handleInfoPhoto(input) {
     const file = input.files[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith('image/') && !isHeicFile(file)) {
         alert('대표 사진은 이미지 파일만 등록할 수 있습니다.');
         input.value = '';
         return;

@@ -13,7 +13,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     updateLivePreview();
+    setupDefaultValueClear();
 });
+
+// 예시로 채워둔 기본값은 처음 터치할 때 비워서 바로 입력할 수 있게 함
+// (직접 입력한 내용은 지우지 않음)
+const DEFAULT_VALUE_INPUTS = ['petNameInput', 'giftInput1', 'giftInput2', 'petQuoteInput'];
+
+function setupDefaultValueClear() {
+    DEFAULT_VALUE_INPUTS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.dataset.isDefault = '1';
+        el.addEventListener('focus', () => {
+            if (el.dataset.isDefault !== '1') return;
+            el.value = '';
+            el.dataset.isDefault = '0';
+            updateLivePreview();
+            updateLiveGifts();
+        });
+        el.addEventListener('input', () => { el.dataset.isDefault = '0'; });
+    });
+}
 
 function updateLivePreview() {
     const name = document.getElementById('petNameInput').value || '우리 아이';
@@ -60,6 +81,9 @@ function selectPetType(btn, type) {
         g1.value = '해바라기씨';
         g2.value = '신선한 건초';
     }
+    // 종류를 바꾸며 채운 선물 이름도 예시값이므로, 터치하면 비워지도록 표시
+    g1.dataset.isDefault = '1';
+    g2.dataset.isDefault = '1';
     updateLiveGifts();
 }
 
@@ -73,33 +97,96 @@ function updateLiveGifts() {
     if (live2) live2.innerText = g2Val;
 }
 
-// 빌더 사진 첨부 시 Base64 저장 및 미리보기 갱신
-function handlePhotoUpload(event) {
+// =========================================
+// 사진 읽기 (아이폰 HEIC 사진 자동 변환 포함)
+// - 브라우저가 바로 읽지 못하는 HEIC 사진은 변환 도구를 그때만 불러와 JPG로 바꿔서 읽음
+// =========================================
+const HEIC_LIB_URL = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+let heicLibPromise = null;
+
+function isHeicFile(file) {
+    return /image\/hei(c|f)/i.test(file.type || '') || /\.(heic|heif)$/i.test(file.name || '');
+}
+
+function loadHeicLib() {
+    if (window.heic2any) return Promise.resolve();
+    if (!heicLibPromise) {
+        heicLibPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = HEIC_LIB_URL;
+            script.onload = resolve;
+            script.onerror = () => {
+                heicLibPromise = null;
+                reject(new Error('HEIC 사진 변환 도구를 불러오지 못했습니다'));
+            };
+            document.head.appendChild(script);
+        });
+    }
+    return heicLibPromise;
+}
+
+function loadImageElement(blob) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => resolve({ img, url });
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('사진을 읽지 못했습니다'));
+        };
+        img.src = url;
+    });
+}
+
+// 결과: { img, url } - 다 쓴 뒤 URL.revokeObjectURL(url) 호출
+async function decodeImageFile(file) {
+    try {
+        return await loadImageElement(file);
+    } catch (err) {
+        if (!isHeicFile(file)) throw err;
+        await loadHeicLib();
+        const converted = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+        return loadImageElement(Array.isArray(converted) ? converted[0] : converted);
+    }
+}
+
+// 빌더 사진 첨부 시 800px로 압축해 저장하고 미리보기 갱신
+async function handlePhotoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-            const scale = Math.min(1, 800 / Math.max(img.width, img.height));
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.round(img.width * scale);
-            canvas.height = Math.round(img.height * scale);
-            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-            window.uploadedImageData = canvas.toDataURL('image/jpeg', 0.85);
-            document.getElementById('liveAvatar').innerHTML = `<img src="${window.uploadedImageData}" alt="업로드된 프로필">`;
 
-            const hint = document.querySelector('.upload-hint-text');
-            if (hint) {
-                hint.innerHTML = '<svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true" style="vertical-align:-0.15em"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> 사진이 등록됐어요';
-                hint.classList.add('is-selected');
-            }
-            const btnText = document.querySelector('.btn-photo-upload span');
-            if (btnText) btnText.textContent = '사진 바꾸기';
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+    const hint = document.querySelector('.upload-hint-text');
+    if (hint && isHeicFile(file)) hint.innerText = '사진을 변환하고 있어요...';
+
+    try {
+        const { img, url } = await decodeImageFile(file);
+        const scale = Math.min(1, 800 / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+
+        window.uploadedImageData = canvas.toDataURL('image/jpeg', 0.85);
+        document.getElementById('liveAvatar').innerHTML = `<img src="${window.uploadedImageData}" alt="업로드된 프로필">`;
+
+        if (hint) {
+            hint.innerHTML = '<svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true" style="vertical-align:-0.15em"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> 사진이 등록됐어요';
+            hint.classList.add('is-selected');
+        }
+        const btnText = document.querySelector('.btn-photo-upload span');
+        if (btnText) btnText.textContent = '사진 바꾸기';
+    } catch (err) {
+        console.error('사진 불러오기 실패:', err);
+        window.uploadedImageData = null;
+        if (hint) {
+            hint.innerText = '사진을 불러오지 못했어요';
+            hint.classList.remove('is-selected');
+        }
+        alert('사진을 불러오지 못했어요. 다른 사진으로 다시 시도해 주세요.');
+    } finally {
+        event.target.value = '';
+    }
 }
 
 function addCount(btn, type = 'treat') {

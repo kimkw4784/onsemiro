@@ -2321,3 +2321,53 @@ body {
     color: var(--accent-brown);
     font-weight: 600;
 }
+
+/* =========================================
+   결제 모달: 화면보다 길어지면 모달 안에서 스크롤
+========================================= */
+.order-modal-backdrop {
+    height: 100vh;
+    height: 100dvh;
+}
+
+.order-modal-card {
+    max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
+    display: flex;
+    flex-direction: column;
+}
+
+.order-modal-header {
+    flex-shrink: 0;
+}
+
+.order-modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+/* 입력칸을 터치하면 안내 글자(placeholder) 숨기기 */
+input:focus::placeholder,
+textarea:focus::placeholder {
+    color: transparent;
+}
+
+/* 버튼 안 로딩 표시 */
+.btn-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #FFFFFF;
+    border-radius: 50%;
+    vertical-align: -2px;
+    animation: btn-spin 0.8s linear infinite;
+}
+
+@keyframes btn-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

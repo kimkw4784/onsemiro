@@ -192,7 +192,11 @@ async function handleOrderSubmit(event) {
     const setLoading = (isLoading) => {
         if (!submitBtn) return;
         submitBtn.disabled = isLoading;
-        submitBtn.innerText = isLoading ? '결제를 준비하고 있어요...' : originalBtnText;
+        if (isLoading) {
+            submitBtn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>결제를 준비하고 있어요...';
+        } else {
+            submitBtn.innerText = originalBtnText;
+        }
     };
 
     const applicantName = document.getElementById('applicantName')?.value.trim() || '';

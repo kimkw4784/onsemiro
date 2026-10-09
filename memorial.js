@@ -388,6 +388,7 @@ function openVideoModal(videoSrc, dateText, descText) {
 
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+    pushModalHistory();
 
     player.load();
     const playPromise = player.play();
@@ -400,7 +401,7 @@ function closeVideoModal(event) {
     if (event.target.id === 'videoModal') forceCloseModal();
 }
 
-function forceCloseModal() {
+function closeVideoModalNow() {
     const modal = document.getElementById('videoModal');
     const player = document.getElementById('modalVideoPlayer');
     const bgmBtn = document.getElementById('bgmToggleBtn');
@@ -610,13 +611,56 @@ function openImageModal(item) {
     document.getElementById('modalImageCaption').innerText = img.alt || '';
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+    pushModalHistory();
 }
 
 function closeImageModal(e) {
-    if (e.target.id === 'imageModal') closeImageModalDirect();
+    if (e.target.id === 'imageModal') requestCloseModal();
 }
 
 function closeImageModalDirect() {
+    requestCloseModal();
+}
+
+function forceCloseModal() {
+    requestCloseModal();
+}
+
+// =========================================
+// 휴대폰 뒤로가기 처리
+// - 사진·영상 창을 열 때 방문 기록에 한 칸을 추가해서,
+//   뒤로가기를 누르면 페이지 이동 대신 창이 닫히게 함
+// =========================================
+let modalHistoryActive = false;
+
+function pushModalHistory() {
+    if (!modalHistoryActive) {
+        history.pushState({ onsemiroModal: true }, '');
+        modalHistoryActive = true;
+    }
+}
+
+function requestCloseModal() {
+    if (modalHistoryActive) {
+        history.back(); // popstate에서 실제로 닫힘
+    } else {
+        closeOpenModals();
+    }
+}
+
+function closeOpenModals() {
+    if (document.getElementById('videoModal')?.classList.contains('active')) closeVideoModalNow();
+    if (document.getElementById('imageModal')?.classList.contains('active')) closeImageModalNow();
+}
+
+window.addEventListener('popstate', () => {
+    if (modalHistoryActive) {
+        modalHistoryActive = false;
+        closeOpenModals();
+    }
+});
+
+function closeImageModalNow() {
     const modal = document.getElementById('imageModal');
     modal.classList.remove('active');
     document.getElementById('modalFullImage').src = '';

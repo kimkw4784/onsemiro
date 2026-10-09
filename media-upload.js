@@ -25,34 +25,75 @@ function fitSize(width, height, maxDim) {
     return { width: Math.round(width * scale), height: Math.round(height * scale) };
 }
 
-// 사진 → WebP (최대 1920px, 화질 0.88)
-function compressImageFile(file) {
+// =========================================
+// 사진 읽기 (아이폰 HEIC 사진 자동 변환 포함)
+// - 브라우저가 바로 읽지 못하는 HEIC 사진은 변환 도구를 그때만 불러와 JPG로 바꿔서 읽음
+// =========================================
+const HEIC_LIB_URL = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+let heicLibPromise = null;
+
+function isHeicFile(file) {
+    return /image\/hei(c|f)/i.test(file.type || '') || /\.(heic|heif)$/i.test(file.name || '');
+}
+
+function loadHeicLib() {
+    if (window.heic2any) return Promise.resolve();
+    if (!heicLibPromise) {
+        heicLibPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = HEIC_LIB_URL;
+            script.onload = resolve;
+            script.onerror = () => {
+                heicLibPromise = null;
+                reject(new Error('HEIC 사진 변환 도구를 불러오지 못했습니다'));
+            };
+            document.head.appendChild(script);
+        });
+    }
+    return heicLibPromise;
+}
+
+function loadImageElement(blob) {
     return new Promise((resolve, reject) => {
-        const url = URL.createObjectURL(file);
+        const url = URL.createObjectURL(blob);
         const img = new Image();
-        img.onload = async () => {
-            try {
-                const { width, height } = fitSize(img.width, img.height, 1920);
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                ctx.drawImage(img, 0, 0, width, height);
-                const blob = await canvasToBlob(canvas, 'image/webp', 0.88);
-                URL.revokeObjectURL(url);
-                resolve(blob);
-            } catch (err) {
-                reject(err);
-            }
-        };
+        img.onload = () => resolve({ img, url });
         img.onerror = () => {
             URL.revokeObjectURL(url);
             reject(new Error('사진을 읽지 못했습니다'));
         };
         img.src = url;
     });
+}
+
+// 결과: { img, url } - 다 쓴 뒤 URL.revokeObjectURL(url) 호출
+async function decodeImageFile(file) {
+    try {
+        return await loadImageElement(file);
+    } catch (err) {
+        if (!isHeicFile(file)) throw err;
+        await loadHeicLib();
+        const converted = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+        return loadImageElement(Array.isArray(converted) ? converted[0] : converted);
+    }
+}
+
+// 사진 → WebP (최대 1920px, 화질 0.88)
+async function compressImageFile(file) {
+    const { img, url } = await decodeImageFile(file);
+    try {
+        const { width, height } = fitSize(img.width, img.height, 1920);
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+        return await canvasToBlob(canvas, 'image/webp', 0.88);
+    } finally {
+        URL.revokeObjectURL(url);
+    }
 }
 
 // 영상 → 썸네일 WebP (최대 1280px)
