@@ -23,11 +23,11 @@ function getSelectedPetType() {
     return match ? match[1] : 'dog';
 }
 
-// 빌더에 아이 이름을 직접 입력했는지 확인 (예시값 '코코' 그대로면 미입력으로 봄)
+// 빌더에 아이 이름을 직접 입력했는지 확인
 function isBuilderFilled() {
     const nameEl = document.getElementById('petNameInput');
     if (!nameEl) return true;
-    return nameEl.value.trim() !== '' && nameEl.dataset.isDefault !== '1';
+    return nameEl.value.trim() !== '';
 }
 
 // 빌더로 안내: 부드럽게 스크롤하고 안내 문구를 잠깐 보여준 뒤 이름 칸에 커서
@@ -248,9 +248,10 @@ async function handleOrderSubmit(event) {
         petType: getSelectedPetType(),
         meetDate: document.getElementById('petMeetInput')?.value || '',
         farewellDate: document.getElementById('petFarewellInput')?.value || '',
-        gift1: document.getElementById('giftInput1')?.value || '',
-        gift2: document.getElementById('giftInput2')?.value || '',
-        quote: document.getElementById('petQuoteInput')?.value || '',
+        // 선물을 비워두면 미리보기에 보이던 예시 그대로 사용
+        gift1: valueOrExample(document.getElementById('giftInput1')),
+        gift2: valueOrExample(document.getElementById('giftInput2')),
+        quote: valueOrExample(document.getElementById('petQuoteInput')),
         bgm: document.getElementById('petBgmSelect')?.value || '',
         photo: window.uploadedImageData || ''
     };

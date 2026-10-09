@@ -13,34 +13,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     updateLivePreview();
-    setupDefaultValueClear();
+    updateLiveGifts();
 });
 
-// 예시로 채워둔 기본값은 처음 터치할 때 비워서 바로 입력할 수 있게 함
-// (직접 입력한 내용은 지우지 않음)
-const DEFAULT_VALUE_INPUTS = ['petNameInput', 'giftInput1', 'giftInput2', 'petQuoteInput'];
-
-function setupDefaultValueClear() {
-    DEFAULT_VALUE_INPUTS.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.dataset.isDefault = '1';
-        el.addEventListener('focus', () => {
-            if (el.dataset.isDefault !== '1') return;
-            el.value = '';
-            el.dataset.isDefault = '0';
-            updateLivePreview();
-            updateLiveGifts();
-        });
-        el.addEventListener('input', () => { el.dataset.isDefault = '0'; });
-    });
+// 입력칸이 비어 있으면 안내 글자(예: ...)의 예시를 대신 사용
+function valueOrExample(el) {
+    if (!el) return '';
+    return el.value.trim() || el.placeholder.replace(/^예:\s*/, '');
 }
 
 function updateLivePreview() {
-    const name = document.getElementById('petNameInput').value || '우리 아이';
+    const name = valueOrExample(document.getElementById('petNameInput')) || '우리 아이';
     const meetDate = document.getElementById('petMeetInput').value;
     const farewellDate = document.getElementById('petFarewellInput').value;
-    const quote = document.getElementById('petQuoteInput').value || '영원히 기억할게.';
+    const quote = valueOrExample(document.getElementById('petQuoteInput')) || '영원히 기억할게.';
 
     document.getElementById('liveName').innerText = name;
     document.getElementById('liveQuoteText').innerText = quote;
@@ -71,25 +57,21 @@ function selectPetType(btn, type) {
     const g1 = document.getElementById('giftInput1');
     const g2 = document.getElementById('giftInput2');
 
-    if (type === 'dog') {
-        g1.value = '좋아하던 간식';
-        g2.value = '테니스공';
-    } else if (type === 'cat') {
-        g1.value = '맛있는 츄르';
-        g2.value = '낚싯대';
-    } else if (type === 'small') {
-        g1.value = '해바라기씨';
-        g2.value = '신선한 건초';
-    }
-    // 종류를 바꾸며 채운 선물 이름도 예시값이므로, 터치하면 비워지도록 표시
-    g1.dataset.isDefault = '1';
-    g2.dataset.isDefault = '1';
+    // 종류에 맞는 선물 예시로 안내 글자만 바꿈 (직접 입력한 내용은 그대로 유지)
+    const examples = {
+        dog: ['좋아하던 간식', '테니스공'],
+        cat: ['맛있는 츄르', '낚싯대'],
+        small: ['해바라기씨', '신선한 건초']
+    }[type] || ['좋아하던 간식', '테니스공'];
+
+    g1.placeholder = `예: ${examples[0]}`;
+    g2.placeholder = `예: ${examples[1]}`;
     updateLiveGifts();
 }
 
 function updateLiveGifts() {
-    const g1Val = document.getElementById('giftInput1').value || '첫 번째 선물';
-    const g2Val = document.getElementById('giftInput2').value || '두 번째 선물';
+    const g1Val = valueOrExample(document.getElementById('giftInput1')) || '첫 번째 선물';
+    const g2Val = valueOrExample(document.getElementById('giftInput2')) || '두 번째 선물';
 
     const live1 = document.getElementById('liveGift1');
     const live2 = document.getElementById('liveGift2');
