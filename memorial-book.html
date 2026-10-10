@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="color-scheme" content="light only">
+    <title>추모 기록집 | ONSEMIRO 온새미로</title>
+
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="book.css">
+    <link rel="icon" href="https://api.iconify.design/noto:paw-prints.svg">
+</head>
+
+<body>
+    <!-- 화면에서만 보이는 안내·저장 버튼 (인쇄할 때는 숨김) -->
+    <div class="book-toolbar">
+        <div class="book-toolbar-inner">
+            <div class="book-toolbar-text">
+                <strong>추모 기록집</strong>
+                <span id="bookStatus">기록을 불러오고 있어요...</span>
+            </div>
+            <button type="button" id="btnSavePdf" class="btn-save-pdf" onclick="saveAsPdf()" disabled>PDF로 저장하기</button>
+        </div>
+        <p class="book-toolbar-guide">
+            <span class="nb">버튼을 누르면 인쇄 창이 열립니다.</span>
+            <span class="nb">프린터(대상)를 <strong>'PDF로 저장'</strong>으로 선택한 뒤 저장해 주세요.</span>
+        </p>
+    </div>
+
+    <main class="book" id="book">
+        <!-- book.js가 페이지를 채웁니다 -->
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script src="book.js"></script>
+</body>
+
+</html>

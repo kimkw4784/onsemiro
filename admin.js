@@ -73,6 +73,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nameEl = document.getElementById('adminPetName');
     if (nameEl) nameEl.innerText = adminMemorial.petName || '아이';
 
+    // 추모 기록집(PDF) 페이지 연결
+    const bookLink = document.getElementById('bookLink');
+    if (bookLink) bookLink.href = `memorial-book.html?room=${room}`;
+
     // "추모관 메인으로 이동" → 공개 추모관 주소 (이 기기는 관리자 키를 기억하므로 관리자 버튼이 보임)
     const backLink = document.querySelector('.admin-footer-links .link-btn');
     if (backLink) backLink.href = `memorial.html?room=${room}`;

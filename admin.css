@@ -1336,3 +1336,25 @@
     flex-shrink: 0;
     white-space: nowrap;
 }
+
+/* 추모 기록집 버튼 */
+.btn-book-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 9px 16px;
+    border: 1px solid var(--accent-brown, #D4A373);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main, #2B2620);
+    text-decoration: none;
+    background: #FFFFFF;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-book-link:hover {
+    background: var(--accent-brown, #D4A373);
+    color: #FFFFFF;
+}
