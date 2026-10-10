@@ -6,6 +6,7 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const crypto = require("crypto");
 const { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { SolapiMessageService } = require("solapi");
 
 initializeApp();
 const db = getFirestore();
@@ -15,6 +16,17 @@ const TOSS_SECRET_KEY = defineSecret("TOSS_SECRET_KEY");
 
 // 운영자 전용 비밀번호 (관리자 링크 재발급 등 운영자 기능에만 사용)
 const OPERATOR_KEY = defineSecret("OPERATOR_KEY");
+
+// 솔라피 (문자·알림톡 발송)
+const SOLAPI_API_KEY = defineSecret("SOLAPI_API_KEY");
+const SOLAPI_API_SECRET = defineSecret("SOLAPI_API_SECRET");
+const SMS_SECRETS = [SOLAPI_API_KEY, SOLAPI_API_SECRET];
+
+// 솔라피에 등록한 발신번호 (받는 사람에게 보이는 번호라 비밀 값이 아님)
+// ※ 비어 있으면 문자를 보내지 않고 건너뜀 → 발신번호 등록 후 숫자만 입력하고 다시 배포
+const SMS_SENDER = "01028004784";
+
+const SITE_BASE = "https://onsemiro.me";
 
 // Cloudflare R2 (사진·영상 저장소) 접근 정보
 const R2_ACCESS_KEY_ID = defineSecret("R2_ACCESS_KEY_ID");
@@ -160,6 +172,55 @@ async function saveProfilePhoto(slug, dataUrl) {
     return { path, url: mediaUrl(path) };
 }
 
+// 문자 발송 (긴 문자는 솔라피가 자동으로 LMS로 보냄)
+// 결과: "sent" | "skipped"(발신번호 미설정) | "failed"
+async function sendSms(to, text) {
+    const from = SMS_SENDER.replace(/[^\d]/g, "");
+    if (!from || !to) return "skipped";
+    try {
+        const service = new SolapiMessageService(SOLAPI_API_KEY.value().trim(), SOLAPI_API_SECRET.value().trim());
+        await service.send({ to, from, text, subject: "[온새미로] 추모관 안내" });
+        return "sent";
+    } catch (err) {
+        console.error("문자 발송 실패:", err);
+        return "failed";
+    }
+}
+
+function openingMessage({ applicantName, petName, slug, adminKey }) {
+    return [
+        "[온새미로] 추모관 개설 안내",
+        "",
+        `${applicantName}님, ${petName}의 온새미로가 개설되었습니다.`,
+        "아래 주소로 언제든 다시 찾아오실 수 있습니다.",
+        "",
+        "■ 추모관 (가족·지인 공유용)",
+        `${SITE_BASE}/memorial.html?room=${slug}`,
+        "",
+        "■ 사진·영상 모으기 (가족·지인 공유용)",
+        `${SITE_BASE}/upload.html?room=${slug}`,
+        "",
+        "■ 관리자 주소 (보호자 전용)",
+        `${SITE_BASE}/admin.html?room=${slug}&key=${adminKey}`,
+        "관리 권한이 포함된 주소이니 다른 분께 공유하지 마세요.",
+        "",
+        "이 문자는 지우지 말고 보관해 주세요."
+    ].join("\n");
+}
+
+function reissueMessage({ petName, slug, adminKey }) {
+    return [
+        "[온새미로] 관리자 주소 재발급 안내",
+        "",
+        `${petName}의 온새미로 관리자 주소가 새로 발급되었습니다.`,
+        "이전 관리자 주소는 더 이상 사용할 수 없습니다.",
+        "",
+        "■ 새 관리자 주소 (보호자 전용)",
+        `${SITE_BASE}/admin.html?room=${slug}&key=${adminKey}`,
+        "관리 권한이 포함된 주소이니 다른 분께 공유하지 마세요."
+    ].join("\n");
+}
+
 // =========================================
 // 1. 주문 등록 (결제창을 열기 직전에 호출)
 // - 브라우저는 플랜 이름만 보내고, 금액은 서버가 가격표로 정함
@@ -225,7 +286,7 @@ exports.createOrder = onCall(async (request) => {
 // 2. 결제 승인 (결제 성공 후 complete.html에서 호출)
 // - 토스에 실제 결제를 확인하고, 금액이 맞을 때만 추모관 생성
 // =========================================
-exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS] }, async (request) => {
+exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS, ...SMS_SECRETS] }, async (request) => {
     const { paymentKey, orderId } = request.data || {};
     const amount = Number(request.data?.amount);
 
@@ -355,11 +416,21 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS] }, a
 
     await batch.commit();
 
+    // 개설 안내 문자 (실패해도 결제·추모관 생성에는 영향 없음)
+    const smsResult = await sendSms(order.applicant?.phone, openingMessage({
+        applicantName: order.applicant?.name || "보호자",
+        petName: draft.petName,
+        slug,
+        adminKey
+    }));
+    await orderRef.update({ notification: { sms: smsResult, at: FieldValue.serverTimestamp() } });
+
     // 관리자 키 원본은 이 응답에서 딱 한 번만 전달됨
     return {
         slug,
         adminKey,
         photoUrl,
+        smsSent: smsResult === "sent",
         orderId,
         plan: order.plan,
         petName: draft.petName,
@@ -380,11 +451,17 @@ async function assertAdmin(slug, key) {
     const snap = await db.collection("secrets").doc(slug).get();
     if (!snap.exists) throw denied;
 
-    const expected = Buffer.from(snap.data().adminKeyHash || "", "hex");
-    const actual = Buffer.from(hashKey(key), "hex");
+    const secret = snap.data();
+    const keyHash = hashKey(key);
+    const expected = Buffer.from(secret.adminKeyHash || "", "hex");
+    const actual = Buffer.from(keyHash, "hex");
 
     // 글자를 하나씩 비교하는 시간 차이로 키를 추측하지 못하도록 일정한 시간으로 비교
     if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) {
+        // 재발급 전의 예전 키로 들어온 경우에만 '재발급됨'을 알려줌
+        if ((secret.previousKeyHashes || []).includes(keyHash)) {
+            throw new HttpsError("permission-denied", "관리자 링크가 재발급되었습니다.", { reason: "reissued" });
+        }
         throw denied;
     }
 }
@@ -891,7 +968,7 @@ exports.operatorFindOrders = onCall({ secrets: [OPERATOR_KEY] }, async (request)
 });
 
 // 관리자 링크 재발급 (예전 링크는 즉시 무효)
-exports.operatorReissueAdminKey = onCall({ secrets: [OPERATOR_KEY] }, async (request) => {
+exports.operatorReissueAdminKey = onCall({ secrets: [OPERATOR_KEY, ...SMS_SECRETS] }, async (request) => {
     assertOperator(request.data?.operatorKey);
 
     const slug = String(request.data?.slug || "").toUpperCase();
@@ -899,15 +976,34 @@ exports.operatorReissueAdminKey = onCall({ secrets: [OPERATOR_KEY] }, async (req
         throw new HttpsError("invalid-argument", "추모관 주소를 확인해 주세요.");
     }
     const secretRef = db.collection("secrets").doc(slug);
-    if (!(await secretRef.get()).exists) {
+    const secretSnap = await secretRef.get();
+    if (!secretSnap.exists) {
         throw new HttpsError("not-found", "추모관을 찾을 수 없습니다.");
     }
 
     const adminKey = crypto.randomBytes(24).toString("base64url");
+    const oldHash = secretSnap.data().adminKeyHash;
     await secretRef.update({
         adminKeyHash: hashKey(adminKey),
+        // 예전 키는 '재발급됨' 안내를 위해 기록만 해둠 (예전 키로는 접속 불가)
+        previousKeyHashes: oldHash ? FieldValue.arrayUnion(oldHash) : [],
         reissuedAt: FieldValue.serverTimestamp()
     });
 
-    return { adminLink: `https://onsemiro.me/admin.html?room=${slug}&key=${adminKey}` };
+    const adminLink = `${SITE_BASE}/admin.html?room=${slug}&key=${adminKey}`;
+
+    // sendSms: true 로 호출하면 결제 때 등록한 번호로 새 주소를 문자 발송
+    let sms = "not_requested";
+    if (request.data?.sendSms) {
+        const orderId = secretSnap.data().orderId;
+        const order = orderId ? (await db.collection("orders").doc(orderId).get()).data() : null;
+        const memorial = (await db.collection("memorials").doc(slug).get()).data() || {};
+        sms = await sendSms(order?.applicant?.phone, reissueMessage({
+            petName: memorial.petName || "아이",
+            slug,
+            adminKey
+        }));
+    }
+
+    return { adminLink, sms };
 });

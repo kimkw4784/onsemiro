@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
         console.error('관리자 확인 실패:', err);
         if (!urlKey) clearAdminKey(room); // 기기에 남아 있던 예전 키는 정리
-        showAdminLocked();
+        showAdminLocked(err.details?.reason);
         return;
     }
 
@@ -90,18 +90,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelector('.admin-container')?.classList.remove('is-verifying');
 });
 
-// 관리자 키가 없거나 틀렸을 때
-function showAdminLocked() {
+// 관리자 키가 없거나 틀렸을 때 (reason이 'reissued'면 재발급 안내)
+function showAdminLocked(reason) {
     const container = document.querySelector('.admin-container');
     if (!container) return;
     container.classList.remove('is-verifying');
+
+    const isReissued = reason === 'reissued';
+    const title = isReissued ? '관리자 링크가 재발급되었습니다' : '관리자 링크로 들어와 주세요';
+    const desc = isReissued
+        ? '이 주소는 더 이상 사용할 수 없습니다.<br>새로 발급된 <strong>관리자 주소</strong>로 들어와 주세요.'
+        : '이 화면은 보호자님만 열 수 있습니다.<br>추모관 개설 때 받으신 <strong>관리자 주소</strong>를 눌러 들어와 주세요.';
+
     container.innerHTML = `
         <div class="admin-locked">
             <span class="header-tag">FAMILY ARCHIVE ADMIN</span>
-            <h1 class="admin-main-title">관리자 링크로 들어와 주세요</h1>
+            <h1 class="admin-main-title">${title}</h1>
             <p class="admin-main-desc">
-                이 화면은 보호자님만 열 수 있습니다.<br>
-                추모관 개설 때 알림톡으로 보내드린 <strong>관리자 주소</strong>를 눌러 들어와 주세요.
+                ${desc}
             </p>
             <a href="index.html" class="btn-timeline-add admin-locked-btn">온새미로 메인으로</a>
         </div>
