@@ -1,11 +1,12 @@
 window.uploadedImageData = null; // order.js에서도 참조할 수 있도록 window 객체에 할당
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 휴대폰에서는 기기 기본 날짜 선택 화면(큼직하고 연도 고르기 쉬움)을 쓰고, PC에서만 달력 표시
     flatpickr(".custom-datepicker", {
         locale: "ko",
         dateFormat: "Y. m. d.",
         defaultDate: "today",
-        disableMobile: "true",
+        maxDate: "today",
         static: true,
         onChange: function () {
             updateLivePreview();
@@ -240,6 +241,62 @@ function updateLiveBgm() {
     if (bgmSelect && liveBgmText) {
         liveBgmText.innerText = bgmSelect.value;
     }
+
+    // 미리듣기 중에 곡을 바꾸면 바꾼 곡으로 이어서 들려주기
+    const file = BGM_PREVIEW_FILES[bgmSelect.value];
+    const btn = document.getElementById('bgmPreviewBtn');
+    if (btn) btn.disabled = !file;
+    if (bgmPreviewing) {
+        if (file) playBgmPreview(file);
+        else stopBgmPreview();
+    }
+}
+
+// =========================================
+// 배경음악 미리듣기
+// =========================================
+const BGM_PREVIEW_FILES = {
+    '별빛 아래 너와 나 (잔잔한 피아노)': './audio/bgm-piano.mp3',
+    '따뜻한 봄날의 산책 (어쿠스틱 기타)': './audio/bgm-guitar.mp3',
+    '영원한 안식처 (서정적인 오르골)': './audio/bgm-musicbox.mp3'
+};
+const bgmPreviewAudio = new Audio();
+bgmPreviewAudio.volume = 0.5;
+let bgmPreviewing = false;
+
+bgmPreviewAudio.addEventListener('ended', stopBgmPreview);
+
+function playBgmPreview(file) {
+    const btn = document.getElementById('bgmPreviewBtn');
+    if (!bgmPreviewAudio.src.endsWith(file.replace('./', '/'))) {
+        bgmPreviewAudio.src = file;
+    }
+    bgmPreviewAudio.play().then(() => {
+        bgmPreviewing = true;
+        if (btn) {
+            btn.innerText = '정지';
+            btn.classList.add('playing');
+        }
+    }).catch(err => console.log('미리듣기 재생 실패:', err));
+}
+
+function stopBgmPreview() {
+    const btn = document.getElementById('bgmPreviewBtn');
+    bgmPreviewAudio.pause();
+    bgmPreviewAudio.currentTime = 0;
+    bgmPreviewing = false;
+    if (btn) {
+        btn.innerText = '미리듣기';
+        btn.classList.remove('playing');
+    }
+}
+
+function toggleBgmPreview() {
+    const select = document.getElementById('petBgmSelect');
+    const file = BGM_PREVIEW_FILES[select.value];
+    if (!file) return;
+    if (bgmPreviewing) stopBgmPreview();
+    else playBgmPreview(file);
 }
 
 // FAQ 아코디언 토글

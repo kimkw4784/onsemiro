@@ -1358,3 +1358,59 @@
     background: var(--accent-brown, #D4A373);
     color: #FFFFFF;
 }
+
+/* 바로 업로드: 올리는 분 이름 */
+.direct-sender-input {
+    width: 100%;
+    margin-top: 14px;
+    box-sizing: border-box;
+}
+
+.dropzone-sub+.dropzone-sub {
+    margin-top: 2px;
+}
+
+/* 갤러리 카드 수정: 입력칸은 위아래로, 버튼은 아래 줄에 (잘리지 않게) */
+.direct-edit-box {
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.direct-edit-box .direct-edit-input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    font-size: 12.5px;
+    padding: 7px 8px;
+}
+
+.direct-edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.direct-edit-actions .btn-edit-save {
+    padding: 6px 14px;
+    font-size: 12px;
+}
+
+.story-display-box:has(.direct-edit-box) {
+    display: block;
+}
+
+/* 수정 버튼이 세로로 꺾이지 않게 */
+.direct-edit-actions .btn-edit-save,
+.direct-edit-actions .btn-story-action {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* 휴대폰에서는 갤러리 카드를 두 줄로 넓게 */
+@media (max-width: 480px) {
+    .direct-media-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+}

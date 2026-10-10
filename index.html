@@ -499,12 +499,17 @@
 
                     <div class="form-group">
                         <label class="form-label" for="petBgmSelect">배경음악 (BGM)</label>
-                        <select id="petBgmSelect" class="form-input form-select" onchange="updateLiveBgm()">
-                            <option value="별빛 아래 너와 나 (잔잔한 피아노)">01. 별빛 아래 너와 나 (잔잔한 피아노)</option>
-                            <option value="따뜻한 봄날의 산책 (어쿠스틱 기타)">02. 따뜻한 봄날의 산책 (어쿠스틱 기타)</option>
-                            <option value="영원한 안식처 (서정적인 오르골)">03. 영원한 안식처 (서정적인 오르골)</option>
-                            <option value="음악 없음 (조용한 추모)">04. 음악 없음 (조용한 추모)</option>
-                        </select>
+                        <div class="bgm-select-row">
+                            <select id="petBgmSelect" class="form-input form-select" onchange="updateLiveBgm()">
+                                <option value="별빛 아래 너와 나 (잔잔한 피아노)">01. 별빛 아래 너와 나 (잔잔한 피아노)</option>
+                                <option value="따뜻한 봄날의 산책 (어쿠스틱 기타)">02. 따뜻한 봄날의 산책 (어쿠스틱 기타)</option>
+                                <option value="영원한 안식처 (서정적인 오르골)">03. 영원한 안식처 (서정적인 오르골)</option>
+                                <option value="음악 없음 (조용한 추모)">04. 음악 없음 (조용한 추모)</option>
+                            </select>
+                            <button type="button" id="bgmPreviewBtn" class="btn-bgm-preview"
+                                onclick="toggleBgmPreview()">미리듣기</button>
+                        </div>
+                        <p class="bgm-hint">개설 후에도 관리자 화면에서 언제든 바꿀 수 있어요.</p>
                     </div>
 
                     <div class="builder-cta-wrap">
@@ -595,7 +600,7 @@
                         <li><strong>영구 독립 고유 웹 링크</strong></li>
                         <li>가족 사진 취합 링크 제공</li>
                         <li>배경음악(BGM) 및 무지개 우체통</li>
-                        <li>PDF 기록집 다운로드</li>
+                        <li>PDF 전자책 원클릭 다운로드</li>
                         <li>매년 생일 & 기일 카카오톡 알림톡</li>
                     </ul>
                     <button type="button" class="btn btn-primary btn-full" onclick="openOrderModal('essential')">

@@ -95,11 +95,17 @@
                         onchange="handleFileSelect(this)" style="display: none;">
                     <div class="dropzone-icon"><iconify-icon icon="noto:camera" aria-hidden="true"></iconify-icon></div>
                     <div class="dropzone-text">클릭하여 사진이나 영상을 선택하세요</div>
-                    <div class="dropzone-sub">여러 장 동시 선택 가능 · 장당 자동 최적화</div>
+                    <div class="dropzone-sub">한 번에 최대 30개까지 선택할 수 있어요</div>
+                    <div class="dropzone-sub"><span class="nb">사진은 화질을 지키면서 가볍게,</span> <span class="nb">영상은 원본 그대로
+                            저장돼요</span></div>
                 </div>
 
                 <!-- 선택된 파일 썸네일 미리보기 영역 -->
                 <div id="selectedPreviewGrid" class="selected-preview-grid" style="display: none;"></div>
+
+                <!-- 올리는 사람 이름 (갤러리에 표시) -->
+                <input type="text" id="directSenderInput" class="timeline-input text-input direct-sender-input"
+                    placeholder="올리는 분 이름 (비우면 '보호자'로 표시)" maxlength="20">
 
                 <!-- 사연 입력 및 즉시 등록 바 -->
                 <div class="direct-input-bar">

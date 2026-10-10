@@ -425,9 +425,17 @@ function renderCards() {
 // =========================================
 let currentSelectedFiles = [];
 
+const DIRECT_MAX_FILES = 30;   // 한 번에 선택할 수 있는 개수
+const DIRECT_BATCH_SIZE = 10;  // 서버에는 10개씩 나눠서 올림
+
 function handleFileSelect(input) {
     if (!input.files || input.files.length === 0) return;
-    currentSelectedFiles = Array.from(input.files);
+    let files = Array.from(input.files);
+    if (files.length > DIRECT_MAX_FILES) {
+        alert(`한 번에 최대 ${DIRECT_MAX_FILES}개까지 올릴 수 있어요.\n앞의 ${DIRECT_MAX_FILES}개만 선택되었습니다.`);
+        files = files.slice(0, DIRECT_MAX_FILES);
+    }
+    currentSelectedFiles = files;
     renderSelectedPreviews();
 }
 
@@ -473,26 +481,40 @@ async function handleDirectUpload() {
 
     const submitBtn = document.getElementById('btnDirectSubmit');
     const storyInput = document.getElementById('directStoryInput');
-    const storyText = storyInput.value.trim() || '보호자가 남긴 소중한 순간';
+    const senderInput = document.getElementById('directSenderInput');
+    const senderName = senderInput ? senderInput.value.trim() : '';
+    const storyText = storyInput.value.trim() || `${senderName || '보호자'}가 남긴 소중한 순간`;
 
     submitBtn.disabled = true;
     submitBtn.innerText = '준비 중...';
 
     try {
         const items = [];
-        for (const file of currentSelectedFiles) {
-            items.push(await prepareMediaFile(file));
+        for (let i = 0; i < currentSelectedFiles.length; i++) {
+            submitBtn.innerText = `준비 중 ${i + 1}/${currentSelectedFiles.length}`;
+            items.push(await prepareMediaFile(currentSelectedFiles[i]));
         }
 
-        await uploadMemory({
-            slug: adminRoom,
-            key: adminKey,
-            story: storyText,
-            items,
-            onProgress: (percent) => { submitBtn.innerText = `올리는 중 ${percent}%`; }
-        });
+        // 10개씩 나눠서 차례로 올리기
+        const batches = [];
+        for (let i = 0; i < items.length; i += DIRECT_BATCH_SIZE) {
+            batches.push(items.slice(i, i + DIRECT_BATCH_SIZE));
+        }
+        for (let b = 0; b < batches.length; b++) {
+            await uploadMemory({
+                slug: adminRoom,
+                key: adminKey,
+                sender: senderName,
+                story: storyText,
+                items: batches[b],
+                onProgress: (percent) => {
+                    const overall = Math.round(((b + percent / 100) / batches.length) * 100);
+                    submitBtn.innerText = `올리는 중 ${Math.min(99, overall)}%`;
+                }
+            });
+        }
 
-        // 폼 초기화
+        // 폼 초기화 (올리는 분 이름은 다음에도 쓰도록 유지)
         currentSelectedFiles = [];
         renderSelectedPreviews();
         storyInput.value = '';
@@ -521,7 +543,7 @@ function renderDirectGallery() {
 
     approvedMemories.forEach(item => {
         if (!item.files) return;
-        const senderLabel = item.isDirect ? '보호자' : `${item.relation} ${item.sender}`.trim();
+        const senderLabel = item.isDirect ? (item.sender || '보호자') : `${item.relation} ${item.sender}`.trim();
 
         item.files.forEach((f, fIdx) => {
             if (f.excluded) return;
@@ -563,12 +585,20 @@ function startEditStory(itemId, fIdx) {
     const card = document.getElementById(`mediaCard-${itemId}-${fIdx}`);
     const storyBox = card.querySelector('.story-display-box');
 
+    // 보호자가 직접 올린 추억은 표시 이름도 함께 수정
+    const senderField = item.isDirect
+        ? `<input type="text" id="editSenderInput-${itemId}" class="direct-edit-input" value="${escapeHtml(item.sender || '보호자')}" maxlength="20" placeholder="올리는 분 이름">`
+        : '';
+
     storyBox.innerHTML = `
         <div class="direct-edit-box">
+            ${senderField}
             <input type="text" id="editStoryInput-${itemId}" class="direct-edit-input" value="${escapeHtml(item.story || '')}" maxlength="1000" placeholder="이야기 입력">
-            <button type="button" class="btn-timeline-add" style="padding: 2px 8px; font-size: 11px;" onclick="saveEditStory('${itemId}')">저장</button>
+            <div class="direct-edit-actions">
+                <button type="button" class="btn-edit-save" onclick="saveEditStory('${itemId}')">저장</button>
+                <button type="button" class="btn-story-action" onclick="renderDirectGallery()">취소</button>
+            </div>
         </div>
-        <button type="button" class="btn-story-action" onclick="renderDirectGallery()">취소</button>
     `;
 
     const input = document.getElementById(`editStoryInput-${itemId}`);
@@ -581,11 +611,12 @@ function startEditStory(itemId, fIdx) {
 async function saveEditStory(itemId) {
     const input = document.getElementById(`editStoryInput-${itemId}`);
     if (!input) return;
+    const senderInput = document.getElementById(`editSenderInput-${itemId}`);
 
     try {
-        await functions.httpsCallable('adminUpdateMemoryStory')({
-            slug: adminRoom, key: adminKey, id: itemId, story: input.value.trim()
-        });
+        const payload = { slug: adminRoom, key: adminKey, id: itemId, story: input.value.trim() };
+        if (senderInput) payload.sender = senderInput.value.trim();
+        await functions.httpsCallable('adminUpdateMemoryStory')(payload);
         showToast('사연이 수정되었습니다.');
         await loadMemories();
     } catch (err) {

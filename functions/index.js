@@ -4,7 +4,7 @@ const { defineSecret } = require("firebase-functions/params");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const crypto = require("crypto");
-const { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { SolapiMessageService } = require("solapi");
 
@@ -648,7 +648,7 @@ async function syncGallery(slug, memoryId, memory) {
     old.docs.forEach((doc) => batch.delete(doc.ref));
 
     if (memory && memory.status === "approved") {
-        const senderLabel = memory.isDirect ? "보호자" : `${memory.relation || ""} ${memory.sender || ""}`.trim();
+        const senderLabel = memory.isDirect ? (memory.sender || "보호자") : `${memory.relation || ""} ${memory.sender || ""}`.trim();
         (memory.files || []).forEach((file, index) => {
             if (file.excluded) return;
             batch.set(galleryRef.doc(`${memoryId}_${index}`), {
@@ -687,7 +687,8 @@ exports.createMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) => 
         throw new HttpsError("invalid-argument", "파일 개수를 확인해 주세요.");
     }
 
-    const sender = isDirect ? "보호자" : cleanText(data.sender, 20);
+    // 보호자 바로 업로드는 표시 이름을 직접 정할 수 있음 (비우면 "보호자")
+    const sender = isDirect ? (cleanText(data.sender, 20) || "보호자") : cleanText(data.sender, 20);
     const relation = isDirect ? "" : cleanText(data.relation, 20);
     const story = cleanText(data.story, 1000);
     if (!isDirect && (!sender || !relation)) {
@@ -891,8 +892,15 @@ exports.adminUpdateMemoryStory = onCall(async (request) => {
     if (!snap.exists) throw new HttpsError("not-found", "추억을 찾을 수 없습니다.");
 
     const story = cleanText(request.data?.story, 1000);
-    await ref.update({ story });
-    await syncGallery(slug, ref.id, { ...snap.data(), story });
+    const update = { story };
+
+    // 보호자가 직접 올린 추억은 표시 이름도 함께 수정 가능
+    if (snap.data().isDirect && typeof request.data?.sender === "string") {
+        update.sender = cleanText(request.data.sender, 20) || "보호자";
+    }
+
+    await ref.update(update);
+    await syncGallery(slug, ref.id, { ...snap.data(), ...update });
     return { ok: true };
 });
 
@@ -1006,4 +1014,64 @@ exports.operatorReissueAdminKey = onCall({ secrets: [OPERATOR_KEY, ...SMS_SECRET
     }
 
     return { adminLink, sms };
+});
+
+
+// =========================================
+// 운영자: 추모관 영구 삭제 (보호자 삭제 요청 대응)
+// - R2의 사진·영상 전체, 추모관 데이터(발자취·편지·갤러리·추억), 관리자 키를 모두 삭제
+// - 주문 기록은 전자상거래법상 보관 의무(5년)가 있어 결제·신청자 정보만 남기고 아이 정보는 지움
+// - 실수 방지를 위해 confirm 값에 추모관 주소를 한 번 더 입력해야 실행됨
+// =========================================
+exports.operatorDeleteMemorial = onCall({ secrets: [OPERATOR_KEY, ...R2_SECRETS], timeoutSeconds: 300 }, async (request) => {
+    assertOperator(request.data?.operatorKey);
+
+    const slug = String(request.data?.slug || "").toUpperCase();
+    if (!/^[A-Z0-9]{6}$/.test(slug)) {
+        throw new HttpsError("invalid-argument", "추모관 주소를 확인해 주세요.");
+    }
+    if (String(request.data?.confirm || "").toUpperCase() !== slug) {
+        throw new HttpsError("failed-precondition", "확인을 위해 confirm에 추모관 주소를 똑같이 입력해 주세요.");
+    }
+
+    const memorialRef = db.collection("memorials").doc(slug);
+    const secretRef = db.collection("secrets").doc(slug);
+    const secretSnap = await secretRef.get();
+    if (!(await memorialRef.get()).exists && !secretSnap.exists) {
+        throw new HttpsError("not-found", "추모관을 찾을 수 없습니다.");
+    }
+
+    // 1. R2에서 이 추모관 폴더의 파일 전부 삭제 (1,000개씩 나눠서)
+    let deletedFiles = 0;
+    let token;
+    do {
+        const list = await getR2().send(new ListObjectsV2Command({
+            Bucket: R2_BUCKET,
+            Prefix: `memorials/${slug}/`,
+            ContinuationToken: token
+        }));
+        const keys = (list.Contents || []).map((obj) => ({ Key: obj.Key }));
+        if (keys.length > 0) {
+            await getR2().send(new DeleteObjectsCommand({ Bucket: R2_BUCKET, Delete: { Objects: keys, Quiet: true } }));
+            deletedFiles += keys.length;
+        }
+        token = list.IsTruncated ? list.NextContinuationToken : undefined;
+    } while (token);
+
+    // 2. 추모관 데이터 전체 삭제 (발자취·편지·갤러리·추억 하위 데이터 포함)
+    await db.recursiveDelete(memorialRef);
+
+    // 3. 주문 기록: 결제·신청자 정보는 법정 보관, 아이 정보는 삭제
+    const orderId = secretSnap.exists ? secretSnap.data().orderId : null;
+    if (orderId) {
+        await db.collection("orders").doc(orderId).update({
+            memorialDraft: FieldValue.delete(),
+            memorialDeletedAt: FieldValue.serverTimestamp()
+        }).catch((err) => console.error("주문 기록 정리 실패:", err));
+    }
+
+    // 4. 관리자 키 삭제 (기존 관리자 링크도 모두 무효)
+    await secretRef.delete();
+
+    return { deleted: true, slug, deletedFiles };
 });

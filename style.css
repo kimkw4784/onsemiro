@@ -2620,3 +2620,78 @@ body {
         display: none;
     }
 }
+
+/* =========================================
+   빌더: 배경음악 미리듣기
+========================================= */
+.bgm-select-row {
+    display: flex;
+    gap: 8px;
+}
+
+.bgm-select-row .form-select {
+    flex: 1;
+    min-width: 0;
+}
+
+.btn-bgm-preview {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0 16px;
+    border: 1px solid var(--accent-brown);
+    border-radius: 8px;
+    background: #FFFFFF;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-bgm-preview.playing {
+    background: var(--accent-brown);
+    color: #FFFFFF;
+}
+
+.btn-bgm-preview:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.bgm-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-sub);
+}
+
+/* =========================================
+   PC 달력: 연도·월 이동 화살표를 누르기 쉽게 크게
+========================================= */
+.flatpickr-calendar .flatpickr-prev-month,
+.flatpickr-calendar .flatpickr-next-month {
+    padding: 10px 12px;
+}
+
+.flatpickr-calendar .flatpickr-prev-month svg,
+.flatpickr-calendar .flatpickr-next-month svg {
+    width: 16px;
+    height: 16px;
+}
+
+.flatpickr-calendar .numInputWrapper span {
+    width: 20px;
+    opacity: 0.6;
+}
+
+.flatpickr-calendar .numInputWrapper span.arrowUp:after {
+    border-left-width: 6px;
+    border-right-width: 6px;
+    border-bottom-width: 6px;
+}
+
+.flatpickr-calendar .numInputWrapper span.arrowDown:after {
+    border-left-width: 6px;
+    border-right-width: 6px;
+    border-top-width: 6px;
+}
