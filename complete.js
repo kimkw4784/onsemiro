@@ -108,7 +108,7 @@ function setCardState(state, message = '') {
         loading: {
             tag: 'CONFIRMING',
             title: '결제를 확인하고 있어요',
-            desc: '추모관을 준비하는 중입니다. 잠시만 기다려 주세요.<br>이 창을 닫지 말아 주세요.',
+            desc: '<span class="nb">추모관을 준비하는 중입니다.</span> <span class="nb">잠시만 기다려 주세요.</span><br><span class="nb">이 창을 닫지 말아 주세요.</span>',
             icon: '<span class="complete-spinner" aria-hidden="true"></span>'
         },
         error: {

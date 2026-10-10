@@ -41,7 +41,7 @@ function guideToBuilder() {
         notice.id = 'builderGuideNotice';
         notice.className = 'builder-guide-notice';
         notice.setAttribute('role', 'status');
-        notice.innerText = '먼저 우리 아이의 정보를 입력해 주세요. 입력한 모습 그대로 추모관이 만들어져요.';
+        notice.innerHTML = '<span class="nb">먼저 우리 아이의 정보를 입력해 주세요.</span> <span class="nb">입력한 모습 그대로 추모관이 만들어져요.</span>';
         formBox.prepend(notice);
     }
     notice.classList.remove('show');
@@ -172,7 +172,7 @@ function openOrderModal(planType = 'essential') {
                     </div>
 
                     <div class="order-notice">
-                        <p><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> 개설 완료 즉시 비공개 관리자 링크와 가족 전용 주소가 발급됩니다.</p>
+                        <p><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="nb">개설 완료 즉시 비공개 관리자 링크와</span> <span class="nb">가족 전용 주소가 발급됩니다.</span></p>
                     </div>
 
                     <button type="submit" id="orderSubmitBtn" class="btn btn-primary btn-full">

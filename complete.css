@@ -18,8 +18,6 @@
     --font-sans: 'Pretendard', -apple-system, sans-serif;
 
     --shadow-md: 0 10px 30px rgba(43, 38, 32, 0.06);
-
-    color-scheme: light only;
 }
 
 * {
@@ -522,15 +520,17 @@ body {
     }
 }
 
-/* 다크모드에서도 원래의 밝은 디자인 유지 */
-@media (prefers-color-scheme: dark) {
-    :root {
-        color-scheme: light only;
-    }
+/* 말 덩어리 묶음: 덩어리 안에서는 줄바꿈하지 않고, 덩어리 사이에서만 줄바꿈 */
+.nb {
+    white-space: nowrap;
+}
 
-    html,
-    body {
-        background-color: #FCFBF7;
-        color: #2B2620;
-    }
+/* 링크 아래 안내 문구: 아이콘 옆 글자는 일반 글자 모양 그대로 */
+.link-item-tip .tip-text {
+    margin: 0;
+}
+
+.link-item-tip .tip-text .nb {
+    color: inherit;
+    font-weight: inherit;
 }

@@ -4,7 +4,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="light only">
     <title>추모관 개설 완료 | ONSEMIRO 온새미로</title>
 
     <link rel="stylesheet" as="style" crossorigin
@@ -44,8 +43,9 @@
                 <span class="complete-tag">ORDER COMPLETED</span>
                 <h1 class="complete-title">추모관 개설이 완료되었습니다</h1>
                 <p class="complete-desc">
-                    <strong id="applicantDisplay">보호자</strong>님, 아이와 함께한 소중한 시간들이<br>
-                    시간을 넘어 영원히 기억될 안식처로 기록되었습니다.
+                    <span class="nb"><strong id="applicantDisplay">보호자</strong>님,</span> <span class="nb">아이와 함께한 소중한
+                        시간들이</span><br>
+                    <span class="nb">시간을 넘어 영원히 기억될</span> <span class="nb">안식처로 기록되었습니다.</span>
                 </p>
             </div>
 
@@ -69,9 +69,10 @@
                 <div class="group-inner-banner welcome-banner">
                     <span class="banner-icon"><iconify-icon icon="noto:candle" aria-hidden="true"></iconify-icon></span>
                     <p>
-                        보호자님이 오실 때까지 <strong id="noticePetName">아이</strong><span id="noticePetJosa">가</span> 심심하지
-                        않도록<br>
-                        온새미로가 먼저 따뜻한 촛불을 켜고 선물도 건네두었습니다.
+                        <span class="nb">보호자님이 오실 때까지</span> <span class="nb"><strong
+                                id="noticePetName">아이</strong><span id="noticePetJosa">가</span> 심심하지 않도록</span><br>
+                        <span class="nb">온새미로가 먼저</span> <span class="nb">따뜻한 촛불을 켜고</span> <span class="nb">선물도
+                            건네두었습니다.</span>
                     </p>
                 </div>
             </div>
@@ -92,7 +93,7 @@
                             <span class="link-badge badge-accent">가족·지인용</span>
                             <strong>공식 추모관 링크</strong>
                         </div>
-                        <p class="link-desc">지인들이 추모관을 방문해 헌화하고 방명록을 남길 수 있는 공개 주소입니다.</p>
+                        <p class="link-desc">지인들이 추모관을 방문해 헌화하고 방명록을 남길 수 있는 <span class="nb">공개 주소입니다.</span></p>
                         <div class="link-input-group">
                             <input type="text" id="memorialLinkInput" class="form-input" readonly>
                             <button type="button" class="btn btn-secondary btn-copy"
@@ -106,7 +107,7 @@
                             <span class="link-badge">사진 모으기</span>
                             <strong>사진·영상 취합함 링크</strong>
                         </div>
-                        <p class="link-desc">지인들이 간직한 고인/아이의 사진과 영상을 직접 올려받는 전용 주소입니다.</p>
+                        <p class="link-desc">지인들이 간직한 고인/아이의 사진과 영상을 직접 올려받는 <span class="nb">전용 주소입니다.</span></p>
                         <div class="link-input-group">
                             <input type="text" id="uploadLinkInput" class="form-input" readonly>
                             <button type="button" class="btn btn-secondary btn-copy"
@@ -116,7 +117,8 @@
                             <span><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true">
                                     <path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8"
                                         stroke-linecap="round" stroke-linejoin="round" />
-                                </svg></span> 보내온 사진은 관리자 화면에서 보호자님이 승인한 것만 공개됩니다.
+                                </svg></span>
+                            <p class="tip-text">보내온 사진은 관리자 화면에서 보호자님이 <span class="nb">승인한 것만 공개됩니다.</span></p>
                         </div>
                     </div>
                 </div>
@@ -136,15 +138,16 @@
                         <span class="link-badge badge-admin">관리자 모드</span>
                         <strong>추모관 설정 링크</strong>
                     </div>
-                    <p class="link-desc">대표 사진, 선물 목록 편집 및 수집된 사진을 검토하는 관리자 모드 주소입니다.</p>
+                    <p class="link-desc">대표 사진, 선물 목록 편집 및 수집된 사진을 검토하는 <span class="nb">관리자 모드 주소입니다.</span></p>
                     <div class="link-input-group">
                         <input type="text" id="adminSecretLinkInput" class="form-input" readonly>
                         <button type="button" class="btn btn-secondary btn-copy"
                             onclick="copyLink('adminSecretLinkInput')">복사</button>
                     </div>
                     <div class="link-item-tip tip-warning">
-                        <span><iconify-icon icon="noto:warning" aria-hidden="true"></iconify-icon></span> 관리 권한이 포함되어
-                        있으므로 지인에게 공유되지 않도록 주의해 주세요.
+                        <span><iconify-icon icon="noto:warning" aria-hidden="true"></iconify-icon></span>
+                        <p class="tip-text">관리 권한이 포함되어 있으므로 <span class="nb">지인에게 공유되지 않도록</span> <span class="nb">주의해
+                                주세요.</span></p>
                     </div>
                 </div>
 
@@ -153,9 +156,10 @@
                     <span class="banner-icon"><iconify-icon icon="noto:speech-balloon"
                             aria-hidden="true"></iconify-icon></span>
                     <p>
-                        위 주소들은 따로 저장해두지 않으셔도 괜찮습니다.<br>
-                        언제든 <strong id="smsPetName">아이</strong><span id="smsPetJosa">를</span> 보러 다시 찾아오실 수 있도록<br>
-                        적어주신 휴대폰 번호로 알림톡(문자) 발송을 마쳤습니다.
+                        <span class="nb">위 주소들은 따로</span> <span class="nb">저장해두지 않으셔도 괜찮습니다.</span><br>
+                        <span class="nb">언제든 <strong id="smsPetName">아이</strong><span id="smsPetJosa">를</span> 보러</span>
+                        <span class="nb">다시 찾아오실 수 있도록</span><br>
+                        <span class="nb">적어주신 휴대폰 번호로</span> <span class="nb">알림톡(문자) 발송을 마쳤습니다.</span>
                     </p>
                 </div>
             </div>

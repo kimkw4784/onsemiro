@@ -24,7 +24,7 @@ const SMS_SECRETS = [SOLAPI_API_KEY, SOLAPI_API_SECRET];
 
 // 솔라피에 등록한 발신번호 (받는 사람에게 보이는 번호라 비밀 값이 아님)
 // ※ 비어 있으면 문자를 보내지 않고 건너뜀 → 발신번호 등록 후 숫자만 입력하고 다시 배포
-const SMS_SENDER = "";
+const SMS_SENDER = "01028004784";
 
 const SITE_BASE = "https://onsemiro.me";
 
