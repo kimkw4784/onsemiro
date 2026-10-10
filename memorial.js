@@ -742,7 +742,7 @@ let memorialShareInfo = null;
 
 function copyMemorialLink() {
     // 관리자 키(&key=...)가 섞이지 않도록 항상 공개 주소로 공유
-    const url = `${window.location.origin}/memorial.html?room=${activeRoomSlug}`;
+    const url = `https://onsemiro.me/memorial.html?room=${activeRoomSlug}`;
     openShareSheet({ ...(memorialShareInfo || { title: '온새미로 추모관', description: '함께한 기억을 모아둔 추모관입니다.' }), url });
 }
 

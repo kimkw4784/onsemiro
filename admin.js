@@ -545,7 +545,7 @@ function renderDirectGallery() {
     if (countEl) countEl.innerText = totalCount;
 
     container.innerHTML = totalCount === 0
-        ? `<div class="empty-state" style="padding: 30px;">현재 갤러리에 전시 중인 사진이 없습니다. 위에서 직접 등록해보세요.</div>`
+        ? `<div class="empty-state" style="padding: 30px;"><span class="nb">현재 갤러리에 전시 중인 사진이 없습니다.</span><br><span class="nb">위에서 직접 등록해보세요.</span></div>`
         : html;
 
     updateMainTabBadges();

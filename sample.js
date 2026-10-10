@@ -368,8 +368,8 @@ function copyMemorialLink() {
     openShareSheet({
         title: `${SAMPLE_PET_NAME}의 온새미로 (체험하기)`,
         description: '반려동물과의 추억을 영원히 간직하는 온새미로 추모관을 미리 둘러보세요.',
-        imageUrl: `${window.location.origin}/images/coco4.png`,
-        url: `${window.location.origin}/sample.html`
+        imageUrl: 'https://onsemiro.me/images/coco4.png',
+        url: 'https://onsemiro.me/sample.html'
     });
 }
 
