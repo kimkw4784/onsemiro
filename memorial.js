@@ -466,7 +466,7 @@ function renderMemorial(memorial, adminKey) {
     const gifts = memorial.gifts || [];
 
     applySavedBgm(memorial.bgm);
-    document.title = `${petName}의 온새미로 | ONSEMIRO`;
+    document.title = `${petName}의 추모관 | ONSEMIRO 온새미로`;
 
     document.getElementById('memorialTitleName').innerText = petName;
     document.getElementById('ctaPetName').innerText = callName(petName);

@@ -1227,3 +1227,33 @@ textarea:focus::placeholder {
     min-width: 0;
     width: 100%;
 }
+
+/* 링크 공유하기 버튼: 평소엔 진한 글자, 마우스를 올리면 지금처럼 브라운 배경 */
+.btn-share-link {
+    color: var(--text-main);
+}
+
+.btn-share-link:hover {
+    color: #FFFFFF;
+}
+
+/* 배경음악 음표 아이콘 세로 가운데 정렬 */
+.bgm-icon {
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.bgm-icon iconify-icon {
+    display: block;
+}
+
+/* 영상 날짜·올린 사람: 한글과 숫자가 같은 크기로 또렷하게 보이도록 일반 글꼴 사용 */
+.video-date,
+.modal-date {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+}

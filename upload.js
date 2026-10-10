@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (backLink) backLink.href = `memorial.html?room=${uploadRoom}`;
 
     const petName = memorial.petName || '아이';
-    document.title = `${callName(petName)}와의 추억 모으기 | 온새미로`;
+    document.title = `${callName(petName)}와의 추억 모으기 | ONSEMIRO 온새미로`;
     const nameEl = document.getElementById('targetPetName');
     const guideEl = document.getElementById('targetPetGuide');
     if (nameEl) nameEl.innerText = callName(petName);
