@@ -2530,11 +2530,6 @@ body {
         white-space: nowrap;
     }
 
-    /* 좁은 화면에선 PC용 강제 줄바꿈 대신 자연스럽게 흐르도록 */
-    section p br {
-        display: none;
-    }
-
     /* 빌더: 아이 이름과 사진 등록을 위아래로 */
     .builder-form-box .form-row:has(.photo-upload-inline) {
         flex-direction: column;
@@ -2595,5 +2590,33 @@ body {
     body {
         background-color: #FCFBF7;
         color: #2B2620;
+    }
+}
+
+/* 말 덩어리 묶음: 덩어리 안에서는 줄바꿈하지 않고, 덩어리 사이에서만 줄바꿈 */
+.nb {
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+
+    /* 섹션 제목: 휴대폰에서 말 덩어리가 한 줄에 들어가는 크기 */
+    .section-heading {
+        font-size: 25px;
+        line-height: 1.4;
+    }
+}
+
+@media (max-width: 340px) {
+    .section-heading {
+        font-size: 22px;
+    }
+}
+
+@media (max-width: 480px) {
+
+    /* 미리보기 카드 설명: 휴대폰에선 PC용 줄바꿈 대신 자연스럽게 흐르도록 */
+    .preview-card-info p br {
+        display: none;
     }
 }
