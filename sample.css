@@ -1395,3 +1395,16 @@ body {
         display: none;
     }
 }
+
+/* 다크모드에서도 원래의 밝은 디자인 유지 */
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: light only;
+    }
+
+    html,
+    body {
+        background-color: #FCFBF7;
+        color: #2B2620;
+    }
+}
