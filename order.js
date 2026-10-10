@@ -1,10 +1,10 @@
 // order.js
 
-let currentSelectedPlan = 'digital';
+let currentSelectedPlan = 'essential';
 let currentPayMethod = 'CARD';   // CARD(카드·간편결제) / TRANSFER(계좌이체) / MOBILE_PHONE(휴대폰)
 const PLAN_PRICES = {
-    digital: 19500,   // 화면 표시용 (실제 결제 금액은 서버 가격표로 정해짐)
-    archive: 49000
+    essential: 19500,   // 에센셜 아카이브 (화면 표시용, 실제 결제 금액은 서버 가격표로 정해짐)
+    signature: 49000    // 시그니처 아카이브
 };
 
 // 토스페이먼츠 클라이언트 키 설정 (테스트용 키)
@@ -58,7 +58,7 @@ function guideToBuilder() {
 }
 
 // 모달 열기 (빌더에 입력된 최신 정보 및 사진 동기화)
-function openOrderModal(planType = 'digital') {
+function openOrderModal(planType = 'essential') {
     // 빌더를 건드리지 않고 요금제 버튼을 누른 경우: 먼저 정보 입력 안내
     if (!isBuilderFilled()) {
         guideToBuilder();
@@ -124,8 +124,8 @@ function openOrderModal(planType = 'digital') {
                     <div class="form-group">
                         <label class="form-label">선택 플랜</label>
                         <div class="plan-card-group" id="planCardGroup">
-                            <label class="plan-card ${currentSelectedPlan === 'digital' ? 'active' : ''}" onclick="selectPlanInModal(this, 'digital')">
-                                <input type="radio" name="orderPlan" value="digital" ${currentSelectedPlan === 'digital' ? 'checked' : ''}>
+                            <label class="plan-card ${currentSelectedPlan === 'essential' ? 'active' : ''}" onclick="selectPlanInModal(this, 'essential')">
+                                <input type="radio" name="orderPlan" value="essential" ${currentSelectedPlan === 'essential' ? 'checked' : ''}>
                                 <div class="plan-card-content">
                                     <div class="plan-card-top">
                                         <span class="plan-name">에센셜 아카이브</span>
@@ -137,8 +137,8 @@ function openOrderModal(planType = 'digital') {
                                 </div>
                             </label>
 
-                            <label class="plan-card ${currentSelectedPlan === 'archive' ? 'active' : ''}" onclick="selectPlanInModal(this, 'archive')">
-                                <input type="radio" name="orderPlan" value="archive" ${currentSelectedPlan === 'archive' ? 'checked' : ''}>
+                            <label class="plan-card ${currentSelectedPlan === 'signature' ? 'active' : ''}" onclick="selectPlanInModal(this, 'signature')">
+                                <input type="radio" name="orderPlan" value="signature" ${currentSelectedPlan === 'signature' ? 'checked' : ''}>
                                 <div class="plan-card-content">
                                     <div class="plan-card-top">
                                         <span class="plan-name">시그니처 아카이브</span>

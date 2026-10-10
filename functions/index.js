@@ -54,14 +54,14 @@ setGlobalOptions({ region: "asia-northeast3", maxInstances: 10 });
 // 가격표 - 금액은 오직 서버의 이 표로만 정해짐
 // =========================================
 const PLANS = {
-    digital: { price: 19500, name: "에센셜 아카이브", storageBytes: 20 * 1024 * 1024 * 1024 },
-    archive: { price: 49000, name: "시그니처 아카이브", storageBytes: 50 * 1024 * 1024 * 1024 }
+    essential: { price: 19500, name: "에센셜 아카이브", storageBytes: 20 * 1024 * 1024 * 1024 },
+    signature: { price: 49000, name: "시그니처 아카이브", storageBytes: 50 * 1024 * 1024 * 1024 }
+    // heritage: 헤리티지 아카이브 (출시 예정)
 };
 
-// 요금제별 저장 한도 (예전 테스트용 heritage 추모관은 평생 아카이브와 같은 한도)
+// 요금제별 저장 한도 (알 수 없는 요금제는 에센셜 기준)
 function storageLimitOf(plan) {
-    if (plan === "heritage") return PLANS.archive.storageBytes;
-    return (PLANS[plan] || PLANS.digital).storageBytes;
+    return (PLANS[plan] || PLANS.essential).storageBytes;
 }
 
 const PET_TYPES = ["dog", "cat", "small"];
@@ -477,7 +477,7 @@ function pickMemorial(m) {
         gifts: m.gifts || ["", ""],
         bgm: m.bgm || "piano",
         photoUrl: m.photoUrl || "",
-        plan: m.plan || "digital",
+        plan: m.plan || "essential",
         counts: m.counts || {},
         storageBytes: m.storageBytes || 0,
         storageLimit: storageLimitOf(m.plan)

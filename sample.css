@@ -1257,3 +1257,112 @@ textarea:focus::placeholder {
     font-weight: 600;
     letter-spacing: 0;
 }
+
+/* =========================================
+   공유하기 선택 창
+========================================= */
+.share-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(18, 16, 14, 0.45);
+    padding: 16px;
+}
+
+.share-sheet-backdrop.active {
+    display: flex;
+}
+
+.share-sheet {
+    width: 100%;
+    max-width: 420px;
+    background: #FFFFFF;
+    border-radius: 18px;
+    padding: 20px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.12);
+    animation: shareSheetUp 0.25s ease-out;
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@keyframes shareSheetUp {
+    from {
+        transform: translateY(24px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.share-sheet-title {
+    font-family: var(--font-serif-kr);
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text-main);
+    margin-bottom: 6px;
+}
+
+.share-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    background: #FCFAF7;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.share-option:hover {
+    background: var(--bg-subtle);
+}
+
+.share-option[hidden] {
+    display: none;
+}
+
+.share-option iconify-icon {
+    font-size: 20px;
+}
+
+.share-kakao {
+    background: #FEE500;
+    border-color: #FEE500;
+    color: #191919;
+}
+
+.share-kakao:hover {
+    background: #F5DC00;
+}
+
+.share-cancel {
+    margin-top: 4px;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    font-family: var(--font-sans);
+    font-size: 13.5px;
+    color: var(--text-sub);
+    cursor: pointer;
+}
+
+@media (min-width: 600px) {
+    .share-sheet-backdrop {
+        align-items: center;
+    }
+}

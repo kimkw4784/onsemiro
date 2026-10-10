@@ -466,6 +466,13 @@ function renderMemorial(memorial, adminKey) {
     const gifts = memorial.gifts || [];
 
     applySavedBgm(memorial.bgm);
+
+    // 카카오톡 공유 카드에 쓸 정보
+    memorialShareInfo = {
+        title: `${petName}의 온새미로`,
+        description: `${callName(petName)}를 기억하는 마음을 함께 나눠주세요.`,
+        imageUrl: memorial.photoUrl || ''
+    };
     document.title = `${petName}의 추모관 | ONSEMIRO 온새미로`;
 
     document.getElementById('memorialTitleName').innerText = petName;
@@ -730,10 +737,13 @@ function closeImageModalNow() {
     document.body.style.overflow = '';
 }
 
+// 공유하기: 카카오톡 카드 / 다른 앱 / 링크 복사 (share.js)
+let memorialShareInfo = null;
+
 function copyMemorialLink() {
-    // 관리자 키(&key=...)가 함께 복사되지 않도록 공개 주소만 복사
-    const publicUrl = `${window.location.origin}/memorial.html?room=${activeRoomSlug}`;
-    navigator.clipboard.writeText(publicUrl).then(() => showToast("추모관 링크가 복사되었습니다."));
+    // 관리자 키(&key=...)가 섞이지 않도록 항상 공개 주소로 공유
+    const url = `${window.location.origin}/memorial.html?room=${activeRoomSlug}`;
+    openShareSheet({ ...(memorialShareInfo || { title: '온새미로 추모관', description: '함께한 기억을 모아둔 추모관입니다.' }), url });
 }
 
 function showToast(msg) {

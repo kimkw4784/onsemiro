@@ -363,9 +363,14 @@ function closeImageModalNow() {
 // =========================================
 // 공유·안내
 // =========================================
+// 공유하기: 카카오톡 카드 / 다른 앱 / 링크 복사 (share.js)
 function copyMemorialLink() {
-    const url = `${window.location.origin}/sample.html`;
-    navigator.clipboard.writeText(url).then(() => showToast('체험용 추모관 링크가 복사되었습니다.'));
+    openShareSheet({
+        title: `${SAMPLE_PET_NAME}의 온새미로 (체험하기)`,
+        description: '반려동물과의 추억을 영원히 간직하는 온새미로 추모관을 미리 둘러보세요.',
+        imageUrl: `${window.location.origin}/images/coco4.png`,
+        url: `${window.location.origin}/sample.html`
+    });
 }
 
 function showToast(message) {
