@@ -1414,3 +1414,23 @@
         gap: 10px;
     }
 }
+
+/* 수정 중 입력칸 왼쪽 이름표 (이름 / 이야기 구분) */
+.direct-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.direct-edit-label {
+    flex-shrink: 0;
+    width: 34px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-sub, #7A7269);
+}
+
+.direct-edit-row .direct-edit-input {
+    flex: 1;
+}

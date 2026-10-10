@@ -543,11 +543,15 @@ function renderDirectGallery() {
 
     approvedMemories.forEach(item => {
         if (!item.files) return;
-        const senderLabel = item.isDirect ? (item.sender || '보호자') : `${item.relation} ${item.sender}`.trim();
+        const baseLabel = item.isDirect ? (item.sender || '보호자') : `${item.relation} ${item.sender}`.trim();
 
         item.files.forEach((f, fIdx) => {
             if (f.excluded) return;
             totalCount++;
+
+            // 사진 한 장만 따로 고친 내용이 있으면 그걸 보여줌
+            const senderLabel = item.isDirect && f.sender ? f.sender : baseLabel;
+            const story = typeof f.story === 'string' ? f.story : item.story;
 
             html += `
                 <div class="direct-media-card" id="mediaCard-${item.id}-${fIdx}">
@@ -558,7 +562,7 @@ function renderDirectGallery() {
                     <div class="direct-media-info">
                         <span class="direct-media-tag">${escapeHtml(senderLabel)}</span>
                         <div class="story-display-box">
-                            <p class="direct-media-desc">${escapeHtml(item.story || '남겨진 추억')}</p>
+                            <p class="direct-media-desc">${escapeHtml(story || '남겨진 추억')}</p>
                             <button type="button" class="btn-story-action" onclick="startEditStory('${item.id}', '${fIdx}')">수정</button>
                         </div>
                     </div>
@@ -577,51 +581,63 @@ function renderDirectGallery() {
     updateMainTabBadges();
 }
 
-// 사연 텍스트 영역만 입력창으로 전환
+// 사진(영상) 한 장의 이름·이야기만 입력창으로 전환
 function startEditStory(itemId, fIdx) {
     const item = memoriesCache.find(m => m.id === itemId);
     if (!item) return;
+    const idx = Number(fIdx);
+    const file = item.files[idx] || {};
+    const currentStory = typeof file.story === 'string' ? file.story : (item.story || '');
+    const currentSender = file.sender || item.sender || '보호자';
+    const uid = `${itemId}-${idx}`;
 
-    const card = document.getElementById(`mediaCard-${itemId}-${fIdx}`);
+    const card = document.getElementById(`mediaCard-${itemId}-${idx}`);
     const storyBox = card.querySelector('.story-display-box');
 
-    // 보호자가 직접 올린 추억은 표시 이름도 함께 수정
-    const senderField = item.isDirect
-        ? `<input type="text" id="editSenderInput-${itemId}" class="direct-edit-input" value="${escapeHtml(item.sender || '보호자')}" maxlength="20" placeholder="올리는 분 이름">`
+    // 보호자가 직접 올린 사진은 표시 이름도 함께 수정
+    const senderRow = item.isDirect
+        ? `<label class="direct-edit-row">
+                <span class="direct-edit-label">이름</span>
+                <input type="text" id="editSenderInput-${uid}" class="direct-edit-input" value="${escapeHtml(currentSender)}" maxlength="20" placeholder="올리는 분 이름">
+           </label>`
         : '';
 
     storyBox.innerHTML = `
         <div class="direct-edit-box">
-            ${senderField}
-            <input type="text" id="editStoryInput-${itemId}" class="direct-edit-input" value="${escapeHtml(item.story || '')}" maxlength="1000" placeholder="이야기 입력">
+            ${senderRow}
+            <label class="direct-edit-row">
+                <span class="direct-edit-label">이야기</span>
+                <input type="text" id="editStoryInput-${uid}" class="direct-edit-input" value="${escapeHtml(currentStory)}" maxlength="1000" placeholder="이야기 입력">
+            </label>
             <div class="direct-edit-actions">
-                <button type="button" class="btn-edit-save" onclick="saveEditStory('${itemId}')">저장</button>
+                <button type="button" class="btn-edit-save" onclick="saveEditStory('${itemId}', ${idx})">저장</button>
                 <button type="button" class="btn-story-action" onclick="renderDirectGallery()">취소</button>
             </div>
         </div>
     `;
 
-    const input = document.getElementById(`editStoryInput-${itemId}`);
+    const input = document.getElementById(`editStoryInput-${uid}`);
     if (input) {
         input.focus();
         input.select();
     }
 }
 
-async function saveEditStory(itemId) {
-    const input = document.getElementById(`editStoryInput-${itemId}`);
+async function saveEditStory(itemId, fIdx) {
+    const uid = `${itemId}-${fIdx}`;
+    const input = document.getElementById(`editStoryInput-${uid}`);
     if (!input) return;
-    const senderInput = document.getElementById(`editSenderInput-${itemId}`);
+    const senderInput = document.getElementById(`editSenderInput-${uid}`);
 
     try {
-        const payload = { slug: adminRoom, key: adminKey, id: itemId, story: input.value.trim() };
+        const payload = { slug: adminRoom, key: adminKey, id: itemId, fileIndex: Number(fIdx), story: input.value.trim() };
         if (senderInput) payload.sender = senderInput.value.trim();
         await functions.httpsCallable('adminUpdateMemoryStory')(payload);
-        showToast('사연이 수정되었습니다.');
+        showToast('수정되었습니다.');
         await loadMemories();
     } catch (err) {
         console.error(err);
-        alert(err.message || '사연을 수정하지 못했습니다.');
+        alert(err.message || '수정하지 못했습니다.');
     }
 }
 

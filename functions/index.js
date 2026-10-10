@@ -648,16 +648,19 @@ async function syncGallery(slug, memoryId, memory) {
     old.docs.forEach((doc) => batch.delete(doc.ref));
 
     if (memory && memory.status === "approved") {
-        const senderLabel = memory.isDirect ? (memory.sender || "보호자") : `${memory.relation || ""} ${memory.sender || ""}`.trim();
+        const baseLabel = memory.isDirect ? (memory.sender || "보호자") : `${memory.relation || ""} ${memory.sender || ""}`.trim();
         (memory.files || []).forEach((file, index) => {
             if (file.excluded) return;
+            // 사진 한 장만 따로 고친 경우 그 내용이 우선
+            const story = typeof file.story === "string" ? file.story : (memory.story || "");
+            const senderLabel = memory.isDirect && file.sender ? file.sender : baseLabel;
             batch.set(galleryRef.doc(`${memoryId}_${index}`), {
                 memoryId,
                 fileIndex: index,
                 type: file.type,
                 path: file.path,
                 thumbPath: file.thumbPath || "",
-                story: memory.story || "",
+                story,
                 senderLabel,
                 createdAt: memory.createdAt || FieldValue.serverTimestamp()
             });
@@ -836,7 +839,9 @@ exports.adminListMemories = onCall(async (request) => {
                     type: f.type,
                     url: mediaUrl(f.path),
                     thumbUrl: mediaUrl(f.thumbPath),
-                    excluded: Boolean(f.excluded)
+                    excluded: Boolean(f.excluded),
+                    story: typeof f.story === "string" ? f.story : null,
+                    sender: f.sender || null
                 })),
                 createdAt: d.createdAt ? d.createdAt.toMillis() : 0
             };
@@ -891,16 +896,27 @@ exports.adminUpdateMemoryStory = onCall(async (request) => {
     const snap = await ref.get();
     if (!snap.exists) throw new HttpsError("not-found", "추억을 찾을 수 없습니다.");
 
+    const memory = snap.data();
     const story = cleanText(request.data?.story, 1000);
-    const update = { story };
+    const hasSender = memory.isDirect && typeof request.data?.sender === "string";
+    const sender = hasSender ? (cleanText(request.data.sender, 20) || "보호자") : null;
+    const fileIndex = Number(request.data?.fileIndex);
 
-    // 보호자가 직접 올린 추억은 표시 이름도 함께 수정 가능
-    if (snap.data().isDirect && typeof request.data?.sender === "string") {
-        update.sender = cleanText(request.data.sender, 20) || "보호자";
+    let update;
+    if (Number.isInteger(fileIndex) && memory.files && memory.files[fileIndex]) {
+        // 사진(영상) 한 장만 수정: 같이 올린 다른 사진은 그대로
+        const files = memory.files.map((f) => ({ ...f }));
+        files[fileIndex].story = story;
+        if (hasSender) files[fileIndex].sender = sender;
+        update = { files };
+    } else {
+        // 묶음 전체 수정 (예전 방식)
+        update = { story };
+        if (hasSender) update.sender = sender;
     }
 
     await ref.update(update);
-    await syncGallery(slug, ref.id, { ...snap.data(), ...update });
+    await syncGallery(slug, ref.id, { ...memory, ...update });
     return { ok: true };
 });
 

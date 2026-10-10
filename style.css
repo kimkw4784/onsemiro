@@ -2680,18 +2680,39 @@ body {
 }
 
 .flatpickr-calendar .numInputWrapper span {
-    width: 20px;
-    opacity: 0.6;
+    width: 16px;
+    opacity: 0.55;
 }
 
 .flatpickr-calendar .numInputWrapper span.arrowUp:after {
-    border-left-width: 6px;
-    border-right-width: 6px;
-    border-bottom-width: 6px;
+    border-left-width: 4.5px;
+    border-right-width: 4.5px;
+    border-bottom-width: 4.5px;
 }
 
 .flatpickr-calendar .numInputWrapper span.arrowDown:after {
-    border-left-width: 6px;
-    border-right-width: 6px;
-    border-top-width: 6px;
+    border-left-width: 4.5px;
+    border-right-width: 4.5px;
+    border-top-width: 4.5px;
+}
+
+/* 휴대폰 기본 날짜 칸: 기기가 덧붙이는 ∨ 표시를 없애고, 칸 전체를 눌러 열리게 */
+.flatpickr-mobile {
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+    text-align: left;
+}
+
+.flatpickr-mobile::-webkit-calendar-picker-indicator {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.flatpickr-mobile::-webkit-date-and-time-value {
+    text-align: left;
 }
