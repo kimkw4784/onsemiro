@@ -1256,3 +1256,52 @@
     margin: 14px auto 0;
     font-size: 12px;
 }
+
+/* =========================================
+   메인 탭: 아이콘 위 + 짧은 이름 아래 (모바일에서도 잘리지 않게)
+========================================= */
+.main-tab-btn {
+    position: relative;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 2px 8px;
+    white-space: normal;
+}
+
+.main-tab-btn .tab-icon {
+    font-size: 19px;
+    line-height: 1;
+}
+
+.main-tab-btn .tab-label {
+    font-size: 11.5px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+.main-tab-btn .main-tab-badge {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    min-width: 16px;
+    text-align: center;
+    padding: 1px 4px;
+    font-size: 9.5px;
+}
+
+@media (max-width: 480px) {
+    .main-tab-btn {
+        padding: 9px 1px 7px;
+    }
+
+    .main-tab-btn .tab-label {
+        font-size: 10.5px;
+        letter-spacing: -0.3px;
+    }
+
+    .main-tab-btn .main-tab-badge {
+        right: 3px;
+    }
+}

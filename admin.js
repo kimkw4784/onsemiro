@@ -139,6 +139,24 @@ function switchMainTab(tabKey) {
 
     const targetPanel = document.getElementById(`panel-${tabKey}`);
     if (targetPanel) targetPanel.classList.add('active');
+
+    // 탭을 누를 때마다 서버에서 최신 내용을 다시 불러옴 (새로고침 없이 바로 확인)
+    refreshTab(tabKey);
+}
+
+// 너무 자주 불러오지 않도록 같은 탭은 3초 안에 다시 불러오지 않음
+const lastTabRefresh = {};
+
+function refreshTab(tabKey) {
+    if (!adminRoom) return;
+    const now = Date.now();
+    const group = (tabKey === 'direct' || tabKey === 'media') ? 'memories' : tabKey;
+    if (lastTabRefresh[group] && now - lastTabRefresh[group] < 3000) return;
+    lastTabRefresh[group] = now;
+
+    if (group === 'memories') loadMemories();
+    else if (group === 'timeline') loadTimeline();
+    else if (group === 'postbox') loadLetters();
 }
 
 function updateMainTabBadges() {

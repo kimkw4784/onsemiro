@@ -1074,3 +1074,91 @@ input:focus::placeholder,
 textarea:focus::placeholder {
     color: transparent;
 }
+
+/* =========================================
+   확대 사진 이전/다음
+========================================= */
+.btn-gallery-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 15;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-gallery-nav:hover {
+    background: var(--accent-brown);
+}
+
+.btn-gallery-nav.prev {
+    left: -56px;
+}
+
+.btn-gallery-nav.next {
+    right: -56px;
+}
+
+.gallery-counter {
+    margin-top: 8px;
+    font-size: 12px;
+    color: rgba(230, 225, 216, 0.7);
+    letter-spacing: 1px;
+}
+
+.image-modal.single .btn-gallery-nav,
+.image-modal.single .gallery-counter {
+    display: none;
+}
+
+/* 화면이 좁으면 화살표를 사진 안쪽 가장자리로 */
+@media (max-width: 900px) {
+    .btn-gallery-nav.prev {
+        left: 8px;
+    }
+
+    .btn-gallery-nav.next {
+        right: 8px;
+    }
+}
+
+/* =========================================
+   영상 창: 세로·가로 영상 모두 영상 모양에 맞춰 크게
+========================================= */
+.video-modal-content {
+    width: auto;
+    max-width: min(800px, 100%);
+}
+
+.modal-player-box {
+    aspect-ratio: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 280px;
+}
+
+.modal-player-box video {
+    width: auto;
+    height: auto;
+    max-width: min(800px, calc(100vw - 48px));
+    max-height: 72vh;
+    max-height: 72dvh;
+}
+
+/* 설명 글이 길어도 창 너비를 늘리지 않고 영상 너비에 맞춰 줄바꿈 */
+.modal-video-meta {
+    width: 0;
+    min-width: 100%;
+    box-sizing: border-box;
+}

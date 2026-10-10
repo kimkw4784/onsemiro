@@ -606,14 +606,76 @@ function showNotFound() {
 
 // 모달 및 유틸리티
 function openImageModal(item) {
-    const img = item.querySelector('img');
+    setupGalleryNav();
+    const items = getGalleryItems();
     const modal = document.getElementById('imageModal');
-    document.getElementById('modalFullImage').src = img.src;
-    document.getElementById('modalImageCaption').innerText = img.alt || '';
+    modal.classList.toggle('single', items.length <= 1);
+    showGalleryImage(Math.max(0, items.indexOf(item)));
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
     pushModalHistory();
 }
+
+// =========================================
+// 확대한 사진에서 이전/다음 넘기기 (화살표, 좌우로 밀기, 키보드 방향키)
+// =========================================
+let galleryIndex = 0;
+
+function getGalleryItems() {
+    return Array.from(document.querySelectorAll('.gallery-grid .gallery-item'));
+}
+
+function showGalleryImage(index) {
+    const items = getGalleryItems();
+    if (items.length === 0) return;
+    galleryIndex = (index + items.length) % items.length;
+    const img = items[galleryIndex].querySelector('img');
+    document.getElementById('modalFullImage').src = img.src;
+    document.getElementById('modalImageCaption').innerText = img.alt || '';
+
+    const counter = document.getElementById('galleryCounter');
+    if (counter) counter.innerText = `${galleryIndex + 1} / ${items.length}`;
+}
+
+function moveGallery(step) {
+    showGalleryImage(galleryIndex + step);
+}
+
+// 이전/다음 버튼과 순서 표시를 사진 창에 한 번만 추가
+function setupGalleryNav() {
+    const content = document.querySelector('#imageModal .image-modal-content');
+    if (!content || document.getElementById('galleryPrevBtn')) return;
+
+    const arrow = (d) => `<svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="${d}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    content.insertAdjacentHTML('beforeend', `
+        <button type="button" id="galleryPrevBtn" class="btn-gallery-nav prev" aria-label="이전 사진" onclick="moveGallery(-1)">${arrow('M12.5 4.5L7 10l5.5 5.5')}</button>
+        <button type="button" id="galleryNextBtn" class="btn-gallery-nav next" aria-label="다음 사진" onclick="moveGallery(1)">${arrow('M7.5 4.5L13 10l-5.5 5.5')}</button>
+        <span id="galleryCounter" class="gallery-counter"></span>
+    `);
+
+    // 휴대폰: 사진을 좌우로 밀어서 넘기기
+    const box = content.querySelector('.image-box');
+    let startX = 0;
+    let startY = 0;
+    box.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+    }, { passive: true });
+    box.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - startX;
+        const dy = e.changedTouches[0].clientY - startY;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) moveGallery(dx < 0 ? 1 : -1);
+    }, { passive: true });
+
+    // PC: 키보드 방향키로 넘기기, Esc로 닫기
+    document.addEventListener('keydown', (e) => {
+        if (!document.getElementById('imageModal')?.classList.contains('active')) return;
+        if (e.key === 'ArrowLeft') moveGallery(-1);
+        else if (e.key === 'ArrowRight') moveGallery(1);
+        else if (e.key === 'Escape') requestCloseModal();
+    });
+}
+
 
 function closeImageModal(e) {
     if (e.target.id === 'imageModal') requestCloseModal();
