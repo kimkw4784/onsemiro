@@ -1366,3 +1366,31 @@ textarea:focus::placeholder {
         align-items: center;
     }
 }
+
+/* =========================================
+   모바일 반응형 정리
+========================================= */
+/* 한글이 단어 중간에서 끊기지 않게 (긴 주소는 필요할 때만 줄바꿈) */
+body {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+
+    /* 선물·촛불 버튼: 글자가 쪼개지지 않게 두 줄로 배치 */
+    .interactive-row {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .btn-interact {
+        white-space: nowrap;
+        padding: 8px 14px;
+        font-size: 12.5px;
+    }
+
+    .archive-cta-desc br {
+        display: none;
+    }
+}

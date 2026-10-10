@@ -2494,3 +2494,88 @@ textarea:focus::placeholder {
 .plan-desc {
     word-break: keep-all;
 }
+
+/* =========================================
+   모바일 반응형 정리
+========================================= */
+/* 한글이 단어 중간에서 끊기지 않게 (긴 주소는 필요할 때만 줄바꿈) */
+body {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
+.hero-btns .btn,
+.pricing-card .btn {
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+
+    /* 메인 상단 버튼: 세로로 쌓아 넓게 */
+    .hero-btns {
+        flex-direction: column;
+    }
+
+    .hero-btns .btn {
+        width: 100%;
+    }
+
+    .hero-trust {
+        flex-wrap: wrap;
+        gap: 8px 16px;
+    }
+
+    .trust-item {
+        white-space: nowrap;
+    }
+
+    /* 좁은 화면에선 PC용 강제 줄바꿈 대신 자연스럽게 흐르도록 */
+    section p br {
+        display: none;
+    }
+
+    /* 빌더: 아이 이름과 사진 등록을 위아래로 */
+    .builder-form-box .form-row:has(.photo-upload-inline) {
+        flex-direction: column;
+    }
+
+    /* 하단 사업자 정보: 한 줄에 하나씩 */
+    .footer-info {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        gap: 2px;
+    }
+
+    .footer-bottom {
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .footer-info span:not(:last-child)::after {
+        display: none;
+    }
+
+    .footer-legal {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 6px 14px;
+    }
+
+    .footer-legal a {
+        white-space: nowrap;
+    }
+}
+
+/* 아주 좁은 화면(320px대) 대응 */
+@media (max-width: 360px) {
+    .pricing-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pricing-card {
+        min-width: 0;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}

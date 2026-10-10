@@ -484,3 +484,38 @@ body {
     font-size: 16px;
     display: block;
 }
+
+/* =========================================
+   모바일 반응형 정리
+========================================= */
+/* 한글이 단어 중간에서 끊기지 않게 (긴 주소는 필요할 때만 줄바꿈) */
+body {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
+/* 주문 요약: 왼쪽 이름표는 한 줄로, 긴 주문번호는 오른쪽에서 줄바꿈 */
+.summary-row {
+    gap: 12px;
+}
+
+.summary-label {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.summary-val {
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+    .complete-title {
+        font-size: 21px;
+    }
+
+    .complete-desc br,
+    .group-inner-banner p br {
+        display: none;
+    }
+}

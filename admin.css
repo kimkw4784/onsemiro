@@ -1325,3 +1325,14 @@
 .admin-main-desc {
     line-height: 1.6;
 }
+
+/* 바로 업로드 입력줄: 좁은 화면에서 버튼이 밀려나지 않게 */
+.direct-input-bar .text-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.direct-input-bar .btn-timeline-add {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
