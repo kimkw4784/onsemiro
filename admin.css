@@ -1,5 +1,5 @@
 .admin-body {
-    background-color: var(--bg-creme, #F7F5F0);
+    background-color: var(--bg-main, #FCFBF7);
     min-height: 100vh;
     color: var(--text-main, #2B2620);
     font-family: var(--font-sans, 'Pretendard', sans-serif);
@@ -1304,4 +1304,24 @@
     .main-tab-btn .main-tab-badge {
         right: 3px;
     }
+}
+
+/* =========================================
+   디자인 통일 (메인 페이지 기준)
+========================================= */
+.header-tag {
+    font-family: var(--font-serif-en);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+}
+
+.admin-main-title {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+}
+
+.admin-main-desc {
+    line-height: 1.6;
 }

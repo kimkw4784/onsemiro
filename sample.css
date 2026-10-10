@@ -1162,3 +1162,68 @@ textarea:focus::placeholder {
     min-width: 100%;
     box-sizing: border-box;
 }
+
+/* =========================================
+   디자인 통일 (메인 페이지 기준)
+========================================= */
+/* 상단 로고 (메인과 동일) */
+.sample-nav .logo {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sample-nav .logo-en {
+    font-family: var(--font-serif-en);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--accent-brown);
+}
+
+.sample-nav .logo-kr {
+    font-family: var(--font-serif-kr);
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--text-muted);
+    border-left: 1px solid var(--border-light);
+    padding-left: 8px;
+}
+
+@media (max-width: 400px) {
+    .sample-nav .logo-kr {
+        display: none;
+    }
+}
+
+/* 이름표(작은 영문) 두께 강화 */
+.intro-badge,
+.sub-tag,
+.archive-cta-tag {
+    font-weight: 600;
+    letter-spacing: 2.5px;
+}
+
+.sub-title {
+    font-weight: 600;
+    letter-spacing: -0.4px;
+}
+
+/* 링크 공유하기 버튼: 아이콘과 글자 가운데 정렬 */
+.btn-share-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+}
+
+.btn-share-link iconify-icon {
+    font-size: 15px;
+}
+
+/* 우체통 이름·관계 입력칸이 화면 밖으로 넘치지 않게 */
+.letter-input {
+    min-width: 0;
+    width: 100%;
+}

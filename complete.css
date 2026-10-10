@@ -438,3 +438,49 @@ body {
         transform: rotate(360deg);
     }
 }
+
+/* =========================================
+   디자인 통일 (메인 페이지 기준) + 화면 폭
+========================================= */
+.complete-tag {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+}
+
+.complete-title {
+    font-size: 24px;
+}
+
+/* 링크가 덜 줄바꿈되도록 카드 폭 확대 */
+.complete-card {
+    max-width: 580px;
+}
+
+@media (max-width: 480px) {
+    .complete-container {
+        padding: 28px 12px;
+    }
+
+    .complete-card {
+        padding: 32px 18px;
+        border-radius: 20px;
+    }
+
+    .complete-group-box {
+        padding: 16px 14px;
+    }
+}
+
+/* 관리자 화면 버튼: 톱니바퀴 아이콘과 글자 가운데 정렬 */
+.btn-admin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-admin iconify-icon {
+    font-size: 16px;
+    display: block;
+}

@@ -2405,3 +2405,23 @@ textarea:focus::placeholder {
         transform: rotate(360deg);
     }
 }
+
+/* =========================================
+   디자인 통일: 이름표(작은 영문) 두께 강화
+========================================= */
+.section-tag {
+    font-weight: 600;
+    letter-spacing: 2.5px;
+}
+
+/* 빌더 '사진이 등록됐어요' 안내가 좁은 화면에서 잘리지 않게 줄바꿈 허용 */
+.photo-upload-inline {
+    height: auto;
+    min-height: 38px;
+}
+
+.upload-hint-text {
+    white-space: normal;
+    line-height: 1.35;
+    word-break: keep-all;
+}

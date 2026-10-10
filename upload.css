@@ -1,5 +1,5 @@
 .upload-body {
-    background-color: var(--bg-creme);
+    background-color: var(--bg-main);
 }
 
 .upload-page {
@@ -288,4 +288,32 @@
 .tip-desc strong {
     color: var(--text-main);
     font-weight: 600;
+}
+
+/* =========================================
+   디자인 통일 (메인 페이지 기준)
+========================================= */
+.upload-badge {
+    font-family: var(--font-serif-en);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    margin-bottom: 10px;
+}
+
+.upload-title {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+}
+
+.upload-guide {
+    font-family: var(--font-sans);
+    font-size: 13.5px;
+    line-height: 1.65;
+}
+
+.btn-submit-upload {
+    font-weight: 600;
+    font-size: 14.5px;
 }
