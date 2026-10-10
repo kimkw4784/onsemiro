@@ -128,11 +128,12 @@ function openOrderModal(planType = 'digital') {
                                 <input type="radio" name="orderPlan" value="digital" ${currentSelectedPlan === 'digital' ? 'checked' : ''}>
                                 <div class="plan-card-content">
                                     <div class="plan-card-top">
-                                        <span class="plan-name">디지털 소장권</span>
+                                        <span class="plan-name">에센셜 아카이브</span>
                                         <span class="plan-badge">인기</span>
                                     </div>
                                     <div class="plan-price">19,500<span>원</span></div>
-                                    <p class="plan-desc">20GB · 사진과 영상을 담는 웹 추모관</p>
+                                    <p class="plan-capacity">20GB</p>
+                                    <p class="plan-desc">사진·영상 원본 보관</p>
                                 </div>
                             </label>
 
@@ -140,10 +141,11 @@ function openOrderModal(planType = 'digital') {
                                 <input type="radio" name="orderPlan" value="archive" ${currentSelectedPlan === 'archive' ? 'checked' : ''}>
                                 <div class="plan-card-content">
                                     <div class="plan-card-top">
-                                        <span class="plan-name">평생 아카이브</span>
+                                        <span class="plan-name">시그니처 아카이브</span>
                                     </div>
                                     <div class="plan-price">49,000<span>원</span></div>
-                                    <p class="plan-desc">50GB · 영상까지 넉넉한 대용량</p>
+                                    <p class="plan-capacity">50GB</p>
+                                    <p class="plan-desc">영상이 많은 가족에게</p>
                                 </div>
                             </label>
                         </div>

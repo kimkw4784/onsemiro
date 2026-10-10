@@ -24,7 +24,7 @@ const SMS_SECRETS = [SOLAPI_API_KEY, SOLAPI_API_SECRET];
 
 // 솔라피에 등록한 발신번호 (받는 사람에게 보이는 번호라 비밀 값이 아님)
 // ※ 비어 있으면 문자를 보내지 않고 건너뜀 → 발신번호 등록 후 숫자만 입력하고 다시 배포
-const SMS_SENDER = "01028004784";
+const SMS_SENDER = "";
 
 const SITE_BASE = "https://onsemiro.me";
 
@@ -54,8 +54,8 @@ setGlobalOptions({ region: "asia-northeast3", maxInstances: 10 });
 // 가격표 - 금액은 오직 서버의 이 표로만 정해짐
 // =========================================
 const PLANS = {
-    digital: { price: 19500, name: "디지털 소장권", storageBytes: 20 * 1024 * 1024 * 1024 },
-    archive: { price: 49000, name: "평생 아카이브", storageBytes: 50 * 1024 * 1024 * 1024 }
+    digital: { price: 19500, name: "에센셜 아카이브", storageBytes: 20 * 1024 * 1024 * 1024 },
+    archive: { price: 49000, name: "시그니처 아카이브", storageBytes: 50 * 1024 * 1024 * 1024 }
 };
 
 // 요금제별 저장 한도 (예전 테스트용 heritage 추모관은 평생 아카이브와 같은 한도)

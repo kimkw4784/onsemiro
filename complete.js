@@ -165,7 +165,7 @@ function renderOrder(orderData) {
 
     const planEl = document.getElementById('planDisplay');
     if (planEl && orderData.plan) {
-        planEl.innerText = orderData.plan === 'archive' ? '평생 아카이브 (49,000원)' : '디지털 소장권 (19,500원)';
+        planEl.innerText = orderData.plan === 'archive' ? '시그니처 아카이브 (49,000원)' : '에센셜 아카이브 (19,500원)';
     }
 
     // [링크 박스]

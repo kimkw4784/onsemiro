@@ -2425,3 +2425,72 @@ textarea:focus::placeholder {
     line-height: 1.35;
     word-break: keep-all;
 }
+
+/* =========================================
+   요금제: 용량을 크게 + 어색한 줄바꿈 정리
+========================================= */
+.capacity-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 14px 0 16px;
+    margin-bottom: 18px;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.capacity-num {
+    font-family: var(--font-serif-kr);
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-main);
+    letter-spacing: -1px;
+}
+
+.capacity-num small {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent-brown);
+    margin-left: 4px;
+    letter-spacing: 0;
+}
+
+.capacity-desc {
+    font-size: 12.5px;
+    color: var(--text-sub);
+    word-break: keep-all;
+}
+
+.capacity-desc sup,
+.pricing-note {
+    color: var(--text-muted);
+}
+
+.pricing-note {
+    max-width: 760px;
+    margin: 24px auto 0;
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+    word-break: keep-all;
+}
+
+.pricing-features li {
+    word-break: keep-all;
+}
+
+/* 결제 모달 플랜 카드: 용량 강조, 설명은 한 줄로 */
+.plan-capacity {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent-brown);
+    line-height: 1.2;
+    margin-top: 6px;
+}
+
+.plan-desc {
+    word-break: keep-all;
+}
