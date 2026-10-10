@@ -18,6 +18,8 @@
     --font-sans: 'Pretendard', -apple-system, sans-serif;
 
     --shadow-md: 0 10px 30px rgba(43, 38, 32, 0.06);
+
+    color-scheme: light only;
 }
 
 * {

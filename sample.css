@@ -10,6 +10,7 @@
     --font-serif-en: 'Cormorant Garamond', serif;
     --font-serif-kr: 'Noto Serif KR', serif;
     --font-sans: 'Pretendard', -apple-system, sans-serif;
+    color-scheme: light only;
 }
 
 * {

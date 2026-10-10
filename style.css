@@ -26,6 +26,8 @@
     --shadow-sm: 0 4px 12px rgba(43, 38, 32, 0.03);
     --shadow-md: 0 10px 30px rgba(43, 38, 32, 0.06);
     --shadow-lg: 0 20px 40px rgba(43, 38, 32, 0.08);
+
+    color-scheme: light only;
 }
 
 * {
