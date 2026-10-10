@@ -514,10 +514,6 @@ body {
         font-size: 21px;
     }
 
-    .complete-desc br,
-    .group-inner-banner p br {
-        display: none;
-    }
 }
 
 /* 말 덩어리 묶음: 덩어리 안에서는 줄바꿈하지 않고, 덩어리 사이에서만 줄바꿈 */
