@@ -266,6 +266,94 @@ function waitForImages(container) {
     })));
 }
 
+// PDF로 저장하기
+// - 인쇄 창이 열리면 그대로 진행
+// - 모바일 일부 브라우저(삼성인터넷 일부 버전, 카카오톡 안 브라우저 등)는 사이트가 인쇄 창을
+//   직접 열 수 없어서, 잠시 뒤에도 인쇄가 시작되지 않으면 브라우저별 저장 방법을 안내
+let printStarted = false;
+window.addEventListener('beforeprint', () => { printStarted = true; });
+
 function saveAsPdf() {
-    window.print();
+    printStarted = false;
+    try {
+        window.print();
+    } catch (err) {
+        console.error('인쇄 창 열기 실패:', err);
+    }
+    // 인쇄 창이 열리는 브라우저는 그 사이 beforeprint가 발생함
+    setTimeout(() => {
+        if (!printStarted) showPrintGuide();
+    }, 800);
+}
+
+function detectBrowser() {
+    const ua = navigator.userAgent;
+    if (/KAKAOTALK/i.test(ua)) return 'kakao';
+    if (/SamsungBrowser/i.test(ua)) return 'samsung';
+    if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+    if (/Android/i.test(ua)) return 'android';
+    return 'other';
+}
+
+function showPrintGuide() {
+    const guides = {
+        kakao: {
+            title: '카카오톡 안에서는 저장할 수 없어요',
+            steps: [
+                '오른쪽 아래(또는 위)의 <strong>⋮ 메뉴</strong>를 눌러주세요.',
+                '<strong>다른 브라우저로 열기</strong>를 선택해 주세요.',
+                '열린 화면에서 다시 <strong>PDF로 저장하기</strong>를 눌러주세요.'
+            ]
+        },
+        samsung: {
+            title: '삼성인터넷에서 저장하는 방법',
+            steps: [
+                '화면 아래 <strong>≡ 메뉴</strong>를 눌러주세요.',
+                '<strong>인쇄/PDF</strong>를 선택해 주세요.',
+                '프린터를 <strong>PDF로 저장</strong>으로 고르고 저장 버튼을 눌러주세요.'
+            ]
+        },
+        android: {
+            title: '크롬에서 저장하는 방법',
+            steps: [
+                '오른쪽 위 <strong>⋮ 메뉴</strong>에서 <strong>공유</strong>를 눌러주세요.',
+                '<strong>인쇄</strong>를 선택해 주세요.',
+                '프린터를 <strong>PDF로 저장</strong>으로 고르고 PDF 버튼을 눌러주세요.'
+            ]
+        },
+        ios: {
+            title: '아이폰에서 저장하는 방법',
+            steps: [
+                '화면 아래 <strong>공유 버튼</strong>(네모에 위쪽 화살표)을 눌러주세요.',
+                '<strong>프린트</strong>를 선택해 주세요.',
+                '오른쪽 위 <strong>공유 버튼</strong>을 다시 눌러 <strong>파일에 저장</strong>을 선택해 주세요.'
+            ]
+        },
+        other: {
+            title: 'PDF로 저장하는 방법',
+            steps: [
+                '브라우저 메뉴에서 <strong>인쇄</strong>를 선택해 주세요.',
+                '프린터(대상)를 <strong>PDF로 저장</strong>으로 고르고 저장해 주세요.'
+            ]
+        }
+    };
+    const guide = guides[detectBrowser()];
+
+    let modal = document.getElementById('printGuide');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'printGuide';
+        modal.className = 'print-guide-backdrop';
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+        document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+        <div class="print-guide" role="dialog" aria-modal="true" aria-labelledby="printGuideTitle">
+            <p class="print-guide-title" id="printGuideTitle">${guide.title}</p>
+            <ol class="print-guide-steps">${guide.steps.map(step => `<li>${step}</li>`).join('')}</ol>
+            <p class="print-guide-note">배경색이 빠져 보이면 인쇄 옵션의 <strong>배경 그래픽</strong>을 켜주세요.</p>
+            <button type="button" class="btn-save-pdf print-guide-close" onclick="document.getElementById('printGuide').classList.remove('active')">확인</button>
+        </div>
+    `;
+    modal.classList.add('active');
 }
