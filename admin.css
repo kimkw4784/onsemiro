@@ -1366,7 +1366,7 @@
     box-sizing: border-box;
 }
 
-.dropzone-sub+.dropzone-sub {
+.dropzone-sub + .dropzone-sub {
     margin-top: 2px;
 }
 
@@ -1766,10 +1766,23 @@ button:disabled .btn-spinner {
 }
 
 @media (max-width: 480px) {
-
     .timeline-input-row .admin-datepicker-wrap,
     .edit-mode-form .admin-datepicker-wrap {
         flex: 1 1 0;
         min-width: 0;
     }
+}
+
+/* 달력 도구가 날짜 칸을 한 번 더 감싸는 상자(flatpickr-wrapper)도 칸 전체 너비로
+   → 날짜 칸이 상자를 꽉 채우고, 달력 아이콘이 칸 안쪽 오른쪽에 오도록 */
+.admin-datepicker-wrap .flatpickr-wrapper {
+    display: block;
+    width: 100%;
+}
+
+.admin-datepicker-wrap input:not([type="hidden"]) {
+    display: block;
+    width: 100% !important;
+    min-width: 0;
+    max-width: none;
 }
