@@ -615,7 +615,7 @@ function startEditStory(itemId, fIdx) {
             </label>
             <div class="direct-edit-actions">
                 <button type="button" class="btn-edit-save" onclick="saveEditStory('${itemId}', ${idx}, this)">저장</button>
-                <button type="button" class="btn-story-action" onclick="renderDirectGallery()">취소</button>
+                <button type="button" class="btn-edit-cancel" onclick="renderDirectGallery()">취소</button>
             </div>
         </div>
     `;
@@ -1113,10 +1113,22 @@ function setBtnLoading(btn, loading, text) {
 // 날짜 선택: 메인 빌더와 같은 달력 (휴대폰에서는 기기 기본 날짜 화면)
 // - 실제 값은 2026-10-11 형식, 화면에는 2026. 10. 11.로 표시
 // =========================================
+const DATEPICKER_ICON = '<svg class="datepicker-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>';
+
 function initAdminDatepickers(root = document) {
     if (typeof flatpickr === 'undefined') return;
     root.querySelectorAll('.admin-datepicker').forEach(el => {
         if (el._flatpickr) return;
+
+        // 빌더와 같은 모양을 쓰도록 상자로 감싸고 달력 아이콘 추가
+        if (!el.parentElement.classList.contains('datepicker-wrap')) {
+            const wrap = document.createElement('div');
+            wrap.className = 'datepicker-wrap admin-datepicker-wrap';
+            el.parentNode.insertBefore(wrap, el);
+            wrap.appendChild(el);
+            wrap.insertAdjacentHTML('beforeend', DATEPICKER_ICON);
+        }
+
         flatpickr(el, {
             locale: 'ko',
             dateFormat: 'Y-m-d',
@@ -1124,6 +1136,7 @@ function initAdminDatepickers(root = document) {
             altFormat: 'Y. m. d.',
             altInputClass: el.className.replace('admin-datepicker', '').trim(),
             maxDate: 'today',
+            static: true,
             onChange: () => el.dispatchEvent(new Event('input', { bubbles: true }))
         });
     });

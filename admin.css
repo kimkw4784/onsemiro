@@ -1705,3 +1705,71 @@ button:disabled .btn-spinner {
         align-items: center;
     }
 }
+
+/* =========================================
+   수정 화면 버튼: 저장·취소를 같은 크기로
+========================================= */
+.btn-edit-save,
+.btn-edit-cancel {
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    border-radius: 6px;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.btn-edit-save {
+    border: 1px solid var(--text-main, #2B2620);
+}
+
+.btn-edit-cancel {
+    background: #FFFFFF;
+    border: 1px solid rgba(43, 38, 32, 0.2);
+    color: var(--text-sub, #7A7269);
+}
+
+.btn-edit-cancel:hover {
+    background: #F3EDE2;
+}
+
+/* =========================================
+   관리자 달력: 빌더 달력과 같은 모양
+========================================= */
+.admin-datepicker-wrap input {
+    width: 100%;
+    padding-right: 34px;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.admin-datepicker-wrap .datepicker-icon {
+    top: 50%;
+}
+
+/* 좁은 칸에 들어가도 달력은 넉넉한 크기로 */
+.admin-datepicker-wrap .flatpickr-calendar {
+    width: 300px;
+    max-width: calc(100vw - 32px);
+    z-index: 60;
+}
+
+.timeline-input-row .admin-datepicker-wrap {
+    flex: 0 0 170px;
+    width: auto;
+}
+
+.edit-mode-form .admin-datepicker-wrap {
+    flex: 0 0 150px;
+    width: auto;
+}
+
+@media (max-width: 480px) {
+
+    .timeline-input-row .admin-datepicker-wrap,
+    .edit-mode-form .admin-datepicker-wrap {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+}
