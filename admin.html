@@ -13,8 +13,11 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@300;400;600;700&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <link rel="icon" href="https://api.iconify.design/noto:paw-prints.svg">
 </head>
@@ -36,7 +39,10 @@
             <span class="header-tag">FAMILY ARCHIVE ADMIN</span>
             <h1 class="admin-main-title"><span id="adminPetName">아이</span>의 안식처 관리</h1>
             <p class="admin-main-desc">소중한 추억 조각과 발자취, 전해온 편지를 한눈에 관리합니다.</p>
-            <a href="#" id="bookLink" class="btn-book-link" target="_blank" rel="noopener">추모 기록집 PDF로 저장하기</a>
+            <div class="admin-backup-links">
+                <a href="#" id="bookLink" class="btn-book-link" target="_blank" rel="noopener">추모 기록집 PDF로 저장하기</a>
+                <button type="button" class="btn-book-link" onclick="openDownloadModal()">원본 사진·영상 내려받기</button>
+            </div>
         </header>
 
         <!-- 5단 대분류 메인 탭 (순서 변경 적용) -->
@@ -159,7 +165,8 @@
             <!-- 발자취 등록 폼 -->
             <form class="timeline-form" onsubmit="handleAddTimeline(event)">
                 <div class="timeline-input-row">
-                    <input type="date" id="timelineDate" class="timeline-input date-picker-input" required>
+                    <input type="text" id="timelineDate" class="timeline-input date-picker-input admin-datepicker"
+                        placeholder="날짜 선택">
                     <input type="text" id="timelineStory" class="timeline-input text-input" placeholder="기억할 순간을 남겨주세요"
                         required>
                     <button type="submit" class="btn-timeline-add">+ 등록</button>
@@ -245,13 +252,13 @@
                     <div class="info-date-row">
                         <div class="info-field">
                             <label class="info-label" for="infoMeetDate">처음 만난 날</label>
-                            <input type="date" id="infoMeetDate" class="timeline-input info-input"
-                                onchange="markInfoDirty()">
+                            <input type="text" id="infoMeetDate" class="timeline-input info-input admin-datepicker"
+                                placeholder="날짜 선택" onchange="markInfoDirty()">
                         </div>
                         <div class="info-field">
                             <label class="info-label" for="infoFarewellDate">별이 된 날</label>
-                            <input type="date" id="infoFarewellDate" class="timeline-input info-input"
-                                onchange="markInfoDirty()">
+                            <input type="text" id="infoFarewellDate" class="timeline-input info-input admin-datepicker"
+                                placeholder="날짜 선택" onchange="markInfoDirty()">
                         </div>
                     </div>
                     <p class="info-days" id="infoDaysText" aria-live="polite"></p>

@@ -1228,15 +1228,6 @@ textarea:focus::placeholder {
     width: 100%;
 }
 
-/* 링크 공유하기 버튼: 평소엔 진한 글자, 마우스를 올리면 지금처럼 브라운 배경 */
-.btn-share-link {
-    color: var(--text-main);
-}
-
-.btn-share-link:hover {
-    color: #FFFFFF;
-}
-
 /* 배경음악 음표 아이콘 세로 가운데 정렬 */
 .bgm-icon {
     display: inline-flex;

@@ -4,7 +4,7 @@ const { defineSecret } = require("firebase-functions/params");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const crypto = require("crypto");
-const { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { SolapiMessageService } = require("solapi");
 
@@ -1090,4 +1090,91 @@ exports.operatorDeleteMemorial = onCall({ secrets: [OPERATOR_KEY, ...R2_SECRETS]
     await secretRef.delete();
 
     return { deleted: true, slug, deletedFiles };
+});
+
+
+// =========================================
+// 관리자: 원본 사진·영상 내려받기 목록 (백업용)
+// - 파일마다 1시간짜리 내려받기 주소를 만들어 줌 (브라우저가 바로 파일로 저장)
+// =========================================
+const DOWNLOAD_EXT = {
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "video/mp4": ".mp4",
+    "video/quicktime": ".mov",
+    "video/webm": ".webm"
+};
+
+function downloadDisposition(filename) {
+    // 한글 파일 이름이 깨지지 않도록 두 가지 방식으로 함께 지정
+    const ascii = filename.replace(/[^\x20-\x7E]/g, "_").replace(/"/g, "");
+    return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+}
+
+exports.adminListDownloads = onCall({ secrets: R2_SECRETS }, async (request) => {
+    const { slug, key } = request.data || {};
+    await assertAdmin(slug, key);
+
+    const memorialRef = db.collection("memorials").doc(slug);
+    const memorial = (await memorialRef.get()).data() || {};
+    const petName = String(memorial.petName || "onsemiro").replace(/[\\/:*?"<>|]/g, "").trim() || "onsemiro";
+
+    const sign = (path, filename) => getSignedUrl(
+        getR2(),
+        new GetObjectCommand({ Bucket: R2_BUCKET, Key: path, ResponseContentDisposition: downloadDisposition(filename) }),
+        { expiresIn: 3600 }
+    );
+
+    const files = [];
+    let totalBytes = 0;
+
+    // 대표 사진
+    if (memorial.photoPath) {
+        const ext = (memorial.photoPath.match(/\.[a-z0-9]+$/i) || [".jpg"])[0];
+        files.push({
+            name: `${petName}_대표사진${ext}`,
+            type: "image",
+            group: "대표 사진",
+            size: 0,
+            previewUrl: mediaUrl(memorial.photoPath),
+            url: await sign(memorial.photoPath, `${petName}_대표사진${ext}`)
+        });
+    }
+
+    // 갤러리·지인이 보낸 사진·영상 (오래된 순)
+    const memSnap = await memorialRef.collection("memories").get();
+    const memories = memSnap.docs
+        .map((doc) => doc.data())
+        .filter((m) => m.status !== "uploading")
+        .sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+
+    const groupOf = (m, f) => {
+        if (m.status === "approved" && !f.excluded) return "갤러리 전시 중";
+        if (m.status === "pending") return "확인 대기";
+        return "전시하지 않음";
+    };
+
+    let count = 0;
+    for (const m of memories) {
+        for (const f of (m.files || [])) {
+            if (!f.path) continue;
+            count++;
+            const ext = DOWNLOAD_EXT[f.contentType] || (f.type === "video" ? ".mp4" : ".jpg");
+            const label = f.type === "video" ? "영상" : "사진";
+            const name = `${petName}_${label}_${String(count).padStart(3, "0")}${ext}`;
+            totalBytes += f.size || 0;
+            files.push({
+                name,
+                type: f.type,
+                group: groupOf(m, f),
+                size: f.size || 0,
+                previewUrl: mediaUrl(f.type === "video" ? f.thumbPath : f.path),
+                url: await sign(f.path, name)
+            });
+        }
+    }
+
+    return { files, totalBytes };
 });

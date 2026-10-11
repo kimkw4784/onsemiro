@@ -273,10 +273,11 @@ function toggleAllFiles(itemId) {
     renderCards();
 }
 
-async function applyMediaDecision(itemId) {
+async function applyMediaDecision(itemId, btn) {
     const item = memoriesCache.find(m => m.id === itemId);
     if (!item) return;
 
+    setBtnLoading(btn, true, '처리 중');
     try {
         const result = await functions.httpsCallable('adminReviewMemory')({
             slug: adminRoom,
@@ -293,11 +294,13 @@ async function applyMediaDecision(itemId) {
         await loadMemories();
     } catch (err) {
         console.error(err);
+        setBtnLoading(btn, false);
         alert(err.message || '처리하지 못했습니다.');
     }
 }
 
-async function revertStatus(itemId) {
+async function revertStatus(itemId, btn) {
+    setBtnLoading(btn, true, '복원 중');
     try {
         await functions.httpsCallable('adminReviewMemory')({ slug: adminRoom, key: adminKey, id: itemId, action: 'revert' });
         showToast('대기함으로 복원되었습니다.');
@@ -306,6 +309,7 @@ async function revertStatus(itemId) {
         setFilter('pending');
     } catch (err) {
         console.error(err);
+        setBtnLoading(btn, false);
         alert(err.message || '복원하지 못했습니다.');
     }
 }
@@ -381,7 +385,7 @@ function renderCards() {
 
         const topActionHtml = (currentFilter === 'pending')
             ? ''
-            : `<button type="button" class="btn-revert-mini" onclick="revertStatus('${item.id}')">다시 검수</button>`;
+            : `<button type="button" class="btn-revert-mini" onclick="revertStatus('${item.id}', this)">다시 검수</button>`;
 
         let actionBarHtml = '';
         if (currentFilter === 'pending') {
@@ -395,7 +399,7 @@ function renderCards() {
                     <button type="button" class="btn-status btn-toggle-all" onclick="toggleAllFiles('${item.id}')">
                         ${toggleBtnText}
                     </button>
-                    <button type="button" class="btn-status ${approveBtnClass}" onclick="applyMediaDecision('${item.id}')">
+                    <button type="button" class="btn-status ${approveBtnClass}" onclick="applyMediaDecision('${item.id}', this)">
                         ${approveBtnText}
                     </button>
                 </div>
@@ -557,7 +561,7 @@ function renderDirectGallery() {
                 <div class="direct-media-card" id="mediaCard-${item.id}-${fIdx}">
                     <div class="direct-media-thumb">
                         ${mediaTagFor(f, false)}
-                        <button type="button" class="btn-direct-delete" title="삭제" onclick="deleteGalleryItem('${item.id}', ${fIdx})" aria-label="삭제"><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+                        <button type="button" class="btn-direct-delete" title="삭제" onclick="deleteGalleryItem('${item.id}', ${fIdx}, this)" aria-label="삭제"><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
                     </div>
                     <div class="direct-media-info">
                         <span class="direct-media-tag">${escapeHtml(senderLabel)}</span>
@@ -610,7 +614,7 @@ function startEditStory(itemId, fIdx) {
                 <input type="text" id="editStoryInput-${uid}" class="direct-edit-input" value="${escapeHtml(currentStory)}" maxlength="1000" placeholder="이야기 입력">
             </label>
             <div class="direct-edit-actions">
-                <button type="button" class="btn-edit-save" onclick="saveEditStory('${itemId}', ${idx})">저장</button>
+                <button type="button" class="btn-edit-save" onclick="saveEditStory('${itemId}', ${idx}, this)">저장</button>
                 <button type="button" class="btn-story-action" onclick="renderDirectGallery()">취소</button>
             </div>
         </div>
@@ -623,12 +627,13 @@ function startEditStory(itemId, fIdx) {
     }
 }
 
-async function saveEditStory(itemId, fIdx) {
+async function saveEditStory(itemId, fIdx, btn) {
     const uid = `${itemId}-${fIdx}`;
     const input = document.getElementById(`editStoryInput-${uid}`);
     if (!input) return;
     const senderInput = document.getElementById(`editSenderInput-${uid}`);
 
+    setBtnLoading(btn, true, '저장 중');
     try {
         const payload = { slug: adminRoom, key: adminKey, id: itemId, fileIndex: Number(fIdx), story: input.value.trim() };
         if (senderInput) payload.sender = senderInput.value.trim();
@@ -637,13 +642,15 @@ async function saveEditStory(itemId, fIdx) {
         await loadMemories();
     } catch (err) {
         console.error(err);
+        setBtnLoading(btn, false);
         alert(err.message || '수정하지 못했습니다.');
     }
 }
 
-async function deleteGalleryItem(itemId, fileIndex) {
+async function deleteGalleryItem(itemId, fileIndex, btn) {
     if (!confirm('이 사진(영상)을 완전히 삭제하시겠습니까?\n삭제한 파일은 되돌릴 수 없습니다.')) return;
 
+    setBtnLoading(btn, true, '');
     try {
         await functions.httpsCallable('adminDeleteMemoryFile')({
             slug: adminRoom, key: adminKey, id: itemId, fileIndex
@@ -652,6 +659,7 @@ async function deleteGalleryItem(itemId, fileIndex) {
         await loadMemories();
     } catch (err) {
         console.error(err);
+        setBtnLoading(btn, false);
         alert(err.message || '삭제하지 못했습니다.');
     }
 }
@@ -702,7 +710,7 @@ function renderAdminTimeline() {
                 </div>
                 <div class="admin-tl-actions">
                     <button type="button" class="btn-tl-edit" onclick="startEditTimeline('${item.id}')">수정</button>
-                    <button type="button" class="btn-tl-delete" onclick="deleteTimelineItem('${item.id}')">삭제</button>
+                    <button type="button" class="btn-tl-delete" onclick="deleteTimelineItem('${item.id}', this)">삭제</button>
                 </div>
             </div>
         `).join('');
@@ -719,12 +727,13 @@ async function handleAddTimeline(e) {
 
     const date = dateInput.value;
     const story = storyInput.value.trim();
-    if (!date || !story) return;
+    if (!date) { alert('날짜를 선택해 주세요.'); return; }
+    if (!story) return;
 
-    if (submitBtn) submitBtn.disabled = true;
+    setBtnLoading(submitBtn, true, '등록 중');
     try {
         await functions.httpsCallable('adminSaveTimeline')({ slug: adminRoom, key: adminKey, date, story });
-        dateInput.value = '';
+        setDatepickerValue('timelineDate', '');
         storyInput.value = '';
         showToast('발자취가 등록되었습니다.');
         await loadTimeline();
@@ -732,7 +741,7 @@ async function handleAddTimeline(e) {
         console.error(err);
         alert(err.message || '발자취를 등록하지 못했습니다.');
     } finally {
-        if (submitBtn) submitBtn.disabled = false;
+        setBtnLoading(submitBtn, false);
     }
 }
 
@@ -744,7 +753,7 @@ function startEditTimeline(id) {
     itemEl.classList.add('editing');
     itemEl.innerHTML = `
         <form class="edit-mode-form" onsubmit="saveEditTimeline(event, '${id}')">
-            <input type="date" id="editDate-${id}" class="edit-input-date" value="${escapeHtml(target.date)}" required>
+            <input type="text" id="editDate-${id}" class="edit-input-date admin-datepicker" value="${escapeHtml(target.date)}" placeholder="날짜 선택">
             <input type="text" id="editStory-${id}" class="edit-input-story" value="${escapeHtml(target.story)}" maxlength="200" required>
             <div class="edit-action-row">
                 <button type="submit" class="btn-edit-save">완료</button>
@@ -752,32 +761,39 @@ function startEditTimeline(id) {
             </div>
         </form>
     `;
+    initAdminDatepickers(itemEl);
 }
 
 async function saveEditTimeline(e, id) {
     e.preventDefault();
     const date = document.getElementById(`editDate-${id}`).value;
     const story = document.getElementById(`editStory-${id}`).value.trim();
-    if (!date || !story) return;
+    if (!date) { alert('날짜를 선택해 주세요.'); return; }
+    if (!story) return;
+    const btn = e.target.querySelector('button[type="submit"]');
 
+    setBtnLoading(btn, true, '저장 중');
     try {
         await functions.httpsCallable('adminSaveTimeline')({ slug: adminRoom, key: adminKey, id, date, story });
         showToast('발자취가 수정되었습니다.');
         await loadTimeline();
     } catch (err) {
         console.error(err);
+        setBtnLoading(btn, false);
         alert(err.message || '발자취를 수정하지 못했습니다.');
     }
 }
 
-async function deleteTimelineItem(id) {
+async function deleteTimelineItem(id, btn) {
     if (!confirm('이 발자취를 삭제하시겠습니까?')) return;
+    setBtnLoading(btn, true, '삭제 중');
     try {
         await functions.httpsCallable('adminDeleteTimeline')({ slug: adminRoom, key: adminKey, id });
         showToast('발자취가 삭제되었습니다.');
         await loadTimeline();
     } catch (err) {
         console.error(err);
+        setBtnLoading(btn, false);
         alert(err.message || '발자취를 삭제하지 못했습니다.');
     }
 }
@@ -835,8 +851,8 @@ function renderAdminPostbox() {
 
     container.innerHTML = list.map(letter => {
         const actions = letter.status === 'approved'
-            ? `<button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'excluded')">숨기기</button>`
-            : `<button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'approved')">공개하기</button>`;
+            ? `<button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'excluded', this)">숨기기</button>`
+            : `<button type="button" class="btn-tl-edit" onclick="changeLetterStatus('${letter.id}', 'approved', this)">공개하기</button>`;
 
         return `
             <div class="admin-postbox-card" id="postbox-${letter.id}">
@@ -848,7 +864,7 @@ function renderAdminPostbox() {
                     </div>
                     <div class="admin-tl-actions">
                         ${actions}
-                        <button type="button" class="btn-postbox-delete" onclick="deletePostboxLetter('${letter.id}')">삭제</button>
+                        <button type="button" class="btn-postbox-delete" onclick="deletePostboxLetter('${letter.id}', this)">삭제</button>
                     </div>
                 </div>
                 <p class="postbox-msg-content">${escapeHtml(letter.message).replace(/\n/g, '<br>')}</p>
@@ -859,7 +875,8 @@ function renderAdminPostbox() {
     updateMainTabBadges();
 }
 
-async function changeLetterStatus(id, status) {
+async function changeLetterStatus(id, status, btn) {
+    setBtnLoading(btn, true, '처리 중');
     try {
         await functions.httpsCallable('adminUpdateLetter')({ slug: adminRoom, key: adminKey, id, status });
         const target = lettersCache.find(l => l.id === id);
@@ -868,12 +885,14 @@ async function changeLetterStatus(id, status) {
         showToast(status === 'approved' ? '편지를 추모관에 공개했습니다.' : '편지를 숨겼습니다.');
     } catch (err) {
         console.error(err);
+        setBtnLoading(btn, false);
         alert(err.message || '상태를 바꾸지 못했습니다.');
     }
 }
 
-async function deletePostboxLetter(id) {
+async function deletePostboxLetter(id, btn) {
     if (!confirm('이 편지를 우체통에서 완전히 삭제하시겠습니까?\n삭제한 편지는 되돌릴 수 없습니다.')) return;
+    setBtnLoading(btn, true, '삭제 중');
     try {
         await functions.httpsCallable('adminUpdateLetter')({ slug: adminRoom, key: adminKey, id, remove: true });
         lettersCache = lettersCache.filter(l => l.id !== id);
@@ -881,6 +900,7 @@ async function deletePostboxLetter(id) {
         showToast('편지가 삭제되었습니다.');
     } catch (err) {
         console.error(err);
+        setBtnLoading(btn, false);
         alert(err.message || '편지를 삭제하지 못했습니다.');
     }
 }
@@ -913,8 +933,8 @@ function loadMemorialInfo(memorial) {
     infoPhotoData = m.photoUrl || '';
 
     document.getElementById('infoPetName').value = m.petName || '';
-    document.getElementById('infoMeetDate').value = m.meetDate || '';
-    document.getElementById('infoFarewellDate').value = m.farewellDate || '';
+    setDatepickerValue('infoMeetDate', m.meetDate);
+    setDatepickerValue('infoFarewellDate', m.farewellDate);
     document.getElementById('infoQuote').value = m.quote || '';
     document.getElementById('infoGift1').value = gifts[0] || '';
     document.getElementById('infoGift2').value = gifts[1] || '';
@@ -1041,7 +1061,7 @@ async function saveMemorialInfo() {
 
     const saveBtn = document.getElementById('btnInfoSave');
     saveBtn.disabled = true;
-    saveBtn.innerText = '저장하는 중...';
+    saveBtn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>저장하는 중...';
 
     try {
         const { petPhoto, ...rest } = values;
@@ -1069,4 +1089,161 @@ async function saveMemorialInfo() {
     } finally {
         saveBtn.innerText = '변경 내용 저장';
     }
+}
+
+// =========================================
+// 버튼 로딩 표시: 처리하는 동안 빙글빙글 + 다시 누르지 못하게
+// =========================================
+function setBtnLoading(btn, loading, text) {
+    if (!btn) return;
+    if (loading) {
+        btn.dataset.originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        // 버튼 배경이 어두우면 흰색, 밝으면 진한색 표시
+        const rgb = (getComputedStyle(btn).backgroundColor.match(/\d+/g) || [255, 255, 255]).map(Number);
+        const isDarkBg = (rgb[3] === undefined || rgb[3] > 0) && (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114) < 140;
+        btn.innerHTML = `<span class="btn-spinner${isDarkBg ? '' : ' is-dark'}" aria-hidden="true"></span>${text || ''}`;
+    } else {
+        btn.disabled = false;
+        if (btn.dataset.originalHtml !== undefined) btn.innerHTML = btn.dataset.originalHtml;
+    }
+}
+
+// =========================================
+// 날짜 선택: 메인 빌더와 같은 달력 (휴대폰에서는 기기 기본 날짜 화면)
+// - 실제 값은 2026-10-11 형식, 화면에는 2026. 10. 11.로 표시
+// =========================================
+function initAdminDatepickers(root = document) {
+    if (typeof flatpickr === 'undefined') return;
+    root.querySelectorAll('.admin-datepicker').forEach(el => {
+        if (el._flatpickr) return;
+        flatpickr(el, {
+            locale: 'ko',
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'Y. m. d.',
+            altInputClass: el.className.replace('admin-datepicker', '').trim(),
+            maxDate: 'today',
+            onChange: () => el.dispatchEvent(new Event('input', { bubbles: true }))
+        });
+    });
+}
+
+function setDatepickerValue(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el._flatpickr) el._flatpickr.setDate(value || null, false);
+    else el.value = value || '';
+}
+
+document.addEventListener('DOMContentLoaded', () => initAdminDatepickers());
+// =========================================
+// 원본 사진·영상 내려받기 (백업)
+// - 서버가 파일마다 1시간짜리 내려받기 주소를 만들어 줌
+// - 파일을 브라우저가 직접 저장해서, 큰 영상도 휴대폰 메모리와 상관없이 받아짐
+// =========================================
+let downloadList = [];
+
+function formatBytes(bytes) {
+    if (!bytes) return '';
+    const mb = bytes / (1024 * 1024);
+    return mb >= 1 ? `${mb.toFixed(1)}MB` : `${Math.max(1, Math.round(bytes / 1024))}KB`;
+}
+
+async function openDownloadModal() {
+    let modal = document.getElementById('downloadModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'downloadModal';
+        modal.className = 'download-modal-backdrop';
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeDownloadModal(); });
+        document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+        <div class="download-modal" role="dialog" aria-modal="true" aria-labelledby="downloadTitle">
+            <div class="download-head">
+                <p class="download-title" id="downloadTitle">원본 사진·영상 내려받기</p>
+                <button type="button" class="btn-download-close" onclick="closeDownloadModal()" aria-label="닫기"><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="download-body"><p class="download-loading"><span class="btn-spinner is-dark" aria-hidden="true"></span>파일 목록을 준비하고 있어요...</p></div>
+        </div>
+    `;
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    try {
+        const result = await functions.httpsCallable('adminListDownloads')({ slug: adminRoom, key: adminKey });
+        downloadList = result.data.files || [];
+        renderDownloadList(result.data.totalBytes || 0);
+    } catch (err) {
+        console.error(err);
+        modal.querySelector('.download-body').innerHTML = `<p class="download-empty">${escapeHtml(err.message || '목록을 불러오지 못했습니다.')}</p>`;
+    }
+}
+
+function renderDownloadList(totalBytes) {
+    const body = document.querySelector('#downloadModal .download-body');
+    if (!body) return;
+
+    if (downloadList.length === 0) {
+        body.innerHTML = '<p class="download-empty">아직 저장된 사진이나 영상이 없습니다.</p>';
+        return;
+    }
+
+    const rows = downloadList.map((f, i) => `
+        <li class="download-item">
+            <div class="download-thumb">${f.previewUrl ? `<img src="${escapeHtml(f.previewUrl)}" alt="" loading="lazy">` : ''}${f.type === 'video' ? '<span class="download-video-label">영상</span>' : ''}</div>
+            <div class="download-info">
+                <span class="download-name">${escapeHtml(f.name)}</span>
+                <span class="download-meta">${escapeHtml(f.group)}${f.size ? ` · ${formatBytes(f.size)}` : ''}</span>
+            </div>
+            <a class="btn-download-one" href="${escapeHtml(f.url)}" download="${escapeHtml(f.name)}" onclick="markDownloaded(${i})">내려받기</a>
+        </li>
+    `).join('');
+
+    body.innerHTML = `
+        <p class="download-summary">
+            <span class="nb">모두 ${downloadList.length}개 · ${formatBytes(totalBytes)}</span>
+            <span class="nb">영상은 원본, 사진은 저장된 그대로 받아져요.</span>
+        </p>
+        <button type="button" id="btnDownloadAll" class="btn-download-all" onclick="downloadAll(this)">전체 내려받기</button>
+        <p class="download-tip">
+            <span class="nb">파일이 많거나 영상이 크다면 PC에서 받는 것을 추천해요.</span>
+            <span class="nb">브라우저가 '여러 파일 내려받기'를 물어보면 허용해 주세요.</span>
+            <span class="nb">내려받기 주소는 1시간 동안 유효해요.</span>
+        </p>
+        <ul class="download-list">${rows}</ul>
+    `;
+}
+
+function markDownloaded(index) {
+    const items = document.querySelectorAll('#downloadModal .download-item');
+    if (items[index]) items[index].classList.add('done');
+}
+
+// 전체 내려받기: 브라우저가 막지 않도록 하나씩 간격을 두고 차례로 저장
+async function downloadAll(btn) {
+    btn.disabled = true;
+    for (let i = 0; i < downloadList.length; i++) {
+        btn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span>내려받는 중 ${i + 1}/${downloadList.length}`;
+        const a = document.createElement('a');
+        a.href = downloadList[i].url;
+        a.download = downloadList[i].name;
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        markDownloaded(i);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+    btn.innerText = '전체 내려받기 완료';
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.innerText = '전체 다시 내려받기';
+    }, 2000);
+}
+
+function closeDownloadModal() {
+    document.getElementById('downloadModal')?.classList.remove('active');
+    document.body.style.overflow = '';
 }

@@ -1434,3 +1434,274 @@
 .direct-edit-row .direct-edit-input {
     flex: 1;
 }
+
+/* =========================================
+   처리 중 표시 (밝은 버튼용 진한 빙글빙글)
+========================================= */
+.btn-spinner.is-dark {
+    border-color: rgba(43, 38, 32, 0.2);
+    border-top-color: #2B2620;
+}
+
+button:disabled .btn-spinner {
+    margin-right: 6px;
+}
+
+/* =========================================
+   발자취: 휴대폰에서 버튼 때문에 늘어지지 않게
+   - 첫 줄: 날짜 + 등록 버튼 / 둘째 줄: 이야기
+========================================= */
+.btn-timeline-add {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+    .timeline-input-row {
+        flex-wrap: wrap;
+    }
+
+    .timeline-input-row .date-picker-input {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .timeline-input-row .text-input {
+        order: 3;
+        flex: 1 1 100%;
+    }
+
+    .edit-mode-form {
+        flex-wrap: wrap;
+    }
+
+    .edit-mode-form .edit-input-date {
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
+    }
+
+    .edit-mode-form .edit-input-story {
+        order: 3;
+        flex: 1 1 100%;
+    }
+
+    .edit-action-row .btn-edit-save,
+    .edit-action-row .btn-edit-cancel {
+        white-space: nowrap;
+    }
+}
+
+/* =========================================
+   백업 버튼 (기록집 PDF, 원본 내려받기)
+========================================= */
+.admin-backup-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.admin-backup-links .btn-book-link {
+    margin-top: 0;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* =========================================
+   원본 내려받기 창
+========================================= */
+.download-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(18, 16, 14, 0.45);
+    padding: 12px;
+}
+
+.download-modal-backdrop.active {
+    display: flex;
+}
+
+.download-modal {
+    width: 100%;
+    max-width: 520px;
+    max-height: 85vh;
+    max-height: 85dvh;
+    background: #FFFFFF;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.download-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 12px;
+    border-bottom: 1px solid rgba(43, 38, 32, 0.08);
+}
+
+.download-title {
+    font-family: var(--font-serif-kr);
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.btn-download-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--text-sub, #7A7269);
+    cursor: pointer;
+    display: flex;
+}
+
+.download-body {
+    padding: 16px 20px 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.download-loading,
+.download-empty {
+    text-align: center;
+    padding: 30px 0;
+    font-size: 13.5px;
+    color: var(--text-sub, #7A7269);
+}
+
+.download-summary {
+    font-size: 13px;
+    color: var(--text-sub, #7A7269);
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.download-summary .nb:first-child {
+    font-weight: 700;
+    color: var(--text-main, #2B2620);
+}
+
+.btn-download-all {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    background: var(--text-main, #2B2620);
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-download-all:disabled {
+    opacity: 0.85;
+    cursor: default;
+}
+
+.download-tip {
+    margin: 10px 0 14px;
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--text-muted, #A39B8F);
+    text-align: center;
+}
+
+.download-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.download-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border: 1px solid rgba(43, 38, 32, 0.08);
+    border-radius: 10px;
+}
+
+.download-item.done {
+    background: #FAF7F2;
+}
+
+.download-thumb {
+    position: relative;
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #F3EDE2;
+}
+
+.download-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.download-video-label {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #FFFFFF;
+    font-size: 9px;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.download-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.download-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main, #2B2620);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.download-meta {
+    font-size: 11.5px;
+    color: var(--text-muted, #A39B8F);
+}
+
+.btn-download-one {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 7px 12px;
+    border: 1px solid var(--accent-brown, #D4A373);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-main, #2B2620);
+    text-decoration: none;
+}
+
+.download-item.done .btn-download-one {
+    border-color: rgba(43, 38, 32, 0.12);
+    color: var(--text-muted, #A39B8F);
+}
+
+@media (min-width: 600px) {
+    .download-modal-backdrop {
+        align-items: center;
+    }
+}
