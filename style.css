@@ -2773,3 +2773,16 @@ body {
     font-size: 12px;
     color: var(--text-muted);
 }
+
+.legal-table.legal-table-wide td:first-child {
+    width: 20%;
+}
+
+.legal-table.legal-table-wide td:not(:first-child) {
+    width: 40%;
+}
+
+.legal-table a {
+    color: var(--accent-brown);
+    text-decoration: underline;
+}
