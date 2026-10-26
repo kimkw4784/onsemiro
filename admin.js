@@ -490,12 +490,12 @@ async function handleDirectUpload() {
     const storyText = storyInput.value.trim() || `${senderName || '보호자'}가 남긴 소중한 순간`;
 
     submitBtn.disabled = true;
-    submitBtn.innerText = '준비 중...';
+    submitBtn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>준비 중...';
 
     try {
         const items = [];
         for (let i = 0; i < currentSelectedFiles.length; i++) {
-            submitBtn.innerText = `준비 중 ${i + 1}/${currentSelectedFiles.length}`;
+            submitBtn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span>준비 중 ${i + 1}/${currentSelectedFiles.length}`;
             items.push(await prepareMediaFile(currentSelectedFiles[i]));
         }
 
@@ -513,7 +513,7 @@ async function handleDirectUpload() {
                 items: batches[b],
                 onProgress: (percent) => {
                     const overall = Math.round(((b + percent / 100) / batches.length) * 100);
-                    submitBtn.innerText = `올리는 중 ${Math.min(99, overall)}%`;
+                    submitBtn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span>올리는 중 ${Math.min(99, overall)}%`;
                 }
             });
         }
@@ -560,6 +560,7 @@ function renderDirectGallery() {
             html += `
                 <div class="direct-media-card" id="mediaCard-${item.id}-${fIdx}">
                     <div class="direct-media-thumb">
+                        ${item.isDirect ? '<span class="direct-owner-badge"><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>직접 올림</span>' : ''}
                         ${mediaTagFor(f, false)}
                         <button type="button" class="btn-direct-delete" title="삭제" onclick="deleteGalleryItem('${item.id}', ${fIdx}, this)" aria-label="삭제"><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
                     </div>
