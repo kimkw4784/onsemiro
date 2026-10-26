@@ -1195,6 +1195,7 @@ async function openDownloadModal() {
 }
 
 function renderDownloadList(totalBytes) {
+    downloadNextIndex = 0;
     const body = document.querySelector('#downloadModal .download-body');
     if (!body) return;
 
@@ -1224,6 +1225,7 @@ function renderDownloadList(totalBytes) {
             <span class="nb">파일이 많거나 영상이 크다면 PC에서 받는 것을 추천해요.</span>
             <span class="nb">브라우저가 '여러 파일 내려받기'를 물어보면 허용해 주세요.</span>
             <span class="nb">내려받기 주소는 1시간 동안 유효해요.</span>
+            <span class="nb">받고 있는 파일은 브라우저 다운로드 목록에서 취소할 수 있어요.</span>
         </p>
         <ul class="download-list">${rows}</ul>
     `;
@@ -1234,11 +1236,25 @@ function markDownloaded(index) {
     if (items[index]) items[index].classList.add('done');
 }
 
-// 전체 내려받기: 브라우저가 막지 않도록 하나씩 간격을 두고 차례로 저장
+let downloadAllRunning = false;
+let downloadNextIndex = 0;
+
 async function downloadAll(btn) {
-    btn.disabled = true;
-    for (let i = 0; i < downloadList.length; i++) {
-        btn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span>내려받는 중 ${i + 1}/${downloadList.length}`;
+    if (downloadAllRunning) {
+        downloadAllRunning = false;
+        btn.disabled = true;
+        btn.innerText = '멈추는 중...';
+        return;
+    }
+
+    if (downloadNextIndex >= downloadList.length) downloadNextIndex = 0;
+    downloadAllRunning = true;
+    btn.disabled = false;
+    btn.classList.add('is-running');
+
+    while (downloadAllRunning && downloadNextIndex < downloadList.length) {
+        const i = downloadNextIndex;
+        btn.innerHTML = `<span class="btn-spinner is-dark" aria-hidden="true"></span>내려받는 중 ${i + 1}/${downloadList.length} · 눌러서 멈추기`;
         const a = document.createElement('a');
         a.href = downloadList[i].url;
         a.download = downloadList[i].name;
@@ -1247,16 +1263,19 @@ async function downloadAll(btn) {
         a.click();
         a.remove();
         markDownloaded(i);
+        downloadNextIndex = i + 1;
         await new Promise(resolve => setTimeout(resolve, 1500));
     }
-    btn.innerText = '전체 내려받기 완료';
-    setTimeout(() => {
-        btn.disabled = false;
-        btn.innerText = '전체 다시 내려받기';
-    }, 2000);
+
+    const finished = downloadNextIndex >= downloadList.length;
+    downloadAllRunning = false;
+    btn.classList.remove('is-running');
+    btn.disabled = false;
+    btn.innerText = finished ? '전체 다시 내려받기' : `이어서 내려받기 (${downloadNextIndex + 1}번째부터)`;
 }
 
 function closeDownloadModal() {
+    downloadAllRunning = false;
     document.getElementById('downloadModal')?.classList.remove('active');
     document.body.style.overflow = '';
 }
