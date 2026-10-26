@@ -1,5 +1,6 @@
 const { setGlobalOptions } = require("firebase-functions");
 const { onCall, HttpsError } = require("firebase-functions/https");
+const { onSchedule } = require("firebase-functions/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
@@ -174,12 +175,12 @@ async function saveProfilePhoto(slug, dataUrl) {
 
 // 문자 발송 (긴 문자는 솔라피가 자동으로 LMS로 보냄)
 // 결과: "sent" | "skipped"(발신번호 미설정) | "failed"
-async function sendSms(to, text) {
+async function sendSms(to, text, subject = "[온새미로] 추모관 안내") {
     const from = SMS_SENDER.replace(/[^\d]/g, "");
     if (!from || !to) return "skipped";
     try {
         const service = new SolapiMessageService(SOLAPI_API_KEY.value().trim(), SOLAPI_API_SECRET.value().trim());
-        await service.send({ to, from, text, subject: "[온새미로] 추모관 안내" });
+        await service.send({ to, from, text, subject });
         return "sent";
     } catch (err) {
         console.error("문자 발송 실패:", err);
@@ -480,7 +481,8 @@ function pickMemorial(m) {
         plan: m.plan || "essential",
         counts: m.counts || {},
         storageBytes: m.storageBytes || 0,
-        storageLimit: storageLimitOf(m.plan)
+        storageLimit: storageLimitOf(m.plan),
+        reminderEnabled: m.reminderEnabled !== false
     };
 }
 
@@ -1177,4 +1179,90 @@ exports.adminListDownloads = onCall({ secrets: R2_SECRETS }, async (request) => 
     }
 
     return { files, totalBytes };
+});
+
+
+exports.adminSetReminder = onCall(async (request) => {
+    const { slug, key, enabled } = request.data || {};
+    await assertAdmin(slug, key);
+    await db.collection("memorials").doc(slug).update({
+        reminderEnabled: Boolean(enabled),
+        updatedAt: FieldValue.serverTimestamp()
+    });
+    return { reminderEnabled: Boolean(enabled) };
+});
+
+function kstToday() {
+    const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate() };
+}
+
+function isLeapYear(y) {
+    return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
+
+function anniversaryYears(iso, today) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+    if (!match) return 0;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    let day = Number(match[3]);
+    if (month === 2 && day === 29 && !isLeapYear(today.y)) day = 28;
+    if (month !== today.m || day !== today.d) return 0;
+    return today.y - year;
+}
+
+function reminderMessage(type, petName, years, slug) {
+    const name = callName(petName);
+    const line = type === "farewell"
+        ? `오늘은 ${name}가 별이 된 지 ${years}년이 되는 날이에요.`
+        : `오늘은 ${name}를 처음 만난 지 ${years}년이 되는 날이에요.`;
+    return [
+        type === "farewell" ? "[온새미로] 기일 안내" : "[온새미로] 기념일 안내",
+        "",
+        line,
+        `${name}를 떠올리며 추모관에 따뜻한 마음을 남겨주세요.`,
+        "",
+        `■ ${petName}의 추모관`,
+        `${SITE_BASE}/memorial.html?room=${slug}`,
+        "",
+        "기념일 알림은 관리자 화면의 정보 수정에서 끌 수 있어요."
+    ].join("\n");
+}
+
+exports.sendAnniversaryReminders = onSchedule({
+    schedule: "0 10 * * *",
+    timeZone: "Asia/Seoul",
+    secrets: SMS_SECRETS,
+    timeoutSeconds: 540
+}, async () => {
+    const today = kstToday();
+    const todayKey = `${today.y}-${String(today.m).padStart(2, "0")}-${String(today.d).padStart(2, "0")}`;
+    const snap = await db.collection("memorials").get();
+
+    for (const doc of snap.docs) {
+        const memorial = doc.data();
+        if (memorial.reminderEnabled === false) continue;
+
+        const events = [];
+        const farewellYears = anniversaryYears(memorial.farewellDate, today);
+        if (farewellYears > 0) events.push(["farewell", farewellYears]);
+        const meetYears = anniversaryYears(memorial.meetDate, today);
+        if (meetYears > 0) events.push(["meet", meetYears]);
+        if (events.length === 0) continue;
+
+        const secretRef = db.collection("secrets").doc(doc.id);
+        const secret = (await secretRef.get()).data() || {};
+        if (!secret.orderId || secret.lastReminderDate === todayKey) continue;
+
+        const order = (await db.collection("orders").doc(secret.orderId).get()).data() || {};
+        const phone = order.applicant?.phone;
+        if (!phone) continue;
+
+        for (const [type, years] of events) {
+            const result = await sendSms(phone, reminderMessage(type, memorial.petName || "아이", years, doc.id), "[온새미로] 기념일 안내");
+            console.log(`기념일 알림 ${doc.id} ${type}: ${result}`);
+        }
+        await secretRef.update({ lastReminderDate: todayKey });
+    }
 });

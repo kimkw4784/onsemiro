@@ -2786,3 +2786,10 @@ body {
     color: var(--accent-brown);
     text-decoration: underline;
 }
+
+.form-label-sub {
+    margin-left: 4px;
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--text-muted);
+}

@@ -939,6 +939,7 @@ function loadMemorialInfo(memorial) {
     document.getElementById('infoGift1').value = gifts[0] || '';
     document.getElementById('infoGift2').value = gifts[1] || '';
     document.getElementById('infoBgm').value = m.bgm || 'piano';
+    renderReminderToggle(m);
 
 
     renderInfoAvatar();
@@ -1278,4 +1279,31 @@ function closeDownloadModal() {
     downloadAllRunning = false;
     document.getElementById('downloadModal')?.classList.remove('active');
     document.body.style.overflow = '';
+}
+
+function renderReminderToggle(m) {
+    const toggle = document.getElementById('reminderToggle');
+    if (!toggle) return;
+    toggle.checked = m.reminderEnabled !== false;
+    const status = document.getElementById('reminderStatus');
+    if (status) status.innerText = '';
+}
+
+async function toggleReminder(input) {
+    const enabled = input.checked;
+    const status = document.getElementById('reminderStatus');
+    input.disabled = true;
+    if (status) status.innerText = '저장하는 중...';
+    try {
+        await functions.httpsCallable('adminSetReminder')({ slug: adminRoom, key: adminKey, enabled });
+        if (adminMemorial) adminMemorial.reminderEnabled = enabled;
+        if (status) status.innerText = enabled ? '기념일 알림을 받습니다.' : '기념일 알림을 받지 않습니다.';
+    } catch (err) {
+        console.error(err);
+        input.checked = !enabled;
+        if (status) status.innerText = '';
+        alert(err.message || '저장하지 못했습니다.');
+    } finally {
+        input.disabled = false;
+    }
 }

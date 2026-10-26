@@ -253,7 +253,8 @@
                 <div class="info-card">
                     <div class="info-date-row">
                         <div class="info-field">
-                            <label class="info-label" for="infoMeetDate">처음 만난 날</label>
+                            <label class="info-label" for="infoMeetDate">처음 만난 날 <span class="form-label-sub">생일 또는
+                                    입양일</span></label>
                             <input type="text" id="infoMeetDate" class="timeline-input info-input admin-datepicker"
                                 placeholder="날짜 선택" onchange="markInfoDirty()">
                         </div>
@@ -298,6 +299,22 @@
                             <option value="none">음악 없음 (조용한 추모)</option>
                         </select>
                     </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="reminder-row">
+                        <div class="reminder-text">
+                            <span class="info-label" id="reminderLabel">기념일 알림</span>
+                            <p class="info-hint">매년 처음 만난 날과 별이 된 날 오전 10시에, 등록된 휴대폰 번호로 추모관 방문 알림을 보내드려요. 켜고 끄면 바로
+                                적용돼요.</p>
+                        </div>
+                        <label class="reminder-switch">
+                            <input type="checkbox" id="reminderToggle" aria-labelledby="reminderLabel"
+                                onchange="toggleReminder(this)">
+                            <span class="reminder-slider" aria-hidden="true"></span>
+                        </label>
+                    </div>
+                    <p class="reminder-status" id="reminderStatus" aria-live="polite"></p>
                 </div>
 
                 <!-- 저장 바 -->
