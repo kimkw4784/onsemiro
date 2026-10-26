@@ -2754,3 +2754,22 @@ body {
     margin-top: 8px;
     color: var(--text-sub);
 }
+
+.legal-table td:first-child {
+    width: 34%;
+    word-break: keep-all;
+}
+
+.legal-sub {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.legal-note {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
