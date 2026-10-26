@@ -174,7 +174,12 @@ function openOrderModal(planType = 'essential') {
                     <div class="order-notice">
                         <p><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="nb">개설 완료 즉시 비공개 관리자 링크와</span> <span class="nb">가족 전용 주소가 발급됩니다.</span></p>
                     </div>
+                    <p class="order-refund-note">결제 즉시 추모관이 개설됩니다. 결제일로부터 7일 이내, 이용을 시작하기 전이라면 전액 환불해 드립니다.</p>
 
+                    <label class="order-agree">
+                        <input type="checkbox" id="orderAgree" required>
+                        <span>주문 내용과 <a href="terms.html#refund" target="_blank" rel="noopener">이용약관·환불 규정</a>, <a href="privacy.html" target="_blank" rel="noopener">개인정보 수집·이용</a>을 확인했으며 결제에 동의합니다.</span>
+                    </label>
                     <button type="submit" id="orderSubmitBtn" class="btn btn-primary btn-full">
                         ${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제 및 생성하기
                     </button>

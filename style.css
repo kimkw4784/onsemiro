@@ -2716,3 +2716,41 @@ body {
 .flatpickr-mobile::-webkit-date-and-time-value {
     text-align: left;
 }
+
+.order-refund-note {
+    margin: 14px 0 10px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-sub);
+    word-break: keep-all;
+}
+
+.order-agree {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--text-main);
+    cursor: pointer;
+}
+
+.order-agree input {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    accent-color: var(--accent-brown);
+}
+
+.order-agree a,
+.pricing-refund a {
+    color: var(--accent-brown);
+    text-decoration: underline;
+}
+
+.pricing-refund {
+    margin-top: 8px;
+    color: var(--text-sub);
+}
