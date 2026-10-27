@@ -2794,12 +2794,14 @@ body {
     color: var(--text-muted);
 }
 
-.gift-code-box {
-    margin: 4px 0 12px;
+.order-modal-body {
+    scrollbar-gutter: stable;
 }
 
 .gift-code-toggle {
-    padding: 0;
+    display: block;
+    margin: 14px auto 0;
+    padding: 4px 8px;
     border: none;
     background: none;
     font-family: inherit;
@@ -2809,25 +2811,21 @@ body {
     cursor: pointer;
 }
 
-.gift-code-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: 8px;
-}
-
-.gift-code-field[hidden],
-#payMethodSection[hidden],
-#orderRefundNote[hidden] {
-    display: none;
-}
-
 .gift-code-hint {
+    margin-top: 6px;
     font-size: 12px;
     color: var(--text-sub);
+    word-break: keep-all;
 }
 
 #giftCodeInput {
     text-transform: uppercase;
     letter-spacing: 1px;
+}
+
+#planSection[hidden],
+#payMethodSection[hidden],
+#giftCodeSection[hidden],
+#orderRefundNote[hidden] {
+    display: none;
 }

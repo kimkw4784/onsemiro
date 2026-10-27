@@ -67,6 +67,7 @@ function openOrderModal(planType = 'essential') {
 
     currentSelectedPlan = planType;
     currentPayMethod = 'CARD';
+    giftMode = false;
 
     // 기존 모달이 남아있다면 제거
     const oldModal = document.getElementById('orderModal');
@@ -121,7 +122,7 @@ function openOrderModal(planType = 'essential') {
                         <input type="tel" id="applicantPhone" class="form-input" placeholder="예: 010-1234-5678" inputmode="numeric" autocomplete="tel" required>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" id="planSection">
                         <label class="form-label">선택 플랜</label>
                         <div class="plan-card-group" id="planCardGroup">
                             <label class="plan-card ${currentSelectedPlan === 'essential' ? 'active' : ''}" onclick="selectPlanInModal(this, 'essential')">
@@ -151,6 +152,12 @@ function openOrderModal(planType = 'essential') {
                         </div>
                     </div>
 
+                    <div class="form-group" id="giftCodeSection" hidden>
+                        <label class="form-label" for="giftCodeInput">선물 코드</label>
+                        <input type="text" id="giftCodeInput" class="form-input" placeholder="받으신 선물 코드를 입력해 주세요" autocomplete="off" autocapitalize="characters" spellcheck="false">
+                        <p class="gift-code-hint">결제 없이, 선물에 포함된 요금제로 바로 추모관이 개설돼요.</p>
+                    </div>
+
                     <div class="form-group" id="payMethodSection">
                         <label class="form-label">결제 수단</label>
                         <div class="plan-card-group" id="payMethodGroup" style="grid-template-columns: repeat(2, 1fr);">
@@ -174,14 +181,6 @@ function openOrderModal(planType = 'essential') {
                     <div class="order-notice">
                         <p><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="nb">개설 완료 즉시 비공개 관리자 링크와</span> <span class="nb">가족 전용 주소가 발급됩니다.</span></p>
                     </div>
-                    <div class="gift-code-box">
-                        <button type="button" class="gift-code-toggle" onclick="toggleGiftCode()">선물 코드가 있으신가요?</button>
-                        <div class="gift-code-field" id="giftCodeField" hidden>
-                            <input type="text" id="giftCodeInput" class="form-input" placeholder="예: GIFT-7K2Q-M9XA" autocomplete="off" autocapitalize="characters" oninput="onGiftCodeInput()">
-                            <p class="gift-code-hint">선물 코드를 입력하면 결제 없이, 코드에 정해진 요금제로 바로 추모관이 개설돼요.</p>
-                        </div>
-                    </div>
-
                     <p class="order-refund-note" id="orderRefundNote">결제 즉시 추모관이 개설됩니다. 결제일로부터 7일 이내이면서 이용을 시작하기 전이라면 전액 환불해 드립니다.</p>
 
                     <label class="order-agree">
@@ -191,6 +190,7 @@ function openOrderModal(planType = 'essential') {
                     <button type="submit" id="orderSubmitBtn" class="btn btn-primary btn-full">
                         ${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제 및 생성하기
                     </button>
+                    <button type="button" class="gift-code-toggle" id="giftModeToggle" onclick="setGiftMode(!giftMode)">선물받은 코드가 있으신가요?</button>
                 </form>
             </div>
         </div>
@@ -231,32 +231,46 @@ function selectPayMethod(cardElement, method) {
 }
 
 // 폼 최종 제출 → 서버에 주문 등록 → 토스 결제창 열기
+let giftMode = false;
+
+function normalizeGiftCode(value) {
+    const raw = String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (raw.length === 12 && raw.startsWith('GIFT')) {
+        return `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8)}`;
+    }
+    return String(value || '').trim().toUpperCase();
+}
+
 function getGiftCode() {
-    return (document.getElementById('giftCodeInput')?.value || '').trim().toUpperCase();
+    if (!giftMode) return '';
+    return normalizeGiftCode(document.getElementById('giftCodeInput')?.value);
 }
 
 function updateSubmitButtonText() {
     const submitBtn = document.getElementById('orderSubmitBtn');
     if (!submitBtn) return;
-    submitBtn.innerText = getGiftCode()
-        ? '선물로 추모관 개설하기'
+    submitBtn.innerText = giftMode
+        ? '선물받은 추모관 개설하기'
         : `${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제 및 생성하기`;
 }
 
-function toggleGiftCode() {
-    const field = document.getElementById('giftCodeField');
-    if (!field) return;
-    field.hidden = !field.hidden;
-    if (!field.hidden) document.getElementById('giftCodeInput')?.focus();
-}
-
-function onGiftCodeInput() {
-    const isGift = Boolean(getGiftCode());
-    const paySection = document.getElementById('payMethodSection');
-    const refundNote = document.getElementById('orderRefundNote');
-    if (paySection) paySection.hidden = isGift;
-    if (refundNote) refundNote.hidden = isGift;
+function setGiftMode(on) {
+    giftMode = on;
+    ['planSection', 'payMethodSection', 'orderRefundNote'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = on;
+    });
+    const giftSection = document.getElementById('giftCodeSection');
+    const input = document.getElementById('giftCodeInput');
+    const toggle = document.getElementById('giftModeToggle');
+    if (giftSection) giftSection.hidden = !on;
+    if (input) {
+        input.required = on;
+        if (!on) input.value = '';
+    }
+    if (toggle) toggle.innerText = on ? '결제하고 개설할게요' : '선물받은 코드가 있으신가요?';
     updateSubmitButtonText();
+    if (on && input) input.focus();
 }
 
 async function handleOrderSubmit(event) {
