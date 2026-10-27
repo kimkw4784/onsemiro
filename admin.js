@@ -434,18 +434,29 @@ const DIRECT_BATCH_SIZE = 10;  // 서버에는 10개씩 나눠서 올림
 
 function handleFileSelect(input) {
     if (!input.files || input.files.length === 0) return;
-    let files = Array.from(input.files);
-    if (files.length > DIRECT_MAX_FILES) {
-        alert(`한 번에 최대 ${DIRECT_MAX_FILES}개까지 올릴 수 있어요.\n앞의 ${DIRECT_MAX_FILES}개만 선택되었습니다.`);
-        files = files.slice(0, DIRECT_MAX_FILES);
+    const isSameFile = (a, b) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
+    const fresh = Array.from(input.files).filter(file => !currentSelectedFiles.some(picked => isSameFile(picked, file)));
+    const room = DIRECT_MAX_FILES - currentSelectedFiles.length;
+
+    if (fresh.length > room) {
+        alert(room > 0
+            ? `한 번에 최대 ${DIRECT_MAX_FILES}개까지 올릴 수 있어요.\n${room}개만 더 추가되었습니다.`
+            : `한 번에 최대 ${DIRECT_MAX_FILES}개까지 올릴 수 있어요.\n먼저 선택한 파일을 올린 뒤 추가해 주세요.`);
     }
-    currentSelectedFiles = files;
+
+    currentSelectedFiles = currentSelectedFiles.concat(fresh.slice(0, Math.max(0, room)));
+    input.value = '';
     renderSelectedPreviews();
 }
+
+let selectedPreviewUrls = [];
 
 function renderSelectedPreviews() {
     const grid = document.getElementById('selectedPreviewGrid');
     if (!grid) return;
+
+    selectedPreviewUrls.forEach(url => URL.revokeObjectURL(url));
+    selectedPreviewUrls = [];
 
     if (currentSelectedFiles.length === 0) {
         grid.style.display = 'none';
@@ -457,6 +468,7 @@ function renderSelectedPreviews() {
     grid.innerHTML = currentSelectedFiles.map((file, idx) => {
         const isVideo = file.type.startsWith('video');
         const objectUrl = URL.createObjectURL(file);
+        selectedPreviewUrls.push(objectUrl);
         return `
             <div class="preview-thumb-wrap">
                 ${isVideo ? `<video src="${objectUrl}"></video>` : `<img src="${objectUrl}">`}

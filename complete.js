@@ -165,7 +165,9 @@ function renderOrder(orderData) {
 
     const planEl = document.getElementById('planDisplay');
     if (planEl && orderData.plan) {
-        planEl.innerText = orderData.plan === 'signature' ? '시그니처 아카이브 (49,000원)' : '에센셜 아카이브 (19,500원)';
+        const planName = orderData.plan === 'signature' ? '시그니처 아카이브' : '에센셜 아카이브';
+        const planPrice = orderData.plan === 'signature' ? '49,000원' : '19,500원';
+        planEl.innerText = orderData.gift ? `${planName} (선물)` : `${planName} (${planPrice})`;
     }
 
     // [링크 박스]

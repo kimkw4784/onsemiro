@@ -2793,3 +2793,41 @@ body {
     font-weight: 400;
     color: var(--text-muted);
 }
+
+.gift-code-box {
+    margin: 4px 0 12px;
+}
+
+.gift-code-toggle {
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 12.5px;
+    color: var(--text-sub);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.gift-code-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.gift-code-field[hidden],
+#payMethodSection[hidden],
+#orderRefundNote[hidden] {
+    display: none;
+}
+
+.gift-code-hint {
+    font-size: 12px;
+    color: var(--text-sub);
+}
+
+#giftCodeInput {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}

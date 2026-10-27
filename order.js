@@ -151,7 +151,7 @@ function openOrderModal(planType = 'essential') {
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" id="payMethodSection">
                         <label class="form-label">결제 수단</label>
                         <div class="plan-card-group" id="payMethodGroup" style="grid-template-columns: repeat(2, 1fr);">
                             <label class="plan-card active" onclick="selectPayMethod(this, 'CARD')">
@@ -174,7 +174,15 @@ function openOrderModal(planType = 'essential') {
                     <div class="order-notice">
                         <p><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="nb">개설 완료 즉시 비공개 관리자 링크와</span> <span class="nb">가족 전용 주소가 발급됩니다.</span></p>
                     </div>
-                    <p class="order-refund-note">결제 즉시 추모관이 개설됩니다. 결제일로부터 7일 이내, 이용을 시작하기 전이라면 전액 환불해 드립니다.</p>
+                    <div class="gift-code-box">
+                        <button type="button" class="gift-code-toggle" onclick="toggleGiftCode()">선물 코드가 있으신가요?</button>
+                        <div class="gift-code-field" id="giftCodeField" hidden>
+                            <input type="text" id="giftCodeInput" class="form-input" placeholder="예: GIFT-7K2Q-M9XA" autocomplete="off" autocapitalize="characters" oninput="onGiftCodeInput()">
+                            <p class="gift-code-hint">선물 코드를 입력하면 결제 없이, 코드에 정해진 요금제로 바로 추모관이 개설돼요.</p>
+                        </div>
+                    </div>
+
+                    <p class="order-refund-note" id="orderRefundNote">결제 즉시 추모관이 개설됩니다. 결제일로부터 7일 이내이면서 이용을 시작하기 전이라면 전액 환불해 드립니다.</p>
 
                     <label class="order-agree">
                         <input type="checkbox" id="orderAgree" required>
@@ -209,10 +217,7 @@ function selectPlanInModal(cardElement, planValue) {
     const radio = cardElement.querySelector('input[type="radio"]');
     if (radio) radio.checked = true;
 
-    const submitBtn = document.getElementById('orderSubmitBtn');
-    if (submitBtn) {
-        submitBtn.innerText = `${PLAN_PRICES[planValue].toLocaleString()}원 결제 및 생성하기`;
-    }
+    updateSubmitButtonText();
 }
 
 // 결제 수단 선택 토글
@@ -226,10 +231,40 @@ function selectPayMethod(cardElement, method) {
 }
 
 // 폼 최종 제출 → 서버에 주문 등록 → 토스 결제창 열기
+function getGiftCode() {
+    return (document.getElementById('giftCodeInput')?.value || '').trim().toUpperCase();
+}
+
+function updateSubmitButtonText() {
+    const submitBtn = document.getElementById('orderSubmitBtn');
+    if (!submitBtn) return;
+    submitBtn.innerText = getGiftCode()
+        ? '선물로 추모관 개설하기'
+        : `${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제 및 생성하기`;
+}
+
+function toggleGiftCode() {
+    const field = document.getElementById('giftCodeField');
+    if (!field) return;
+    field.hidden = !field.hidden;
+    if (!field.hidden) document.getElementById('giftCodeInput')?.focus();
+}
+
+function onGiftCodeInput() {
+    const isGift = Boolean(getGiftCode());
+    const paySection = document.getElementById('payMethodSection');
+    const refundNote = document.getElementById('orderRefundNote');
+    if (paySection) paySection.hidden = isGift;
+    if (refundNote) refundNote.hidden = isGift;
+    updateSubmitButtonText();
+}
+
 async function handleOrderSubmit(event) {
     event.preventDefault();
 
-    if (typeof TossPayments === 'undefined') {
+    const giftCode = getGiftCode();
+
+    if (!giftCode && typeof TossPayments === 'undefined') {
         alert('결제 모듈을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
         return;
     }
@@ -240,7 +275,9 @@ async function handleOrderSubmit(event) {
         if (!submitBtn) return;
         submitBtn.disabled = isLoading;
         if (isLoading) {
-            submitBtn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>결제를 준비하고 있어요...';
+            submitBtn.innerHTML = giftCode
+                ? '<span class="btn-spinner" aria-hidden="true"></span>추모관을 만들고 있어요...'
+                : '<span class="btn-spinner" aria-hidden="true"></span>결제를 준비하고 있어요...';
         } else {
             submitBtn.innerText = originalBtnText;
         }
@@ -271,13 +308,34 @@ async function handleOrderSubmit(event) {
         const result = await functions.httpsCallable('createOrder')({
             plan: currentSelectedPlan,
             memorial,
-            applicant: { name: applicantName, phone: applicantPhone }
+            applicant: { name: applicantName, phone: applicantPhone },
+            giftCode
         });
         order = result.data;
     } catch (error) {
         console.error('주문 등록 실패:', error);
         alert(error.message || '주문을 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.');
         setLoading(false);
+        return;
+    }
+
+    if (order.gift) {
+        try {
+            localStorage.setItem(`onsemiro_admin_${order.slug}`, order.adminKey);
+            localStorage.setItem('recentMemorialOrder', JSON.stringify({
+                orderId: order.orderId,
+                roomSlug: order.slug,
+                adminKey: order.adminKey,
+                petName: order.petName,
+                applicantName: order.applicantName,
+                plan: order.plan,
+                petPhoto: order.photoUrl || '',
+                gift: true
+            }));
+        } catch (e) {
+            console.error('주문 정보 저장 실패:', e);
+        }
+        window.location.href = 'complete.html';
         return;
     }
 

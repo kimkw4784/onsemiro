@@ -29,6 +29,14 @@ const SMS_SENDER = "01025544784";
 
 const SITE_BASE = "https://onsemiro.me";
 
+const KAKAO_PF_ID = "KA01PF261027003134109LR1B22qL6zZ";
+const KAKAO_TEMPLATES = {
+    opening: "KA01TP261027004805061x7xkQdiZu9t",
+    reissue: "KA01TP261027005325313ua2cVZoeBvo",
+    farewell: "KA01TP2610270057360245XN6RgWO0Z6",
+    meet: "KA01TP261027005844224VARDYZSvupl"
+};
+
 // Cloudflare R2 (사진·영상 저장소) 접근 정보
 const R2_ACCESS_KEY_ID = defineSecret("R2_ACCESS_KEY_ID");
 const R2_SECRET_ACCESS_KEY = defineSecret("R2_SECRET_ACCESS_KEY");
@@ -188,6 +196,28 @@ async function sendSms(to, text, subject = "[온새미로] 추모관 안내") {
     }
 }
 
+async function sendNotice(to, { template, variables, fallbackText, subject }) {
+    const from = SMS_SENDER.replace(/[^\d]/g, "");
+    if (!from || !to) return "skipped";
+    try {
+        const service = new SolapiMessageService(SOLAPI_API_KEY.value().trim(), SOLAPI_API_SECRET.value().trim());
+        await service.send({
+            to,
+            from,
+            kakaoOptions: {
+                pfId: KAKAO_PF_ID,
+                templateId: KAKAO_TEMPLATES[template],
+                variables,
+                disableSms: false
+            }
+        });
+        return "sent";
+    } catch (err) {
+        console.error("알림톡 발송 실패, 문자로 대체:", err);
+        return sendSms(to, fallbackText, subject);
+    }
+}
+
 function openingMessage({ applicantName, petName, slug, adminKey }) {
     return [
         "[온새미로] 추모관 개설 안내",
@@ -226,9 +256,19 @@ function reissueMessage({ petName, slug, adminKey }) {
 // 1. 주문 등록 (결제창을 열기 직전에 호출)
 // - 브라우저는 플랜 이름만 보내고, 금액은 서버가 가격표로 정함
 // =========================================
-exports.createOrder = onCall(async (request) => {
+exports.createOrder = onCall({ secrets: [...R2_SECRETS, ...SMS_SECRETS] }, async (request) => {
     const data = request.data || {};
-    const plan = PLANS[data.plan];
+    const giftCode = String(data.giftCode || "").trim().toUpperCase();
+    let giftPlan = null;
+    if (giftCode) {
+        const giftSnap = await db.collection("giftCodes").doc(giftCode).get();
+        if (!giftSnap.exists || giftSnap.data().used) {
+            throw new HttpsError("failed-precondition", "사용할 수 없는 선물 코드예요. 코드를 다시 확인해 주세요.");
+        }
+        giftPlan = giftSnap.data().plan;
+    }
+    const planKey = giftPlan || data.plan;
+    const plan = PLANS[planKey];
     if (!plan) {
         throw new HttpsError("invalid-argument", "선택한 플랜을 확인해 주세요.");
     }
@@ -260,10 +300,12 @@ exports.createOrder = onCall(async (request) => {
     const orderId = `ONSEMIRO_${Date.now()}_${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
     const orderName = `온새미로 ${plan.name} (${petName})`;
 
-    await db.collection("orders").doc(orderId).set({
-        status: "pending",
-        plan: data.plan,
-        amount: plan.price,
+    const orderRef = db.collection("orders").doc(orderId);
+    await orderRef.set({
+        status: giftCode ? "confirming" : "pending",
+        plan: planKey,
+        amount: giftCode ? 0 : plan.price,
+        giftCode: giftCode || null,
         orderName,
         applicant: { name: applicantName, phone: applicantPhone },
         memorialDraft: {
@@ -280,12 +322,126 @@ exports.createOrder = onCall(async (request) => {
         createdAt: FieldValue.serverTimestamp()
     });
 
-    return { orderId, amount: plan.price, orderName };
+    if (!giftCode) {
+        return { orderId, amount: plan.price, orderName };
+    }
+
+    const giftRef = db.collection("giftCodes").doc(giftCode);
+    try {
+        await db.runTransaction(async (tx) => {
+            const snap = await tx.get(giftRef);
+            if (!snap.exists || snap.data().used) {
+                throw new HttpsError("failed-precondition", "사용할 수 없는 선물 코드예요. 코드를 다시 확인해 주세요.");
+            }
+            tx.update(giftRef, { used: true, usedAt: FieldValue.serverTimestamp(), orderId });
+        });
+    } catch (err) {
+        await orderRef.update({ status: "failed", failure: { code: "GIFT_CODE", message: err.message || "" } });
+        throw err;
+    }
+
+    const savedOrder = (await orderRef.get()).data();
+    const result = await openMemorial(orderRef, orderId, savedOrder, { status: "paid", method: "GIFT" });
+    return { ...result, gift: true };
 });
 
 // =========================================
 // 2. 결제 승인 (결제 성공 후 complete.html에서 호출)
 // - 토스에 실제 결제를 확인하고, 금액이 맞을 때만 추모관 생성
+async function openMemorial(orderRef, orderId, order, paidFields) {
+    // 결제 확인 완료 → 추모관 주소와 관리자 키 생성
+    const slug = await generateUniqueSlug();
+    const adminKey = crypto.randomBytes(24).toString("base64url");
+    const draft = order.memorialDraft || {};
+
+    // 대표 사진 저장 (실패해도 추모관 생성은 계속 진행)
+    let photo = null;
+    try {
+        photo = await saveProfilePhoto(slug, draft.photo);
+    } catch (err) {
+        console.error("대표 사진 저장 실패:", err);
+    }
+    const photoUrl = photo ? photo.url : "";
+
+    const batch = db.batch();
+
+    batch.set(db.collection("memorials").doc(slug), {
+        petName: draft.petName,
+        petType: draft.petType,
+        meetDate: draft.meetDate,
+        farewellDate: draft.farewellDate,
+        quote: draft.quote,
+        gifts: [draft.gift1, draft.gift2],
+        bgm: draft.bgm,
+        photoUrl,
+        photoPath: photo ? photo.path : "",
+        storageBytes: 0,
+        plan: order.plan,
+        // 보호자가 오기 전 온새미로가 먼저 켜둔 촛불과 선물
+        counts: { treat: 1, toy: 1, candle: 1 },
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
+    });
+
+    batch.set(db.collection("secrets").doc(slug), {
+        adminKeyHash: hashKey(adminKey),
+        orderId,
+        createdAt: FieldValue.serverTimestamp()
+    });
+
+    // 기본 발자취 두 개 (만난 날, 별이 된 날) - 관리자 화면에서 수정·삭제 가능
+    const timelineRef = db.collection("memorials").doc(slug).collection("timeline");
+    if (draft.meetDate) {
+        batch.set(timelineRef.doc(), {
+            date: draft.meetDate,
+            story: `${callName(draft.petName)}가 우리 가족이 된 날. 그날부터 모든 날이 선물이었어.`,
+            createdAt: FieldValue.serverTimestamp()
+        });
+    }
+    if (draft.farewellDate) {
+        batch.set(timelineRef.doc(), {
+            date: draft.farewellDate,
+            story: "가족들의 품에서 조용히 눈을 감고, 가장 빛나는 별이 된 날.",
+            createdAt: FieldValue.serverTimestamp()
+        });
+    }
+
+    batch.update(orderRef, {
+        ...paidFields,
+        slug,
+        "memorialDraft.photo": FieldValue.delete()
+    });
+
+    await batch.commit();
+
+    // 개설 안내 문자 (실패해도 결제·추모관 생성에는 영향 없음)
+    const applicantName = order.applicant?.name || "보호자";
+    const smsResult = await sendNotice(order.applicant?.phone, {
+        template: "opening",
+        variables: {
+            "#{신청자}": applicantName,
+            "#{아이이름}": draft.petName,
+            "#{추모관주소}": `${SITE_BASE}/memorial.html?room=${slug}`,
+            "#{모으기주소}": `${SITE_BASE}/upload.html?room=${slug}`,
+            "#{관리자주소}": `${SITE_BASE}/admin.html?room=${slug}&key=${adminKey}`
+        },
+        fallbackText: openingMessage({ applicantName, petName: draft.petName, slug, adminKey })
+    });
+    await orderRef.update({ notification: { sms: smsResult, at: FieldValue.serverTimestamp() } });
+
+    // 관리자 키 원본은 이 응답에서 딱 한 번만 전달됨
+    return {
+        slug,
+        adminKey,
+        photoUrl,
+        smsSent: smsResult === "sent",
+        orderId,
+        plan: order.plan,
+        petName: draft.petName,
+        applicantName: order.applicant?.name || ""
+    };
+}
+
 // =========================================
 exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS, ...SMS_SECRETS] }, async (request) => {
     const { paymentKey, orderId } = request.data || {};
@@ -349,94 +505,12 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS, ...S
         throw new HttpsError("failed-precondition", payment.message || "결제 승인에 실패했습니다.");
     }
 
-    // 결제 확인 완료 → 추모관 주소와 관리자 키 생성
-    const slug = await generateUniqueSlug();
-    const adminKey = crypto.randomBytes(24).toString("base64url");
-    const draft = order.memorialDraft || {};
-
-    // 대표 사진 저장 (실패해도 추모관 생성은 계속 진행)
-    let photo = null;
-    try {
-        photo = await saveProfilePhoto(slug, draft.photo);
-    } catch (err) {
-        console.error("대표 사진 저장 실패:", err);
-    }
-    const photoUrl = photo ? photo.url : "";
-
-    const batch = db.batch();
-
-    batch.set(db.collection("memorials").doc(slug), {
-        petName: draft.petName,
-        petType: draft.petType,
-        meetDate: draft.meetDate,
-        farewellDate: draft.farewellDate,
-        quote: draft.quote,
-        gifts: [draft.gift1, draft.gift2],
-        bgm: draft.bgm,
-        photoUrl,
-        photoPath: photo ? photo.path : "",
-        storageBytes: 0,
-        plan: order.plan,
-        // 보호자가 오기 전 온새미로가 먼저 켜둔 촛불과 선물
-        counts: { treat: 1, toy: 1, candle: 1 },
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp()
-    });
-
-    batch.set(db.collection("secrets").doc(slug), {
-        adminKeyHash: hashKey(adminKey),
-        orderId,
-        createdAt: FieldValue.serverTimestamp()
-    });
-
-    // 기본 발자취 두 개 (만난 날, 별이 된 날) - 관리자 화면에서 수정·삭제 가능
-    const timelineRef = db.collection("memorials").doc(slug).collection("timeline");
-    if (draft.meetDate) {
-        batch.set(timelineRef.doc(), {
-            date: draft.meetDate,
-            story: `${callName(draft.petName)}가 우리 가족이 된 날. 그날부터 모든 날이 선물이었어.`,
-            createdAt: FieldValue.serverTimestamp()
-        });
-    }
-    if (draft.farewellDate) {
-        batch.set(timelineRef.doc(), {
-            date: draft.farewellDate,
-            story: "가족들의 품에서 조용히 눈을 감고, 가장 빛나는 별이 된 날.",
-            createdAt: FieldValue.serverTimestamp()
-        });
-    }
-
-    batch.update(orderRef, {
+    return openMemorial(orderRef, orderId, order, {
         status: "paid",
-        slug,
         paymentKey,
         method: payment.method || "",
-        approvedAt: payment.approvedAt || "",
-        "memorialDraft.photo": FieldValue.delete()
+        approvedAt: payment.approvedAt || ""
     });
-
-    await batch.commit();
-
-    // 개설 안내 문자 (실패해도 결제·추모관 생성에는 영향 없음)
-    const smsResult = await sendSms(order.applicant?.phone, openingMessage({
-        applicantName: order.applicant?.name || "보호자",
-        petName: draft.petName,
-        slug,
-        adminKey
-    }));
-    await orderRef.update({ notification: { sms: smsResult, at: FieldValue.serverTimestamp() } });
-
-    // 관리자 키 원본은 이 응답에서 딱 한 번만 전달됨
-    return {
-        slug,
-        adminKey,
-        photoUrl,
-        smsSent: smsResult === "sent",
-        orderId,
-        plan: order.plan,
-        petName: draft.petName,
-        applicantName: order.applicant?.name || ""
-    };
 });
 
 
@@ -1024,11 +1098,15 @@ exports.operatorReissueAdminKey = onCall({ secrets: [OPERATOR_KEY, ...SMS_SECRET
         const orderId = secretSnap.data().orderId;
         const order = orderId ? (await db.collection("orders").doc(orderId).get()).data() : null;
         const memorial = (await db.collection("memorials").doc(slug).get()).data() || {};
-        sms = await sendSms(order?.applicant?.phone, reissueMessage({
-            petName: memorial.petName || "아이",
-            slug,
-            adminKey
-        }));
+        const petName = memorial.petName || "아이";
+        sms = await sendNotice(order?.applicant?.phone, {
+            template: "reissue",
+            variables: {
+                "#{아이이름}": petName,
+                "#{관리자주소}": adminLink
+            },
+            fallbackText: reissueMessage({ petName, slug, adminKey })
+        });
     }
 
     return { adminLink, sms };
@@ -1212,6 +1290,20 @@ function anniversaryYears(iso, today) {
     return today.y - year;
 }
 
+function sendReminder(phone, type, petName, years, slug) {
+    return sendNotice(phone, {
+        template: type === "farewell" ? "farewell" : "meet",
+        variables: {
+            "#{부르는이름}": callName(petName),
+            "#{햇수}": String(years),
+            "#{아이이름}": petName,
+            "#{추모관주소}": `${SITE_BASE}/memorial.html?room=${slug}`
+        },
+        fallbackText: reminderMessage(type, petName, years, slug),
+        subject: "[온새미로] 기념일 안내"
+    });
+}
+
 function reminderMessage(type, petName, years, slug) {
     const name = callName(petName);
     const line = type === "farewell"
@@ -1260,9 +1352,54 @@ exports.sendAnniversaryReminders = onSchedule({
         if (!phone) continue;
 
         for (const [type, years] of events) {
-            const result = await sendSms(phone, reminderMessage(type, memorial.petName || "아이", years, doc.id), "[온새미로] 기념일 안내");
+            const result = await sendReminder(phone, type, memorial.petName || "아이", years, doc.id);
             console.log(`기념일 알림 ${doc.id} ${type}: ${result}`);
         }
         await secretRef.update({ lastReminderDate: todayKey });
     }
+});
+
+exports.operatorTestReminder = onCall({ secrets: [OPERATOR_KEY, ...SMS_SECRETS] }, async (request) => {
+    assertOperator(request.data?.operatorKey);
+
+    const slug = String(request.data?.slug || "").toUpperCase();
+    const type = request.data?.type === "meet" ? "meet" : "farewell";
+    const memorial = (await db.collection("memorials").doc(slug).get()).data();
+    if (!memorial) throw new HttpsError("not-found", "추모관을 찾을 수 없습니다.");
+
+    const secret = (await db.collection("secrets").doc(slug).get()).data() || {};
+    const order = secret.orderId ? (await db.collection("orders").doc(secret.orderId).get()).data() || {} : {};
+    const phone = order.applicant?.phone;
+    if (!phone) throw new HttpsError("failed-precondition", "등록된 휴대폰 번호가 없습니다.");
+
+    const sms = await sendReminder(phone, type, memorial.petName || "아이", 1, slug);
+    return { sms };
+});
+
+const GIFT_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function randomGiftPart(length) {
+    const bytes = crypto.randomBytes(length);
+    return Array.from(bytes, (b) => GIFT_CODE_CHARS[b % GIFT_CODE_CHARS.length]).join("");
+}
+
+exports.operatorCreateGiftCodes = onCall({ secrets: [OPERATOR_KEY] }, async (request) => {
+    assertOperator(request.data?.operatorKey);
+
+    const plan = PLANS[request.data?.plan] ? request.data.plan : "essential";
+    const note = cleanText(request.data?.note, 100);
+    const count = Math.min(20, Math.max(1, Number(request.data?.count) || 1));
+
+    const codes = [];
+    for (let i = 0; i < count; i++) {
+        let code;
+        let ref;
+        do {
+            code = `GIFT-${randomGiftPart(4)}-${randomGiftPart(4)}`;
+            ref = db.collection("giftCodes").doc(code);
+        } while ((await ref.get()).exists);
+        await ref.set({ plan, note, used: false, createdAt: FieldValue.serverTimestamp() });
+        codes.push(code);
+    }
+    return { plan, codes };
 });
