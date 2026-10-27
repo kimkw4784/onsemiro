@@ -231,6 +231,25 @@ function renderStorageUsage(used, limit) {
     textEl.innerText = `${usedText} / ${Math.round(limit / GB)}GB 사용 중`;
     barEl.style.width = `${percent}%`;
     barEl.style.background = percent >= 90 ? '#C0704A' : 'var(--accent-brown, #B89065)';
+
+    const box = document.getElementById('storageUsage');
+    if (!box) return;
+    let warning = document.getElementById('storageWarning');
+    if (!warning) {
+        warning = document.createElement('p');
+        warning.id = 'storageWarning';
+        warning.className = 'storage-warning';
+        box.appendChild(warning);
+    }
+    if (percent >= 100) {
+        warning.innerHTML = '저장 공간이 가득 찼어요. 필요 없는 사진·영상을 정리하거나 <a href="mailto:contact@onsemiro.me">contact@onsemiro.me</a>로 문의해 주세요.';
+        warning.hidden = false;
+    } else if (percent >= 90) {
+        warning.innerHTML = '저장 공간이 거의 찼어요. 용량이 부족하면 <a href="mailto:contact@onsemiro.me">contact@onsemiro.me</a>로 문의해 주세요.';
+        warning.hidden = false;
+    } else {
+        warning.hidden = true;
+    }
 }
 
 function setFilter(filter) {

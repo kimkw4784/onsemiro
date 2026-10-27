@@ -1904,3 +1904,20 @@ button:disabled .btn-spinner {
 .btn-timeline-add .btn-spinner {
     margin-right: 6px;
 }
+
+.storage-warning {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #A35A36;
+    word-break: keep-all;
+}
+
+.storage-warning[hidden] {
+    display: none;
+}
+
+.storage-warning a {
+    color: inherit;
+    text-decoration: underline;
+}
