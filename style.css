@@ -1649,25 +1649,37 @@ body {
 
 .footer-bottom {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 14px;
 }
 
 .footer-info {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px 12px;
+    flex-direction: column;
+    gap: 6px;
     font-size: 12px;
     line-height: 1.6;
     opacity: 0.8;
 }
 
-.footer-info span:not(:last-child)::after {
-    content: '|';
-    margin-left: 12px;
-    opacity: 0.3;
+.footer-info-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 4px;
+    margin: 0;
+}
+
+.footer-info-row span:not(:last-child)::after {
+    content: '';
+    display: inline-block;
+    width: 1px;
+    height: 10px;
+    margin: 0 12px;
+    background: currentColor;
+    opacity: 0.35;
+    vertical-align: middle;
 }
 
 .footer-legal {
@@ -1703,8 +1715,6 @@ body {
     }
 
     .footer-bottom {
-        flex-direction: column;
-        align-items: flex-start;
         gap: 12px;
     }
 }
@@ -2537,18 +2547,21 @@ body {
 
     /* 하단 사업자 정보: 한 줄에 하나씩 */
     .footer-info {
-        flex-direction: column;
-        align-items: flex-start;
+        gap: 8px;
         text-align: left;
-        gap: 2px;
     }
 
     .footer-bottom {
-        align-items: flex-start;
         text-align: left;
     }
 
-    .footer-info span:not(:last-child)::after {
+    .footer-info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+
+    .footer-info-row span:not(:last-child)::after {
         display: none;
     }
 
