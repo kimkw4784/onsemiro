@@ -183,6 +183,11 @@ function openOrderModal(planType = 'essential') {
                     </div>
                     <p class="order-refund-note" id="orderRefundNote">결제 즉시 추모관이 개설됩니다. 결제일로부터 7일 이내이면서 이용을 시작하기 전이라면 전액 환불해 드립니다.</p>
 
+                    <label class="order-agree order-remind">
+                        <input type="checkbox" id="orderRemind">
+                        <span>(선택) 매년 처음 만난 날과 별이 된 날에 기념일 알림을 받을게요. 관리자 화면에서 언제든 끌 수 있어요.</span>
+                    </label>
+
                     <label class="order-agree">
                         <input type="checkbox" id="orderAgree" required>
                         <span>주문 내용과 <a href="terms.html#refund" target="_blank" rel="noopener">이용약관·환불 규정</a>, <a href="privacy.html" target="_blank" rel="noopener">개인정보 수집·이용</a>을 확인했으며 결제에 동의합니다.</span>
@@ -190,7 +195,7 @@ function openOrderModal(planType = 'essential') {
                     <button type="submit" id="orderSubmitBtn" class="btn btn-primary btn-full">
                         ${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제 및 생성하기
                     </button>
-                    <button type="button" class="gift-code-toggle" id="giftModeToggle" onclick="setGiftMode(!giftMode)">선물받은 코드가 있으신가요?</button>
+                    <button type="button" class="gift-code-toggle" id="giftModeToggle" onclick="setGiftMode(!giftMode)">선물 받은 코드가 있으신가요?</button>
                 </form>
             </div>
         </div>
@@ -250,7 +255,7 @@ function updateSubmitButtonText() {
     const submitBtn = document.getElementById('orderSubmitBtn');
     if (!submitBtn) return;
     submitBtn.innerText = giftMode
-        ? '선물받은 추모관 개설하기'
+        ? '선물 받은 추모관 개설하기'
         : `${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제 및 생성하기`;
 }
 
@@ -268,7 +273,7 @@ function setGiftMode(on) {
         input.required = on;
         if (!on) input.value = '';
     }
-    if (toggle) toggle.innerText = on ? '결제하고 개설할게요' : '선물받은 코드가 있으신가요?';
+    if (toggle) toggle.innerText = on ? '결제하고 개설할게요' : '선물 받은 코드가 있으신가요?';
     updateSubmitButtonText();
     if (on && input) input.focus();
 }
@@ -290,7 +295,7 @@ async function handleOrderSubmit(event) {
         submitBtn.disabled = isLoading;
         if (isLoading) {
             submitBtn.innerHTML = giftCode
-                ? '<span class="btn-spinner" aria-hidden="true"></span>추모관을 만들고 있어요...'
+                ? '<span class="btn-spinner" aria-hidden="true"></span>추모관을 개설하고 있어요...'
                 : '<span class="btn-spinner" aria-hidden="true"></span>결제를 준비하고 있어요...';
         } else {
             submitBtn.innerText = originalBtnText;
@@ -311,7 +316,8 @@ async function handleOrderSubmit(event) {
         gift2: valueOrExample(document.getElementById('giftInput2')),
         quote: valueOrExample(document.getElementById('petQuoteInput')),
         bgm: document.getElementById('petBgmSelect')?.value || '',
-        photo: window.uploadedImageData || ''
+        photo: window.uploadedImageData || '',
+        reminder: Boolean(document.getElementById('orderRemind')?.checked)
     };
 
     setLoading(true);

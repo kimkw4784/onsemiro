@@ -222,7 +222,7 @@ function openingMessage({ applicantName, petName, slug, adminKey }) {
     return [
         "[온새미로] 추모관 개설 안내",
         "",
-        `${applicantName}님, ${petName}의 온새미로가 개설되었습니다.`,
+        `${applicantName}님, 신청하신 ${petName}의 온새미로 추모관 개설이 완료되었습니다.`,
         "아래 주소로 언제든 다시 찾아오실 수 있습니다.",
         "",
         "■ 추모관 (가족·지인 공유용)",
@@ -317,7 +317,8 @@ exports.createOrder = onCall({ secrets: [...R2_SECRETS, ...SMS_SECRETS] }, async
             gift1: cleanText(memorial.gift1, 15),
             gift2: cleanText(memorial.gift2, 15),
             bgm,
-            photo
+            photo,
+            reminder: memorial.reminder === true
         },
         createdAt: FieldValue.serverTimestamp()
     });
@@ -373,6 +374,7 @@ async function openMemorial(orderRef, orderId, order, paidFields) {
         quote: draft.quote,
         gifts: [draft.gift1, draft.gift2],
         bgm: draft.bgm,
+        reminderEnabled: draft.reminder === true,
         photoUrl,
         photoPath: photo ? photo.path : "",
         storageBytes: 0,
@@ -556,7 +558,7 @@ function pickMemorial(m) {
         counts: m.counts || {},
         storageBytes: m.storageBytes || 0,
         storageLimit: storageLimitOf(m.plan),
-        reminderEnabled: m.reminderEnabled !== false
+        reminderEnabled: m.reminderEnabled === true
     };
 }
 
@@ -1318,7 +1320,10 @@ function reminderMessage(type, petName, years, slug) {
         `■ ${petName}의 추모관`,
         `${SITE_BASE}/memorial.html?room=${slug}`,
         "",
-        "기념일 알림은 관리자 화면의 정보 수정에서 끌 수 있어요."
+        type === "farewell"
+            ? "이 메시지는 고객님께서 신청하신 기일 알림으로, 등록하신 별이 된 날이 되면 매년 발송됩니다."
+            : "이 메시지는 고객님께서 신청하신 기념일 알림으로, 등록하신 처음 만난 날이 되면 매년 발송됩니다.",
+        "알림을 원하지 않으시면 관리자 화면의 정보 수정에서 끌 수 있어요."
     ].join("\n");
 }
 
@@ -1334,7 +1339,7 @@ exports.sendAnniversaryReminders = onSchedule({
 
     for (const doc of snap.docs) {
         const memorial = doc.data();
-        if (memorial.reminderEnabled === false) continue;
+        if (memorial.reminderEnabled !== true) continue;
 
         const events = [];
         const farewellYears = anniversaryYears(memorial.farewellDate, today);
