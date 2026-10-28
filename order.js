@@ -127,7 +127,7 @@ function openOrderModal(planType = 'essential') {
                             <input type="checkbox" id="orderRemind">
                             <span class="order-check-text">
                                 <span><em class="order-tag">선택</em>리마인드 알림도 받을게요</span>
-                                <span class="order-check-hint">매년 처음 만난 날과 별이 된 날에 알려드려요. 관리자 화면에서 언제든 끌 수 있어요.</span>
+                                <span class="order-check-hint">매년 처음 만난 날과 별이 된 날에 알려드려요.</span>
                             </span>
                         </label>
                     </div>
@@ -181,7 +181,7 @@ function openOrderModal(planType = 'essential') {
                             <input type="checkbox" id="orderAgree" required>
                             <span class="order-check-text">
                                 <span><em class="order-tag order-tag-required">필수</em>주문 내용과 <a href="terms.html#refund" target="_blank" rel="noopener">이용약관·환불 규정</a>, <a href="privacy.html" target="_blank" rel="noopener">개인정보 수집·이용</a>에 동의합니다</span>
-                                <span class="order-check-hint" id="orderRefundNote">결제 즉시 추모관이 개설돼요. 결제일로부터 7일 이내이면서 이용을 시작하기 전이라면 전액 환불해 드려요.</span>
+                                <span class="order-check-hint" id="orderRefundNote">결제일로부터 7일 이내이면서 이용 전이면 전액 환불돼요.</span>
                             </span>
                         </label>
                         <button type="submit" id="orderSubmitBtn" class="btn btn-primary btn-full">${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제하기</button>
