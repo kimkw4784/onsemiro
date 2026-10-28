@@ -112,18 +112,28 @@ function openOrderModal(planType = 'essential') {
                 </div>
 
                 <form id="orderForm" onsubmit="handleOrderSubmit(event)">
-                    <div class="form-group">
-                        <label class="form-label" for="applicantName">신청자 성함 (보호자)</label>
-                        <input type="text" id="applicantName" class="form-input" placeholder="예: 홍길동" required>
+                    <div class="order-section">
+                        <p class="order-section-title">신청자 정보</p>
+                        <div class="order-field">
+                            <label class="order-field-label" for="applicantName">성함</label>
+                            <input type="text" id="applicantName" class="form-input" placeholder="예: 홍길동" required>
+                        </div>
+                        <div class="order-field">
+                            <label class="order-field-label" for="applicantPhone">휴대폰</label>
+                            <input type="tel" id="applicantPhone" class="form-input" placeholder="예: 010-1234-5678" inputmode="numeric" autocomplete="tel" required>
+                        </div>
+                        <p class="order-field-hint">추모관 주소와 관리자 링크를 알림톡으로 보내드려요.</p>
+                        <label class="order-check">
+                            <input type="checkbox" id="orderRemind">
+                            <span class="order-check-text">
+                                <span><em class="order-tag">선택</em>리마인드 알림도 받을게요</span>
+                                <span class="order-check-hint">매년 처음 만난 날과 별이 된 날에 알려드려요. 관리자 화면에서 언제든 끌 수 있어요.</span>
+                            </span>
+                        </label>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="applicantPhone">휴대폰 번호 (알림톡 수신용)</label>
-                        <input type="tel" id="applicantPhone" class="form-input" placeholder="예: 010-1234-5678" inputmode="numeric" autocomplete="tel" required>
-                    </div>
-
-                    <div class="form-group" id="planSection">
-                        <label class="form-label">선택 플랜</label>
+                    <div class="order-section" id="planSection">
+                        <p class="order-section-title">요금제</p>
                         <div class="plan-card-group" id="planCardGroup">
                             <label class="plan-card ${currentSelectedPlan === 'essential' ? 'active' : ''}" onclick="selectPlanInModal(this, 'essential')">
                                 <input type="radio" name="orderPlan" value="essential" ${currentSelectedPlan === 'essential' ? 'checked' : ''}>
@@ -152,50 +162,31 @@ function openOrderModal(planType = 'essential') {
                         </div>
                     </div>
 
-                    <div class="form-group" id="giftCodeSection" hidden>
-                        <label class="form-label" for="giftCodeInput">선물 코드</label>
-                        <input type="text" id="giftCodeInput" class="form-input" placeholder="받으신 선물 코드를 입력해 주세요" autocomplete="off" autocapitalize="characters" spellcheck="false">
-                        <p class="gift-code-hint">결제 없이, 선물에 포함된 요금제로 바로 추모관이 개설돼요.</p>
+                    <div class="order-section" id="giftCodeSection" hidden>
+                        <p class="order-section-title">선물 코드</p>
+                        <input type="text" id="giftCodeInput" class="form-input" placeholder="받으신 선물 코드를 입력해 주세요" aria-label="선물 코드" autocomplete="off" autocapitalize="characters" spellcheck="false">
+                        <p class="order-field-hint">결제 없이, 선물에 포함된 요금제로 바로 추모관이 개설돼요.</p>
                     </div>
 
-                    <div class="form-group" id="payMethodSection">
-                        <label class="form-label">결제 수단</label>
-                        <div class="plan-card-group" id="payMethodGroup" style="grid-template-columns: repeat(2, 1fr);">
-                            <label class="plan-card active" onclick="selectPayMethod(this, 'CARD')">
-                                <input type="radio" name="payMethod" value="CARD" checked>
-                                <div class="plan-card-content">
-                                    <span class="plan-name">카드·간편결제</span>
-                                    <p class="plan-desc">카카오페이·토스페이 등</p>
-                                </div>
-                            </label>
-                            <label class="plan-card" onclick="selectPayMethod(this, 'TRANSFER')">
-                                <input type="radio" name="payMethod" value="TRANSFER">
-                                <div class="plan-card-content">
-                                    <span class="plan-name">계좌이체</span>
-                                    <p class="plan-desc">내 계좌에서 바로</p>
-                                </div>
-                            </label>                            
+                    <div class="order-section" id="payMethodSection">
+                        <p class="order-section-title">결제 수단</p>
+                        <div class="pay-toggle" id="payMethodGroup">
+                            <button type="button" class="pay-option active" aria-pressed="true" onclick="selectPayMethod(this, 'CARD')">카드·간편결제</button>
+                            <button type="button" class="pay-option" aria-pressed="false" onclick="selectPayMethod(this, 'TRANSFER')">계좌이체</button>
                         </div>
                     </div>
 
-                    <div class="order-notice">
-                        <p><svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" aria-hidden="true"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="nb">개설 완료 즉시 비공개 관리자 링크와</span> <span class="nb">가족 전용 주소가 발급됩니다.</span></p>
+                    <div class="order-footer">
+                        <label class="order-check">
+                            <input type="checkbox" id="orderAgree" required>
+                            <span class="order-check-text">
+                                <span><em class="order-tag order-tag-required">필수</em>주문 내용과 <a href="terms.html#refund" target="_blank" rel="noopener">이용약관·환불 규정</a>, <a href="privacy.html" target="_blank" rel="noopener">개인정보 수집·이용</a>에 동의합니다</span>
+                                <span class="order-check-hint" id="orderRefundNote">결제 즉시 추모관이 개설돼요. 결제일로부터 7일 이내이면서 이용을 시작하기 전이라면 전액 환불해 드려요.</span>
+                            </span>
+                        </label>
+                        <button type="submit" id="orderSubmitBtn" class="btn btn-primary btn-full">${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제하기</button>
+                        <button type="button" class="gift-code-toggle" id="giftModeToggle" onclick="setGiftMode(!giftMode)">선물 받은 코드가 있으신가요?</button>
                     </div>
-                    <p class="order-refund-note" id="orderRefundNote">결제 즉시 추모관이 개설됩니다. 결제일로부터 7일 이내이면서 이용을 시작하기 전이라면 전액 환불해 드립니다.</p>
-
-                    <label class="order-agree order-remind">
-                        <input type="checkbox" id="orderRemind">
-                        <span>(선택) 매년 처음 만난 날과 별이 된 날에 기념일 알림을 받을게요. 관리자 화면에서 언제든 끌 수 있어요.</span>
-                    </label>
-
-                    <label class="order-agree">
-                        <input type="checkbox" id="orderAgree" required>
-                        <span>주문 내용과 <a href="terms.html#refund" target="_blank" rel="noopener">이용약관·환불 규정</a>, <a href="privacy.html" target="_blank" rel="noopener">개인정보 수집·이용</a>을 확인했으며 결제에 동의합니다.</span>
-                    </label>
-                    <button type="submit" id="orderSubmitBtn" class="btn btn-primary btn-full">
-                        ${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제 및 생성하기
-                    </button>
-                    <button type="button" class="gift-code-toggle" id="giftModeToggle" onclick="setGiftMode(!giftMode)">선물 받은 코드가 있으신가요?</button>
                 </form>
             </div>
         </div>
@@ -228,11 +219,12 @@ function selectPlanInModal(cardElement, planValue) {
 // 결제 수단 선택 토글
 function selectPayMethod(cardElement, method) {
     currentPayMethod = method;
-    document.querySelectorAll('#payMethodGroup .plan-card').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('#payMethodGroup .pay-option').forEach(el => {
+        el.classList.remove('active');
+        el.setAttribute('aria-pressed', 'false');
+    });
     cardElement.classList.add('active');
-
-    const radio = cardElement.querySelector('input[type="radio"]');
-    if (radio) radio.checked = true;
+    cardElement.setAttribute('aria-pressed', 'true');
 }
 
 // 폼 최종 제출 → 서버에 주문 등록 → 토스 결제창 열기
@@ -256,7 +248,7 @@ function updateSubmitButtonText() {
     if (!submitBtn) return;
     submitBtn.innerText = giftMode
         ? '선물 받은 추모관 개설하기'
-        : `${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제 및 생성하기`;
+        : `${PLAN_PRICES[currentSelectedPlan].toLocaleString()}원 결제하기`;
 }
 
 function setGiftMode(on) {

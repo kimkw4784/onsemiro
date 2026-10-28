@@ -2842,3 +2842,177 @@ body {
 #orderRefundNote[hidden] {
     display: none;
 }
+
+.order-modal-body {
+    padding: 20px 24px 22px;
+}
+
+.order-summary-box {
+    margin-bottom: 4px;
+}
+
+.order-section {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.order-section-title {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.2px;
+}
+
+.order-field {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+}
+
+.order-field+.order-field {
+    margin-top: 8px;
+}
+
+.order-field-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-sub);
+}
+
+.order-field+.order-field-hint {
+    margin-top: 8px;
+    padding-left: 62px;
+}
+
+.order-field-hint {
+    margin: 6px 0 0;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    word-break: keep-all;
+}
+
+.order-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.order-section .order-check {
+    margin-top: 14px;
+}
+
+.order-check input {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0;
+    accent-color: var(--text-main);
+    cursor: pointer;
+}
+
+.order-check-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-main);
+    word-break: keep-all;
+}
+
+.order-check-text a {
+    color: var(--text-main);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.order-check-hint {
+    display: block;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.order-tag {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--bg-subtle);
+    color: var(--text-sub);
+    font-size: 10.5px;
+    font-style: normal;
+    font-weight: 600;
+    vertical-align: 1px;
+}
+
+.order-tag-required {
+    background: #FAEDE3;
+    color: #A35A36;
+}
+
+.pay-toggle {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--bg-subtle);
+}
+
+.pay-option {
+    padding: 10px 8px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-sub);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pay-option.active {
+    background: #FFFFFF;
+    color: var(--text-main);
+    box-shadow: 0 1px 3px rgba(43, 38, 32, 0.12);
+}
+
+.pay-option:focus-visible {
+    outline: 2px solid var(--accent-brown);
+    outline-offset: 2px;
+}
+
+.order-footer {
+    padding-top: 18px;
+}
+
+.order-footer .order-check {
+    margin-bottom: 16px;
+}
+
+.order-footer .gift-code-toggle {
+    margin-top: 12px;
+}
+
+#orderRefundNote[hidden] {
+    display: none;
+}
+
+.plan-card-top {
+    gap: 6px;
+}
+
+.plan-name {
+    word-break: keep-all;
+}
+
+.plan-badge {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
