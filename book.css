@@ -35,9 +35,6 @@ body {
     white-space: nowrap;
 }
 
-/* =========================================
-   화면 상단 안내·저장 버튼
-========================================= */
 .book-toolbar {
     position: sticky;
     top: 0;
@@ -106,9 +103,6 @@ body {
     color: var(--text-sub);
 }
 
-/* =========================================
-   책 페이지 (화면에서는 종이처럼 카드로 미리보기)
-========================================= */
 .book {
     max-width: 794px;
     margin: 24px auto 60px;
@@ -141,7 +135,6 @@ body {
     color: var(--text-muted);
 }
 
-/* 각 장 제목 */
 .chapter-head {
     text-align: center;
     margin-bottom: 36px;
@@ -164,9 +157,6 @@ body {
     letter-spacing: -0.5px;
 }
 
-/* =========================================
-   1. 표지
-========================================= */
 .page-cover {
     justify-content: center;
     align-items: center;
@@ -252,9 +242,6 @@ body {
     color: var(--text-muted);
 }
 
-/* =========================================
-   2. 발자취
-========================================= */
 .timeline {
     position: relative;
     max-width: 560px;
@@ -305,9 +292,6 @@ body {
     line-height: 1.7;
 }
 
-/* =========================================
-   3. 갤러리
-========================================= */
 .gallery {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -360,9 +344,6 @@ body {
     color: var(--text-muted);
 }
 
-/* =========================================
-   4. 우체통 편지
-========================================= */
 .letters {
     display: flex;
     flex-direction: column;
@@ -403,9 +384,6 @@ body {
     white-space: pre-wrap;
 }
 
-/* =========================================
-   5. 맺음 페이지
-========================================= */
 .page-closing {
     justify-content: center;
     align-items: center;
@@ -457,9 +435,6 @@ body {
     color: var(--text-sub);
 }
 
-/* =========================================
-   인쇄 창이 열리지 않는 브라우저용 안내
-========================================= */
 .print-guide-backdrop {
     position: fixed;
     inset: 0;
@@ -523,9 +498,6 @@ body {
     }
 }
 
-/* =========================================
-   휴대폰 화면 미리보기
-========================================= */
 @media (max-width: 600px) {
     .book {
         margin-top: 16px;
@@ -559,16 +531,12 @@ body {
     }
 }
 
-/* =========================================
-   인쇄 / PDF 저장 (A4)
-========================================= */
 @page {
     size: A4;
     margin: 0;
 }
 
 @media print {
-
     html,
     body {
         background: var(--bg-main);
@@ -577,8 +545,9 @@ body {
     }
 
     .book-toolbar,
-    .print-guide-backdrop {
-        display: none !important;
+    .print-guide-backdrop,
+    .print-guide-backdrop.active {
+        display: none;
     }
 
     .book {
@@ -596,7 +565,6 @@ body {
         border-radius: 0;
         box-shadow: none;
         break-after: page;
-        /* 내용이 여러 장으로 넘어가도 매 장마다 같은 여백이 생기도록 */
         -webkit-box-decoration-break: clone;
         box-decoration-break: clone;
     }
@@ -605,9 +573,7 @@ body {
         break-after: auto;
     }
 
-    /* 갤러리·편지가 길면 여러 장으로 자연스럽게 이어짐 (꼬리말은 각 장의 끝에) */
-
-    .page-cover,
+.page-cover,
     .page-closing {
         height: 297mm;
     }

@@ -1,5 +1,3 @@
-// 이름 끝에 받침이 있으면 '이'를 붙여 부르는 이름으로 바꿔줍니다.
-// (하임 → 하임이, 코코 → 코코) 뒤에 붙는 조사는 항상 받침 없는 형태(가/를/와/의/에게)로 쓰면 됩니다.
 function callName(name) {
     if (!name) return '';
     const lastChar = name.charCodeAt(name.length - 1);
@@ -7,10 +5,9 @@ function callName(name) {
     return (lastChar - 0xAC00) % 28 > 0 ? name + '이' : name;
 }
 
-let selectedFiles = [];     // prepareMediaFile 결과 목록
+let selectedFiles = [];
 let uploadRoom = '';
 
-// 기기 환경 감지 (모바일: 200MB, PC: 500MB)
 function getMaxFileSize() {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     return {
@@ -20,7 +17,6 @@ function getMaxFileSize() {
     };
 }
 
-// 추모관 정보 불러와서 아이 이름, 돌아가기 링크 연결
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     uploadRoom = (urlParams.get('room') || '').trim().toUpperCase();
@@ -50,7 +46,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (nameEl) nameEl.innerText = callName(petName);
     if (guideEl) guideEl.innerText = callName(petName);
 
-    // '코코와의 관계' 라벨과 이야기 입력칸 안내 문구도 아이 이름으로 교체
     const relationLabel = document.getElementById('senderRelation')?.closest('.form-group')?.querySelector('.form-label');
     if (relationLabel && relationLabel.firstChild) {
         relationLabel.firstChild.textContent = `${callName(petName)}와의 관계 `;
@@ -61,7 +56,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// 주소가 잘못됐을 때
 function showUploadUnavailable() {
     const card = document.querySelector('.upload-form-card');
     const header = document.querySelector('.upload-header');
@@ -114,7 +108,6 @@ async function handleFileSelect(e) {
     const { limit, isMobile } = getMaxFileSize();
 
     for (const file of files) {
-        // 원본 선택 용량 체크 (모바일 200MB / PC 500MB)
         if (file.size > limit) {
             const currentMB = (file.size / (1024 * 1024)).toFixed(1);
             if (isMobile) {

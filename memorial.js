@@ -1,5 +1,3 @@
-// 이름 끝에 받침이 있으면 '이'를 붙여 부르는 이름으로 바꿔줍니다.
-// (하임 → 하임이, 코코 → 코코) 뒤에 붙는 조사는 항상 받침 없는 형태(가/를/와/의/에게)로 쓰면 됩니다.
 function callName(name) {
     if (!name) return '';
     const lastChar = name.charCodeAt(name.length - 1);
@@ -10,7 +8,6 @@ function callName(name) {
 let activeRoomSlug = '';
 let activePetType = 'dog';
 
-// 화면에 넣기 전에 HTML 특수문자를 바꿔서, 입력값에 섞인 태그가 실행되지 않게 함
 function escapeHtml(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -20,16 +17,12 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-// "2013-05-10" → "2013. 05. 10."
 function formatIsoDate(iso) {
     if (!iso) return '';
     const [y, m, d] = iso.split('-');
     return `${y}. ${m}. ${d}.`;
 }
 
-// =========================================
-// 오디오 BGM 컨트롤러
-// =========================================
 const bgmAudio = new Audio();
 bgmAudio.loop = true;
 bgmAudio.volume = 0.4;
@@ -83,11 +76,6 @@ function switchBgm() {
     }).catch(err => console.log("곡 재생 대기:", err));
 }
 
-
-// =========================================
-// 저장된 배경음악을 추모관 선택창에 반영
-// (빌더는 곡 제목을, 관리자 정보 탭은 키 값을 저장하므로 둘 다 처리)
-// =========================================
 const BGM_FILES = {
     piano: './audio/bgm-piano.mp3',
     guitar: './audio/bgm-guitar.mp3',
@@ -117,13 +105,10 @@ function applySavedBgm(saved) {
             btn.style.pointerEvents = 'none';
         }
     } else {
-        bgmAudio.src = value; // 자동재생은 브라우저가 막기 때문에 곡만 준비해 두고, 재생 버튼으로 시작
+        bgmAudio.src = value;
     }
 }
 
-// =========================================
-// 인터랙션 (헌화/간식)
-// =========================================
 function addInteractCount(btn, type = 'default') {
     const cntEl = btn.querySelector('.cnt') || btn.querySelector('strong');
     if (!cntEl) return;
@@ -137,7 +122,6 @@ function addInteractCount(btn, type = 'default') {
 
     createFloatingParticle(btn, type);
 
-    // 서버에 +1 저장 (보안 규칙상 카운트를 1씩 올리는 것만 허용됨)
     if (activeRoomSlug && ['treat', 'toy', 'candle'].includes(type)) {
         db.collection('memorials').doc(activeRoomSlug).update({
             [`counts.${type}`]: firebase.firestore.FieldValue.increment(1)
@@ -146,10 +130,8 @@ function addInteractCount(btn, type = 'default') {
 }
 
 function createFloatingParticle(targetEl, type) {
-    // 추모관 정보에서 읽어온 동물 종류 (기본값: 'dog')
     const petType = activePetType;
 
-    // 동물 종류별 아이콘 세트 (Iconify Noto Emoji)
     const iconPacks = {
         dog: {
             treat: ['noto:bone', 'noto:meat-on-bone', 'noto:cookie', 'fxemoji:sparkles'],
@@ -186,10 +168,6 @@ function createFloatingParticle(targetEl, type) {
     setTimeout(() => particle.remove(), 950);
 }
 
-// =========================================
-// 무지개 우체통 (방명록 격리 저장)
-// =========================================
-// 공개된 편지만 불러오기 (보안 규칙상 'approved' 편지만 읽을 수 있음)
 async function loadLetters() {
     const list = document.getElementById('letterList');
     if (!list) return;
@@ -212,7 +190,6 @@ async function loadLetters() {
         return;
     }
 
-    // 최신 편지가 위로
     letters.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
 
     list.innerHTML = letters.map(letter => {
@@ -230,7 +207,6 @@ async function loadLetters() {
     }).join('');
 }
 
-// 편지 보내기 → 보호자 확인 대기 상태로 저장
 async function handleLetterSubmit(e) {
     e.preventDefault();
     const nameInput = document.getElementById('letterName');
@@ -249,7 +225,7 @@ async function handleLetterSubmit(e) {
             name,
             relation,
             message,
-            status: 'approved',   // 바로 공개 (보호자는 관리자 화면에서 숨기거나 삭제 가능)
+            status: 'approved',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
@@ -266,15 +242,11 @@ async function handleLetterSubmit(e) {
     }
 }
 
-// =========================================
-// 갤러리 및 미디어 렌더링
-// =========================================
 const MEDIA_BASE = 'https://media.onsemiro.me';
 function mediaUrl(path) {
     return path ? `${MEDIA_BASE}/${path}` : '';
 }
 
-// 승인된 사진·영상 불러오기 (보호자가 전시한 것만 모아 둔 gallery 목록)
 async function renderMedia() {
     const photoGrid = document.getElementById('galleryGrid');
     const videoGrid = document.getElementById('videoGrid');
@@ -289,7 +261,6 @@ async function renderMedia() {
         console.error('갤러리 불러오기 실패:', err);
     }
 
-    // 최신 추억이 앞으로, 같은 묶음 안에서는 올린 순서대로
     items.sort((a, b) => {
         const diff = (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
         return diff !== 0 ? diff : (a.fileIndex || 0) - (b.fileIndex || 0);
@@ -323,7 +294,6 @@ async function renderMedia() {
         }
     });
 
-    // 전시된 사진이 없을 때의 안내
     if (photoCount === 0) {
         photoGrid.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 44px 16px; background: #FFF; border-radius: 14px; border: 1px dashed rgba(43, 38, 32, 0.12);">
@@ -333,7 +303,6 @@ async function renderMedia() {
         `;
     }
 
-    // 영상이 있을 때만 영상 섹션 열기
     if (videoSection) {
         videoSection.style.display = videoCount > 0 ? 'block' : 'none';
     }
@@ -347,7 +316,6 @@ function createPhotoElement(src, caption) {
     return div;
 }
 
-// 영상은 썸네일만 먼저 보여주고, 눌렀을 때 영상을 불러옴 (데이터 절약)
 function createVideoElement(src, thumb, date, desc) {
     const div = document.createElement('div');
     div.className = 'video-card';
@@ -365,7 +333,6 @@ function createVideoElement(src, thumb, date, desc) {
     return div;
 }
 
-// 영상 모달 (재생 중에는 배경음악을 잠시 멈췄다가, 닫으면 다시 재생)
 let wasBgmPlayingBeforeVideo = false;
 
 function openVideoModal(videoSrc, dateText, descText) {
@@ -423,9 +390,6 @@ function closeVideoModalNow() {
     }
 }
 
-// =========================================
-// 초기화 및 데이터 바인딩
-// =========================================
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomParam = (urlParams.get('room') || '').trim().toUpperCase();
@@ -436,7 +400,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Firestore에서 추모관 정보 읽기
     let memorial = null;
     try {
         const snap = await db.collection('memorials').doc(roomParam).get();
@@ -454,12 +417,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     activePetType = memorial.petType || 'dog';
     renderMemorial(memorial, adminKey);
 
-    // 갤러리·우체통
     renderMedia();
     loadLetters();
 });
 
-// 추모관 기본 정보를 화면에 채우기
 function renderMemorial(memorial, adminKey) {
     const petName = memorial.petName || '아이';
     const counts = memorial.counts || {};
@@ -467,7 +428,6 @@ function renderMemorial(memorial, adminKey) {
 
     applySavedBgm(memorial.bgm);
 
-    // 카카오톡 공유 카드에 쓸 정보
     memorialShareInfo = {
         title: `${petName}의 온새미로`,
         description: `${callName(petName)}를 기억하는 마음을 함께 나눠주세요.`,
@@ -478,14 +438,12 @@ function renderMemorial(memorial, adminKey) {
     document.getElementById('memorialTitleName').innerText = petName;
     document.getElementById('ctaPetName').innerText = callName(petName);
 
-    // 인트로 프로필 사진
     const avatarImg = document.getElementById('introAvatar');
     if (avatarImg) {
         avatarImg.src = memorial.photoUrl || './images/coco4.png';
         avatarImg.alt = petName;
     }
 
-    // 날짜 및 함께한 날 계산
     const meet = formatIsoDate(memorial.meetDate);
     const farewell = formatIsoDate(memorial.farewellDate);
     let daysText = '';
@@ -498,7 +456,6 @@ function renderMemorial(memorial, adminKey) {
     }
     document.getElementById('memorialDates').innerHTML = `${meet} — ${farewell}${daysText}`;
 
-    // 한 줄 메시지
     const quoteEl = document.getElementById('memorialQuote');
     if (quoteEl) {
         quoteEl.innerHTML = memorial.quote
@@ -506,7 +463,6 @@ function renderMemorial(memorial, adminKey) {
             : '“우리 가족에게 와줘서 정말 행복했어. 영원히 사랑해.”';
     }
 
-    // 선물·촛불 버튼 (카운트는 서버에 저장된 값)
     const row = document.getElementById('interactiveRow');
     if (row) {
         const g1 = escapeHtml(gifts[0] || '좋아하던 간식');
@@ -524,17 +480,13 @@ function renderMemorial(memorial, adminKey) {
         `;
     }
 
-    // 사진 모으기 링크
     document.getElementById('galleryUploadBtn').href = `upload.html?room=${activeRoomSlug}`;
 
-    // 관리자 버튼: 이 기기가 관리자 키를 기억하고 있고, 서버에서 확인되면 표시
     showAdminButtonIfVerified(adminKey);
 
-    // 발자취 타임라인
     loadTimeline();
 }
 
-// 발자취 불러오기 (날짜 순으로 정렬)
 async function loadTimeline() {
     const tlList = document.getElementById('memorialTimelineList');
     if (!tlList) return;
@@ -565,12 +517,10 @@ async function loadTimeline() {
     `).join('');
 }
 
-// 관리자 버튼 표시 여부 확인
-// - 주소의 key 또는 이 기기에 기억된 키를 서버에 확인해서 맞을 때만 버튼 표시
 async function showAdminButtonIfVerified(urlKey) {
     const storageKey = `onsemiro_admin_${activeRoomSlug}`;
     let storedKey = '';
-    try { storedKey = localStorage.getItem(storageKey) || ''; } catch (e) { /* 무시 */ }
+    try { storedKey = localStorage.getItem(storageKey) || ''; } catch (e) {  }
 
     const key = urlKey || storedKey;
     if (!key) return;
@@ -578,16 +528,14 @@ async function showAdminButtonIfVerified(urlKey) {
     try {
         await functions.httpsCallable('verifyAdmin')({ slug: activeRoomSlug, key });
     } catch (err) {
-        // 키가 틀렸거나 재발급된 경우: 기억해 둔 예전 키 정리
         if (!urlKey) {
-            try { localStorage.removeItem(storageKey); } catch (e) { /* 무시 */ }
+            try { localStorage.removeItem(storageKey); } catch (e) {  }
         }
         return;
     }
 
-    try { localStorage.setItem(storageKey, key); } catch (e) { /* 무시 */ }
+    try { localStorage.setItem(storageKey, key); } catch (e) {  }
 
-    // 주소에 키가 있었다면 지워서, 이 화면을 공유하거나 캡처해도 키가 드러나지 않게 함
     if (urlKey) history.replaceState(null, '', `memorial.html?room=${activeRoomSlug}`);
 
     const adminBtn = document.getElementById('adminFloatingBtn');
@@ -597,7 +545,6 @@ async function showAdminButtonIfVerified(urlKey) {
     }
 }
 
-// 주소가 잘못됐거나 없는 추모관일 때
 function showNotFound() {
     const main = document.querySelector('.sample-container');
     if (!main) return;
@@ -611,7 +558,6 @@ function showNotFound() {
     `;
 }
 
-// 모달 및 유틸리티
 function openImageModal(item) {
     setupGalleryNav();
     const items = getGalleryItems();
@@ -623,9 +569,6 @@ function openImageModal(item) {
     pushModalHistory();
 }
 
-// =========================================
-// 확대한 사진에서 이전/다음 넘기기 (화살표, 좌우로 밀기, 키보드 방향키)
-// =========================================
 let galleryIndex = 0;
 
 function getGalleryItems() {
@@ -648,7 +591,6 @@ function moveGallery(step) {
     showGalleryImage(galleryIndex + step);
 }
 
-// 이전/다음 버튼과 순서 표시를 사진 창에 한 번만 추가
 function setupGalleryNav() {
     const content = document.querySelector('#imageModal .image-modal-content');
     if (!content || document.getElementById('galleryPrevBtn')) return;
@@ -660,7 +602,6 @@ function setupGalleryNav() {
         <span id="galleryCounter" class="gallery-counter"></span>
     `);
 
-    // 휴대폰: 사진을 좌우로 밀어서 넘기기
     const box = content.querySelector('.image-box');
     let startX = 0;
     let startY = 0;
@@ -674,7 +615,6 @@ function setupGalleryNav() {
         if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) moveGallery(dx < 0 ? 1 : -1);
     }, { passive: true });
 
-    // PC: 키보드 방향키로 넘기기, Esc로 닫기
     document.addEventListener('keydown', (e) => {
         if (!document.getElementById('imageModal')?.classList.contains('active')) return;
         if (e.key === 'ArrowLeft') moveGallery(-1);
@@ -682,7 +622,6 @@ function setupGalleryNav() {
         else if (e.key === 'Escape') requestCloseModal();
     });
 }
-
 
 function closeImageModal(e) {
     if (e.target.id === 'imageModal') requestCloseModal();
@@ -696,11 +635,6 @@ function forceCloseModal() {
     requestCloseModal();
 }
 
-// =========================================
-// 휴대폰 뒤로가기 처리
-// - 사진·영상 창을 열 때 방문 기록에 한 칸을 추가해서,
-//   뒤로가기를 누르면 페이지 이동 대신 창이 닫히게 함
-// =========================================
 let modalHistoryActive = false;
 
 function pushModalHistory() {
@@ -712,7 +646,7 @@ function pushModalHistory() {
 
 function requestCloseModal() {
     if (modalHistoryActive) {
-        history.back(); // popstate에서 실제로 닫힘
+        history.back();
     } else {
         closeOpenModals();
     }
@@ -737,11 +671,9 @@ function closeImageModalNow() {
     document.body.style.overflow = '';
 }
 
-// 공유하기: 카카오톡 카드 / 다른 앱 / 링크 복사 (share.js)
 let memorialShareInfo = null;
 
 function copyMemorialLink() {
-    // 관리자 키(&key=...)가 섞이지 않도록 항상 공개 주소로 공유
     const url = `https://onsemiro.me/memorial.html?room=${activeRoomSlug}`;
     openShareSheet({ ...(memorialShareInfo || { title: '온새미로 추모관', description: '함께한 기억을 모아둔 추모관입니다.' }), url });
 }

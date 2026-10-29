@@ -1,12 +1,5 @@
-// =========================================
-// 샘플(체험용) 추모관 - 코코
-// - 누가 열어도 항상 같은 체험용 화면을 보여줍니다.
-// - 실제 추모관은 memorial.html이 담당하므로, 여기서는 서버나 브라우저 저장소를 쓰지 않습니다.
-// =========================================
-
 const SAMPLE_PET_NAME = '코코';
 
-// 이름 끝에 받침이 있으면 '이'를 붙여 부르는 이름으로 바꿔줍니다. (하임 → 하임이, 코코 → 코코)
 function callName(name) {
     if (!name) return '';
     const lastChar = name.charCodeAt(name.length - 1);
@@ -23,9 +16,6 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-// =========================================
-// 배경음악
-// =========================================
 const bgmAudio = new Audio();
 bgmAudio.loop = true;
 bgmAudio.volume = 0.4;
@@ -79,9 +69,6 @@ function switchBgm() {
     }).catch(err => console.log('곡 재생 대기:', err));
 }
 
-// =========================================
-// 선물·촛불 버튼 (체험용이라 화면에서만 숫자가 올라감)
-// =========================================
 function addInteractCount(btn, type = 'default') {
     const cntEl = btn.querySelector('.cnt');
     if (cntEl) {
@@ -94,7 +81,6 @@ function addInteractCount(btn, type = 'default') {
 }
 
 function createFloatingParticle(targetEl, type) {
-    // 메인 빌더·실제 추모관과 같은 강아지용 아이콘 세트
     const iconPack = {
         treat: ['noto:bone', 'noto:meat-on-bone', 'noto:cookie', 'fxemoji:sparkles'],
         toy: ['noto:soccer-ball', 'twemoji:teddy-bear', 'noto:balloon'],
@@ -114,9 +100,6 @@ function createFloatingParticle(targetEl, type) {
     setTimeout(() => particle.remove(), 950);
 }
 
-// =========================================
-// 발자취 타임라인 (체험용 고정 내용)
-// =========================================
 const SAMPLE_TIMELINE = [
     { date: '2013. 05. 10.', story: `손바닥만 하던 ${callName(SAMPLE_PET_NAME)}가 처음 우리 집에 오던 날, 온 세상이 따뜻해졌어.` },
     { date: '2016. 08. 21.', story: '처음으로 바다를 본 날. 파도가 무서워 한참을 뒷걸음질 쳤지.' },
@@ -134,9 +117,6 @@ function renderTimeline() {
     `).join('');
 }
 
-// =========================================
-// 무지개 우체통 (체험용: 화면에만 잠깐 추가되고 저장되지 않음)
-// =========================================
 const sampleLetters = [
     { name: '수진', relation: '누나', msg: '네가 없으니 방이 너무 조용해. 꿈속에 꼭 한번 놀러 와줘. 보고 싶다.', date: '2026. 02. 18.' },
     { name: '민규', relation: '삼촌', msg: '갈 때마다 반갑게 꼬리 흔들어주던 모습이 생생하다. 좋은 곳에서 편히 쉬렴.', date: '2026. 02. 16.' }
@@ -182,10 +162,6 @@ function handleLetterSubmit(e) {
     showToast('체험용 페이지라 실제로 전달되지는 않아요. 내 추모관에서는 보호자 확인 후 우체통에 걸립니다.');
 }
 
-// =========================================
-// 사진·영상 창 + 휴대폰 뒤로가기 처리
-// - 창을 열 때 방문 기록에 한 칸을 추가해서, 뒤로가기를 누르면 페이지 이동 대신 창이 닫히게 함
-// =========================================
 let modalHistoryActive = false;
 let wasBgmPlayingBeforeVideo = false;
 
@@ -198,7 +174,7 @@ function pushModalHistory() {
 
 function requestCloseModal() {
     if (modalHistoryActive) {
-        history.back(); // popstate에서 실제로 닫힘
+        history.back();
     } else {
         closeOpenModals();
     }
@@ -284,9 +260,6 @@ function openImageModal(item) {
     pushModalHistory();
 }
 
-// =========================================
-// 확대한 사진에서 이전/다음 넘기기 (화살표, 좌우로 밀기, 키보드 방향키)
-// =========================================
 let galleryIndex = 0;
 
 function getGalleryItems() {
@@ -309,7 +282,6 @@ function moveGallery(step) {
     showGalleryImage(galleryIndex + step);
 }
 
-// 이전/다음 버튼과 순서 표시를 사진 창에 한 번만 추가
 function setupGalleryNav() {
     const content = document.querySelector('#imageModal .image-modal-content');
     if (!content || document.getElementById('galleryPrevBtn')) return;
@@ -321,7 +293,6 @@ function setupGalleryNav() {
         <span id="galleryCounter" class="gallery-counter"></span>
     `);
 
-    // 휴대폰: 사진을 좌우로 밀어서 넘기기
     const box = content.querySelector('.image-box');
     let startX = 0;
     let startY = 0;
@@ -335,7 +306,6 @@ function setupGalleryNav() {
         if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) moveGallery(dx < 0 ? 1 : -1);
     }, { passive: true });
 
-    // PC: 키보드 방향키로 넘기기, Esc로 닫기
     document.addEventListener('keydown', (e) => {
         if (!document.getElementById('imageModal')?.classList.contains('active')) return;
         if (e.key === 'ArrowLeft') moveGallery(-1);
@@ -343,7 +313,6 @@ function setupGalleryNav() {
         else if (e.key === 'Escape') requestCloseModal();
     });
 }
-
 
 function closeImageModal(e) {
     if (e.target.id === 'imageModal') requestCloseModal();
@@ -360,10 +329,6 @@ function closeImageModalNow() {
     document.body.style.overflow = '';
 }
 
-// =========================================
-// 공유·안내
-// =========================================
-// 공유하기: 카카오톡 카드 / 다른 앱 / 링크 복사 (share.js)
 function copyMemorialLink() {
     openShareSheet({
         title: `${SAMPLE_PET_NAME}의 온새미로 (체험하기)`,
@@ -390,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
         letterMsg.placeholder = `${callName(SAMPLE_PET_NAME)}에게 전하고 싶은 따뜻한 한마디를 남겨주세요. (최대 1,000자)`;
     }
 
-    // 사진·영상 보내기: 체험용 페이지라 안내만
     const uploadBtn = document.getElementById('galleryUploadBtn');
     if (uploadBtn) {
         uploadBtn.href = '#';
@@ -400,7 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 관리자 버튼은 체험용 페이지에서 항상 숨김
     const adminBtn = document.getElementById('adminFloatingBtn');
     if (adminBtn) adminBtn.style.display = 'none';
 

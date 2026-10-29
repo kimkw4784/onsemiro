@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>추모관 관리 | ONSEMIRO 온새미로</title>
-    <link rel="stylesheet" as="style" crossorigin
+    <link rel="stylesheet" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,7 +36,6 @@
     </header>
 
     <div class="admin-container is-verifying">
-        <!-- 메인 헤더 -->
         <header class="admin-header-box">
             <span class="header-tag">FAMILY ARCHIVE ADMIN</span>
             <h1 class="admin-main-title"><span id="adminPetName">아이</span>의 안식처 관리</h1>
@@ -47,7 +46,6 @@
             </div>
         </header>
 
-        <!-- 5단 대분류 메인 탭 (순서 변경 적용) -->
         <nav class="admin-main-nav">
             <button type="button" class="main-tab-btn active" onclick="switchMainTab('direct')">
                 <iconify-icon class="tab-icon" icon="noto:framed-picture" aria-hidden="true"></iconify-icon>
@@ -75,14 +73,12 @@
             </button>
         </nav>
 
-        <!-- 탭 1: 바로 업로드 (보호자 직접 등록 및 전시 관리) -->
         <section id="panel-direct" class="admin-tab-panel active">
             <div class="panel-desc-box">
                 <p class="panel-sub-desc"><span class="nb">보호자님이 직접 올리시는 사진과 영상은</span><br><span class="nb">검수 절차
                         없이</span> <span class="nb">추모관 갤러리에 즉시 공개됩니다.</span></p>
             </div>
 
-            <!-- 저장 공간 사용량 -->
             <div class="storage-usage" id="storageUsage" style="margin: 0 4px 16px;">
                 <div
                     style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-sub, #7A7269); margin-bottom:6px;">
@@ -96,7 +92,6 @@
                 </div>
             </div>
 
-            <!-- 업로드 드롭존 & 인풋 -->
             <div class="direct-upload-box">
                 <div class="upload-dropzone" onclick="document.getElementById('directFileInput').click()">
                     <input type="file" id="directFileInput" accept="image/*,video/*" multiple
@@ -108,14 +103,11 @@
                             저장돼요</span></div>
                 </div>
 
-                <!-- 선택된 파일 썸네일 미리보기 영역 -->
                 <div id="selectedPreviewGrid" class="selected-preview-grid" style="display: none;"></div>
 
-                <!-- 올리는 사람 이름 (갤러리에 표시) -->
                 <input type="text" id="directSenderInput" class="timeline-input text-input direct-sender-input"
                     placeholder="올리는 분 이름 (비우면 '보호자'로 표시)" maxlength="20">
 
-                <!-- 사연 입력 및 즉시 등록 바 -->
                 <div class="direct-input-bar">
                     <input type="text" id="directStoryInput" class="timeline-input text-input"
                         placeholder="함께 남길 한 줄 이야기 (선택)">
@@ -124,23 +116,19 @@
                 </div>
             </div>
 
-            <!-- 현재 전시 중인 미디어 목록 헤더 -->
             <div
                 style="display: flex; justify-content: space-between; align-items: center; margin: 28px 0 12px; padding: 0 4px;">
                 <span class="postbox-total-text">현재 갤러리 전시 중인 미디어 <strong id="directGalleryCount">0</strong>개</span>
             </div>
-            <!-- 전시 그리드 목록 -->
             <div id="directGalleryList"></div>
         </section>
 
-        <!-- 탭 2: 사진 모으기 관리 (지인 취합본 검수) -->
         <section id="panel-media" class="admin-tab-panel">
             <div class="panel-desc-box">
                 <p class="panel-sub-desc"><span class="nb">지인분들이 취합 링크로 보내주신 사진과 영상입니다.</span><br><span class="nb">선택하여
                         승인한 사진만</span> <span class="nb">갤러리에 공개됩니다.</span></p>
             </div>
 
-            <!-- 하위 상태 필터 탭 -->
             <div class="filter-tabs">
                 <button class="filter-tab active" onclick="setFilter('pending')">
                     확인 대기 중 <span id="countPending" class="badge">0</span>
@@ -153,18 +141,15 @@
                 </button>
             </div>
 
-            <!-- 추억 카드 목록 -->
             <div id="memoryCardList" class="memory-card-list"></div>
         </section>
 
-        <!-- 탭 3: 발자취 관리 패널 -->
         <section id="panel-timeline" class="admin-tab-panel">
             <div class="panel-desc-box">
                 <p class="panel-sub-desc"><span class="nb">아이와 함께 걸어온 소중한 날들을</span><br><span class="nb">시간 순서대로
                         기록해보세요.</span></p>
             </div>
 
-            <!-- 발자취 등록 폼 -->
             <form class="timeline-form" onsubmit="handleAddTimeline(event)">
                 <div class="timeline-input-row">
                     <input type="text" id="timelineDate" class="timeline-input date-picker-input admin-datepicker"
@@ -175,11 +160,9 @@
                 </div>
             </form>
 
-            <!-- 등록된 타임라인 리스트 -->
             <div class="admin-timeline-list" id="adminTimelineList"></div>
         </section>
 
-        <!-- 탭 4: 우체통 관리 패널 -->
         <section id="panel-postbox" class="admin-tab-panel">
             <div class="panel-desc-box">
                 <p class="panel-sub-desc"><span class="nb">지인과 가족분들이 남겨주신 편지입니다.</span><br><span class="nb">편지는 바로 추모관에
@@ -201,7 +184,6 @@
             </div>
         </section>
 
-        <!-- 탭 5: 추모관 정보 수정 패널 -->
         <section id="panel-info" class="admin-tab-panel">
             <div class="panel-desc-box">
                 <p class="panel-sub-desc"><span class="nb">추모관 첫 화면에 보이는</span> <span class="nb">아이의 정보를 고칠 수
@@ -209,7 +191,6 @@
             </div>
 
             <div class="info-form">
-                <!-- 그룹 1: 대표 사진 · 이름 · 종류 -->
                 <div class="info-card">
                     <div class="info-profile-row">
                         <div class="info-avatar" id="infoAvatar">
@@ -249,7 +230,6 @@
                     </div>
                 </div>
 
-                <!-- 그룹 2: 함께한 날 · 한 줄 메시지 -->
                 <div class="info-card">
                     <div class="info-date-row">
                         <div class="info-field">
@@ -274,7 +254,6 @@
                     </div>
                 </div>
 
-                <!-- 그룹 3: 선물 · 배경음악 -->
                 <div class="info-card">
                     <div class="info-date-row">
                         <div class="info-field">
@@ -317,7 +296,6 @@
                     <p class="reminder-status" id="reminderStatus" aria-live="polite"></p>
                 </div>
 
-                <!-- 저장 바 -->
                 <div class="info-save-bar">
                     <span class="info-save-status" id="infoSaveStatus" aria-live="polite">변경 사항 없음</span>
                     <button type="button" id="btnInfoSave" class="btn-timeline-add info-save-btn"
@@ -340,7 +318,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="media-upload.js"></script>

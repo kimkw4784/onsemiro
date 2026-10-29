@@ -1,7 +1,6 @@
-window.uploadedImageData = null; // order.js에서도 참조할 수 있도록 window 객체에 할당
+window.uploadedImageData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 휴대폰에서는 기기 기본 날짜 선택 화면(큼직하고 연도 고르기 쉬움)을 쓰고, PC에서만 달력 표시
     flatpickr(".custom-datepicker", {
         locale: "ko",
         dateFormat: "Y. m. d.",
@@ -17,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLiveGifts();
 });
 
-// 입력칸이 비어 있으면 안내 글자(예: ...)의 예시를 대신 사용
 function valueOrExample(el) {
     if (!el) return '';
     return el.value.trim() || el.placeholder.replace(/^예:\s*/, '');
@@ -58,7 +56,6 @@ function selectPetType(btn, type) {
     const g1 = document.getElementById('giftInput1');
     const g2 = document.getElementById('giftInput2');
 
-    // 종류에 맞는 선물 예시로 안내 글자만 바꿈 (직접 입력한 내용은 그대로 유지)
     const examples = {
         dog: ['좋아하던 간식', '테니스공'],
         cat: ['맛있는 츄르', '낚싯대'],
@@ -80,10 +77,6 @@ function updateLiveGifts() {
     if (live2) live2.innerText = g2Val;
 }
 
-// =========================================
-// 사진 읽기 (아이폰 HEIC 사진 자동 변환 포함)
-// - 브라우저가 바로 읽지 못하는 HEIC 사진은 변환 도구를 그때만 불러와 JPG로 바꿔서 읽음
-// =========================================
 const HEIC_LIB_URL = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
 let heicLibPromise = null;
 
@@ -121,7 +114,6 @@ function loadImageElement(blob) {
     });
 }
 
-// 결과: { img, url } - 다 쓴 뒤 URL.revokeObjectURL(url) 호출
 async function decodeImageFile(file) {
     try {
         return await loadImageElement(file);
@@ -133,7 +125,6 @@ async function decodeImageFile(file) {
     }
 }
 
-// 빌더 사진 첨부 시 800px로 압축해 저장하고 미리보기 갱신
 async function handlePhotoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -179,12 +170,10 @@ function addCount(btn, type = 'treat') {
     let currentVal = parseInt(cntEl.innerText.replace(/[^\d]/g, ''), 10) || 0;
     cntEl.innerText = currentVal + 1;
 
-    // 숫자 팝 범프 효과
     cntEl.classList.remove('count-bump');
     void cntEl.offsetWidth;
     cntEl.classList.add('count-bump');
 
-    // 현재 빌더에서 선택된 동물 타입 읽기 (기본값 dog)
     const activePetBtn = document.querySelector('.pet-type-btn.active');
     let petType = 'dog';
     if (activePetBtn) {
@@ -242,7 +231,6 @@ function updateLiveBgm() {
         liveBgmText.innerText = bgmSelect.value;
     }
 
-    // 미리듣기 중에 곡을 바꾸면 바꾼 곡으로 이어서 들려주기
     const file = BGM_PREVIEW_FILES[bgmSelect.value];
     const btn = document.getElementById('bgmPreviewBtn');
     if (btn) btn.disabled = !file;
@@ -252,9 +240,6 @@ function updateLiveBgm() {
     }
 }
 
-// =========================================
-// 배경음악 미리듣기
-// =========================================
 const BGM_PREVIEW_FILES = {
     '별빛 아래 너와 나 (잔잔한 피아노)': './audio/bgm-piano.mp3',
     '따뜻한 봄날의 산책 (어쿠스틱 기타)': './audio/bgm-guitar.mp3',
@@ -299,34 +284,28 @@ function toggleBgmPreview() {
     else playBgmPreview(file);
 }
 
-// FAQ 아코디언 토글
 function toggleFaq(buttonEl) {
     const currentItem = buttonEl.closest('.faq-item');
     const wrap = currentItem.querySelector('.faq-a-wrap');
     const isActive = currentItem.classList.contains('active');
 
-    // 다른 열려있는 항목 모두 닫기
     document.querySelectorAll('.faq-item').forEach(item => {
         item.classList.remove('active');
         const aWrap = item.querySelector('.faq-a-wrap');
         if (aWrap) aWrap.style.maxHeight = null;
     });
 
-    // 이미 열려있던 항목을 누른 게 아니라면 열기
     if (!isActive) {
         currentItem.classList.add('active');
         wrap.style.maxHeight = wrap.scrollHeight + 'px';
     }
 }
 
-// FAQ 탭 전환 함수
 function switchFaqTab(category, element) {
-    // 1. 모든 탭에서 active 클래스 제거 후 클릭한 탭에 추가
     const tabs = document.querySelectorAll('.faq-tab');
     tabs.forEach(tab => tab.classList.remove('active'));
     element.classList.add('active');
 
-    // 2. 카테고리에 맞춰 항목 노출/숨김 처리
     const items = document.querySelectorAll('.faq-item');
     items.forEach(item => {
         const itemCategory = item.getAttribute('data-category');
@@ -335,7 +314,6 @@ function switchFaqTab(category, element) {
             item.classList.remove('hide');
         } else {
             item.classList.add('hide');
-            // 숨겨지는 항목의 열려있는 아코디언은 닫아줌 (선택사항)
             item.classList.remove('open');
         }
     });

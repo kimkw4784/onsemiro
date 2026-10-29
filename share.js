@@ -1,14 +1,5 @@
-// =========================================
-// 추모관 공유하기 (memorial.html, sample.html 공통)
-// - 카카오톡: 아이 사진·이름이 들어간 카드 모양으로 공유
-// - 다른 앱: 휴대폰 기본 공유 창 (문자, 밴드 등)
-// - 링크 복사: 어디서든 동작하는 기본 방법
-// =========================================
-
-// 카카오 디벨로퍼스 > 앱 키 > JavaScript 키 (브라우저용 공개 키)
 const KAKAO_JS_KEY = '54f68fc94018022dd760523c591d8d42';
 
-// 아이 사진이 없을 때 카드에 쓸 기본 이미지 (권장 크기 800×400)
 const SHARE_DEFAULT_IMAGE = 'https://onsemiro.me/images/og-share.png';
 
 function initKakaoShare() {
@@ -22,7 +13,6 @@ function initKakaoShare() {
     }
 }
 
-// info: { title, description, imageUrl, url }
 function openShareSheet(info) {
     let sheet = document.getElementById('shareSheet');
     if (!sheet) {
@@ -54,7 +44,6 @@ function openShareSheet(info) {
         });
     }
 
-    // 쓸 수 있는 방법만 보여주기
     sheet.querySelector('[data-action="kakao"]').hidden = !initKakaoShare();
     sheet.querySelector('[data-action="native"]').hidden = !navigator.share;
 
@@ -101,7 +90,6 @@ async function handleShareAction(action, info) {
         try {
             await navigator.share({ title: info.title, text: info.description, url: info.url });
         } catch (err) {
-            // 사용자가 공유 창을 닫은 경우는 조용히 넘어감
             if (err.name !== 'AbortError') console.error('공유 실패:', err);
         }
         closeShareSheet();
@@ -112,7 +100,6 @@ async function handleShareAction(action, info) {
         try {
             await navigator.clipboard.writeText(info.url);
         } catch (err) {
-            // 일부 브라우저용 예비 방법
             const temp = document.createElement('textarea');
             temp.value = info.url;
             document.body.appendChild(temp);

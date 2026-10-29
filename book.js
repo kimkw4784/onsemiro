@@ -1,8 +1,3 @@
-// =========================================
-// 추모 기록집 (memorial-book.html?room=슬러그)
-// - 추모관에 공개된 내용만 불러와 책 형태로 보여주고, 인쇄 창에서 PDF로 저장
-// =========================================
-
 const MEDIA_BASE = 'https://media.onsemiro.me';
 const SITE_BASE = 'https://onsemiro.me';
 
@@ -19,7 +14,6 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-// 받침이 있으면 '이'를 붙여 부르는 이름 (하임 → 하임이)
 function callName(name) {
     if (!name) return '';
     const code = name.charCodeAt(name.length - 1);
@@ -27,7 +21,6 @@ function callName(name) {
     return (code - 0xAC00) % 28 > 0 ? name + '이' : name;
 }
 
-// "2013-05-10" → "2013. 05. 10."
 function formatIsoDate(iso) {
     if (!iso) return '';
     const [y, m, d] = iso.split('-');
@@ -97,7 +90,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const petName = memorial.petName || '아이';
     document.title = `${petName}의 추모 기록집 | ONSEMIRO 온새미로`;
 
-    // 정렬: 발자취는 날짜순, 갤러리는 올린 순서, 편지는 오래된 순
     timeline.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
     gallery.sort((a, b) => {
         const diff = (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0);
@@ -118,7 +110,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btnSavePdf').disabled = false;
 });
 
-// 1. 표지
 function renderCover(m) {
     const petName = m.petName || '아이';
     const meet = formatIsoDate(m.meetDate);
@@ -146,7 +137,6 @@ function renderCover(m) {
     `;
 }
 
-// 2. 발자취
 function renderTimeline(petName, items) {
     const body = items.length === 0
         ? `<p class="empty-note">기록된 발자취가 없습니다.</p>`
@@ -168,7 +158,6 @@ function renderTimeline(petName, items) {
     `;
 }
 
-// 3. 갤러리 (영상은 썸네일과 함께 '영상' 표시)
 function renderGallery(petName, items) {
     if (items.length === 0) return '';
 
@@ -201,7 +190,6 @@ function renderGallery(petName, items) {
     `;
 }
 
-// 4. 우체통 편지
 function renderLetters(petName, items) {
     if (items.length === 0) return '';
 
@@ -224,7 +212,6 @@ function renderLetters(petName, items) {
     `;
 }
 
-// 5. 맺음
 function renderClosing(petName, room) {
     const today = new Date();
     const made = `${today.getFullYear()}. ${String(today.getMonth() + 1).padStart(2, '0')}. ${String(today.getDate()).padStart(2, '0')}.`;
@@ -246,7 +233,6 @@ function renderClosing(petName, room) {
     `;
 }
 
-// 사진이 모두 불러와진 뒤에 저장 버튼을 켜서, PDF에 빈 사진이 들어가지 않게 함
 function waitForImages(container) {
     const imgs = Array.from(container.querySelectorAll('img'));
     let done = 0;
@@ -266,10 +252,6 @@ function waitForImages(container) {
     })));
 }
 
-// PDF로 저장하기
-// - 인쇄 창이 열리면 그대로 진행
-// - 모바일 일부 브라우저(삼성인터넷 일부 버전, 카카오톡 안 브라우저 등)는 사이트가 인쇄 창을
-//   직접 열 수 없어서, 잠시 뒤에도 인쇄가 시작되지 않으면 브라우저별 저장 방법을 안내
 let printStarted = false;
 window.addEventListener('beforeprint', () => { printStarted = true; });
 
@@ -280,7 +262,6 @@ function saveAsPdf() {
     } catch (err) {
         console.error('인쇄 창 열기 실패:', err);
     }
-    // 인쇄 창이 열리는 브라우저는 그 사이 beforeprint가 발생함
     setTimeout(() => {
         if (!printStarted) showPrintGuide();
     }, 800);

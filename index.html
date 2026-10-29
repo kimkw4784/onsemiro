@@ -19,7 +19,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="naver-site-verification" content="f6d80d4968feb78d93daaffe4010ff8088881154" />
 
-    <link rel="stylesheet" as="style" crossorigin
+    <link rel="stylesheet" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -39,7 +39,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 
@@ -144,7 +144,6 @@
         </div>
     </section>
 
-    <!-- 브랜드 스토리 섹션 -->
     <section id="story" class="brand-story-section">
         <div class="container">
             <span class="section-tag">BRAND STORY</span>
@@ -185,7 +184,6 @@
             </div>
 
             <div class="features-grid">
-                <!-- 01 -->
                 <div class="feature-card">
                     <div class="feature-card-header">
                         <span class="feature-num">01</span>
@@ -195,7 +193,6 @@
                     <p class="feature-desc">상업적 피드와 광고의 방해 없이<br>온전한 추모와 회고에 몰입합니다.</p>
                 </div>
 
-                <!-- 02 -->
                 <div class="feature-card">
                     <div class="feature-card-header">
                         <span class="feature-num">02</span>
@@ -205,7 +202,6 @@
                     <p class="feature-desc">회원가입 없이 링크 전달 하나로<br>지인들의 옛 사진과 사연을 모읍니다.</p>
                 </div>
 
-                <!-- 03 -->
                 <div class="feature-card">
                     <div class="feature-card-header">
                         <span class="feature-num">03</span>
@@ -215,7 +211,6 @@
                     <p class="feature-desc">앱 설치의 번거로움 없이 터치 한 번으로<br>누구나 편안하게 둘러봅니다.</p>
                 </div>
 
-                <!-- 04 -->
                 <div class="feature-card">
                     <div class="feature-card-header">
                         <span class="feature-num">04</span>
@@ -238,7 +233,6 @@
             </div>
 
             <div class="preview-grid">
-                <!-- 01 -->
                 <div class="preview-card">
                     <div class="preview-screen-box">
                         <div class="screen-content screen-intro">
@@ -264,7 +258,6 @@
                     </div>
                 </div>
 
-                <!-- 02 -->
                 <div class="preview-card">
                     <div class="preview-screen-box">
                         <div class="screen-content screen-timeline">
@@ -292,7 +285,6 @@
                     </div>
                 </div>
 
-                <!-- 03 -->
                 <div class="preview-card">
                     <div class="preview-screen-box">
                         <div class="screen-content screen-gallery">
@@ -322,7 +314,6 @@
                     </div>
                 </div>
 
-                <!-- 04 -->
                 <div class="preview-card">
                     <div class="preview-screen-box">
                         <div class="screen-content screen-letters">
@@ -346,7 +337,6 @@
                     </div>
                 </div>
 
-                <!-- 05 -->
                 <div class="preview-card">
                     <div class="preview-screen-box">
                         <div class="screen-content screen-letters">
@@ -370,7 +360,6 @@
                     </div>
                 </div>
 
-                <!-- 06 -->
                 <div class="preview-card">
                     <div class="preview-screen-box">
                         <div class="screen-content screen-export">
@@ -583,7 +572,6 @@
             </div>
 
             <div class="pricing-grid">
-                <!-- 01. 에센셜 아카이브 (론칭 스페셜) -->
                 <div class="pricing-card popular launching-card">
                     <div class="popular-tag">LAUNCHING SPECIAL</div>
                     <div class="pricing-header">
@@ -612,7 +600,6 @@
                     </button>
                 </div>
 
-                <!-- 02. 시그니처 아카이브 -->
                 <div class="pricing-card">
                     <div class="pricing-header">
                         <h3>시그니처 아카이브</h3>
@@ -638,7 +625,6 @@
                     </button>
                 </div>
 
-                <!-- 03. 헤리티지 아카이브 (준비 중) -->
                 <div class="pricing-card coming-soon-card">
                     <div class="coming-soon-tag">OPENING SOON</div>
                     <div class="pricing-header">
@@ -675,7 +661,6 @@
                 <h2 class="section-heading">자주 묻는 질문</h2>
             </div>
 
-            <!-- FAQ 카테고리 탭 -->
             <div class="faq-tabs">
                 <button type="button" class="faq-tab active" onclick="switchFaqTab('all', this)">전체</button>
                 <button type="button" class="faq-tab" onclick="switchFaqTab('use', this)">이용/공유</button>
@@ -683,10 +668,8 @@
                 <button type="button" class="faq-tab" onclick="switchFaqTab('payment', this)">결제/기타</button>
             </div>
 
-            <!-- FAQ 아코디언 리스트 -->
             <div class="faq-list">
 
-                <!-- [결제/기타] FAQ 01 -->
                 <div class="faq-item" data-category="payment">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 매달 결제되는 구독료가 있나요?</span>
@@ -697,7 +680,6 @@
                     </div>
                 </div>
 
-                <!-- [데이터/보안] FAQ 02 -->
                 <div class="faq-item" data-category="data">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 서비스가 중단되면 사진은 어떻게 되나요?</span>
@@ -709,7 +691,6 @@
                     </div>
                 </div>
 
-                <!-- [이용/공유] FAQ 03 -->
                 <div class="faq-item" data-category="use">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 친척이나 지인들에게 어떻게 공유하나요?</span>
@@ -720,7 +701,6 @@
                     </div>
                 </div>
 
-                <!-- [데이터/보안] FAQ 04 -->
                 <div class="faq-item" data-category="data">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 네이버나 구글 같은 포털 검색에 내 추모관이 노출되나요?</span>
@@ -732,7 +712,6 @@
                     </div>
                 </div>
 
-                <!-- [이용/공유] FAQ 05 -->
                 <div class="faq-item" data-category="use">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 업로드할 수 있는 사진이나 동영상 용량 제한이 있나요?</span>
@@ -746,7 +725,6 @@
                     </div>
                 </div>
 
-                <!-- [이용/공유] FAQ 06 -->
                 <div class="faq-item" data-category="use">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 추모관 링크를 따로 저장해 두어야 하나요?</span>
@@ -757,7 +735,6 @@
                     </div>
                 </div>
 
-                <!-- [이용/공유] FAQ 07 -->
                 <div class="faq-item" data-category="use">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 지인들이 보내준 사진이나 추모글이 추모관에 바로 게시되나요?</span>
@@ -768,7 +745,6 @@
                     </div>
                 </div>
 
-                <!-- [데이터/보안] FAQ 08 -->
                 <div class="faq-item" data-category="data">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 관리자 전용 링크란 무엇인가요?</span>
@@ -780,7 +756,6 @@
                     </div>
                 </div>
 
-                <!-- [결제/기타] FAQ 09 -->
                 <div class="faq-item" data-category="payment">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 결제는 어떤 방법으로 가능한가요?</span>
@@ -791,7 +766,6 @@
                     </div>
                 </div>
 
-                <!-- [결제/기타] FAQ 10 -->
                 <div class="faq-item" data-category="payment">
                     <button type="button" class="faq-q" onclick="toggleFaq(this)">
                         <span>Q. 결제 후에 환불받을 수 있나요?</span>

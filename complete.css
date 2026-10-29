@@ -34,7 +34,6 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* 상단 헤더 네비게이션 */
 .navbar {
     position: sticky;
     top: 0;
@@ -78,7 +77,6 @@ body {
     padding-left: 8px;
 }
 
-/* 완료 페이지 본문 레이아웃 */
 .complete-page-body {
     min-height: 100vh;
     display: flex;
@@ -144,7 +142,6 @@ body {
     word-break: keep-all;
 }
 
-/* 묶음 그룹 박스 공통 */
 .complete-group-box {
     background: #FCFAF7;
     border: 1px solid rgba(43, 38, 32, 0.08);
@@ -154,7 +151,6 @@ body {
     text-align: left;
 }
 
-/* 1그룹: 주문 내역 요약 */
 .complete-summary {
     padding-bottom: 14px;
     margin-bottom: 14px;
@@ -177,14 +173,6 @@ body {
     font-weight: 600;
 }
 
-/* 2그룹: 링크 묶음 */
-.links-group-box {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 24px;
-}
-
 .inner-link-item {
     background: #FFFFFF;
     border: 1px solid var(--border-light);
@@ -196,7 +184,6 @@ body {
     border-color: rgba(212, 163, 115, 0.5);
 }
 
-/* 관리자 전용 시크릿 링크 강조 */
 .inner-link-item.link-item-admin {
     background: #FAF8F5;
     border-color: rgba(212, 163, 115, 0.35);
@@ -275,7 +262,6 @@ body {
     color: #C07040;
 }
 
-/* 그룹 내부 안내 띠지 공통 */
 .group-inner-banner {
     display: flex;
     align-items: flex-start;
@@ -316,7 +302,6 @@ body {
     color: var(--text-main);
 }
 
-/* 버튼 컴포넌트 */
 .btn {
     display: inline-block;
     padding: 13px 24px;
@@ -367,7 +352,6 @@ body {
     gap: 10px;
 }
 
-/* 그룹 상단 소제목 */
 .group-section-title {
     display: flex;
     align-items: baseline;
@@ -395,7 +379,6 @@ body {
     gap: 10px;
 }
 
-/* 관리자 전용 시크릿 박스 강조 (따뜻한 테두리 및 톤 구분) */
 .box-admin-secret {
     background: #FAF7F2;
     border: 1px solid rgba(212, 163, 115, 0.3);
@@ -423,7 +406,6 @@ body {
     color: #C05621;
 }
 
-/* 결제 확인 중 로딩 표시 */
 .complete-spinner {
     width: 22px;
     height: 22px;
@@ -439,9 +421,6 @@ body {
     }
 }
 
-/* =========================================
-   디자인 통일 (메인 페이지 기준) + 화면 폭
-========================================= */
 .complete-tag {
     font-size: 12px;
     font-weight: 600;
@@ -452,7 +431,6 @@ body {
     font-size: 24px;
 }
 
-/* 링크가 덜 줄바꿈되도록 카드 폭 확대 */
 .complete-card {
     max-width: 580px;
 }
@@ -472,7 +450,6 @@ body {
     }
 }
 
-/* 관리자 화면 버튼: 톱니바퀴 아이콘과 글자 가운데 정렬 */
 .btn-admin {
     display: inline-flex;
     align-items: center;
@@ -485,16 +462,11 @@ body {
     display: block;
 }
 
-/* =========================================
-   모바일 반응형 정리
-========================================= */
-/* 한글이 단어 중간에서 끊기지 않게 (긴 주소는 필요할 때만 줄바꿈) */
 body {
     word-break: keep-all;
     overflow-wrap: anywhere;
 }
 
-/* 주문 요약: 왼쪽 이름표는 한 줄로, 긴 주문번호는 오른쪽에서 줄바꿈 */
 .summary-row {
     gap: 12px;
 }
@@ -513,15 +485,12 @@ body {
     .complete-title {
         font-size: 21px;
     }
-
 }
 
-/* 말 덩어리 묶음: 덩어리 안에서는 줄바꿈하지 않고, 덩어리 사이에서만 줄바꿈 */
 .nb {
     white-space: nowrap;
 }
 
-/* 링크 아래 안내 문구: 아이콘 옆 글자는 일반 글자 모양 그대로 */
 .link-item-tip .tip-text {
     margin: 0;
 }

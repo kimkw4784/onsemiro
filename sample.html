@@ -14,7 +14,7 @@
     <meta property="og:url" content="https://onsemiro.me/sample.html">
     <meta property="og:image" content="https://onsemiro.me/images/og-share.png">
 
-    <link rel="stylesheet" as="style" crossorigin
+    <link rel="stylesheet" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -22,7 +22,6 @@
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@300;400;600;700&display=swap"
         rel="stylesheet">
 
-    <!-- sample.css 연결 -->
     <link rel="stylesheet" href="sample.css">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -53,7 +52,6 @@
     </header>
 
     <main class="sample-container">
-        <!-- 인트로 섹션 -->
         <section class="memorial-intro">
             <span class="intro-badge">IN LOVING MEMORY</span>
             <div class="intro-avatar-frame">
@@ -79,7 +77,6 @@
             </div>
         </section>
 
-        <!-- 발자취 타임라인 -->
         <section class="sub-section">
             <div class="sub-header">
                 <span class="sub-tag">TIMELINE</span>
@@ -89,7 +86,6 @@
             </div>
         </section>
 
-        <!-- 갤러리 섹션 -->
         <section class="sub-section">
             <div class="sub-header">
                 <span class="sub-tag">PHOTO GALLERY</span>
@@ -107,7 +103,6 @@
             </div>
         </section>
 
-        <!-- 이미지 모달 -->
         <div id="imageModal" class="image-modal" onclick="closeImageModal(event)">
             <div class="image-modal-content" onclick="event.stopPropagation()">
                 <button type="button" class="btn-modal-close" onclick="closeImageModalDirect()" aria-label="닫기"><svg
@@ -122,7 +117,6 @@
             </div>
         </div>
 
-        <!-- 비디오 섹션 -->
         <section class="sub-section">
             <div class="sub-header">
                 <span class="sub-tag">VIDEO MEMORY</span>
@@ -165,7 +159,6 @@
             </div>
         </section>
 
-        <!-- 사진/영상 모으기 배너 -->
         <div class="gallery-archive-cta">
             <div class="archive-cta-content">
                 <span class="archive-cta-tag">MEMORY ARCHIVE</span>
@@ -175,7 +168,7 @@
                     가족들의 추모 공간에 따뜻한 조각으로 소중히 전시됩니다.
                 </p>
             </div>
-            <a href="upload.html?room=4K8F2G" id="galleryUploadBtn" class="btn-archive-cta">
+            <a href="#" id="galleryUploadBtn" class="btn-archive-cta">
                 <svg viewBox="0 0 20 20" fill="none" class="cta-btn-icon">
                     <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
@@ -183,7 +176,6 @@
             </a>
         </div>
 
-        <!-- 비디오 모달 -->
         <div id="videoModal" class="video-modal" onclick="closeVideoModal(event)">
             <div class="video-modal-content" onclick="event.stopPropagation()">
                 <button type="button" class="btn-modal-close" onclick="forceCloseModal()" aria-label="닫기"><svg
@@ -201,7 +193,6 @@
             </div>
         </div>
 
-        <!-- 우체통 섹션 -->
         <section class="sub-section">
             <div class="sub-header">
                 <span class="sub-tag">POSTBOX</span>
@@ -221,7 +212,6 @@
             <div class="letter-list" id="letterList"></div>
         </section>
 
-        <!-- 공유 버튼 -->
         <div class="share-container">
             <button type="button" class="btn-share-link" onclick="copyMemorialLink()">
                 <iconify-icon icon="noto:link" aria-hidden="true"></iconify-icon> 추모관 링크 공유하기
@@ -230,7 +220,6 @@
 
         <div id="toastMessage" class="toast-popup">추모관 링크가 클립보드에 복사되었습니다.</div>
 
-        <!-- 개설 유도 세일즈 배너 (?room= 시 자동 숨김) -->
         <div class="sample-cta-banner">
             <h4>우리 아이를 위한 단 하나의 디지털 안식처</h4>
             <p>1회 결제로 평생 보존되는 우리 가족만의 추모 공간을 개설해보세요.</p>
@@ -238,12 +227,10 @@
         </div>
     </main>
 
-    <!-- 우측 하단 고정 관리자 버튼 (독립 배치) -->
     <a href="admin.html" id="adminFloatingBtn" class="btn-admin-floating" style="display: none;">
         <iconify-icon icon="noto:gear" aria-hidden="true"></iconify-icon> 관리자 모드
     </a>
 
-    <!-- sample.js 연결 -->
     <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>
     <script src="share.js"></script>
     <script src="sample.js"></script>

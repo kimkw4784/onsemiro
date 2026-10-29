@@ -389,11 +389,9 @@ body {
     overflow: visible;
     font-family: var(--font-sans);
     font-size: 11px;
-    /* 기존 아담한 폰트 크기 유지 */
     font-weight: 500;
     color: var(--text-sub);
     padding: 7px 12px;
-    /* 기존 패딩 규격 유지 */
     border-radius: 20px;
     border: 1px solid rgba(43, 38, 32, 0.08);
     background: #FFFFFF;
@@ -402,12 +400,10 @@ body {
     align-items: center;
     gap: 6px;
     outline: none;
-    /* 클릭 후 잔여 포커스 테두리 제거 */
     -webkit-tap-highlight-color: transparent;
     transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* PC 마우스 호버 시에만 반응 */
 @media (hover: hover) and (pointer: fine) {
     .mockup-btn:hover {
         border-color: var(--accent-brown);
@@ -415,7 +411,6 @@ body {
     }
 }
 
-/* 클릭 후 포커스가 남아있어도 테두리가 켜져 있지 않도록 초기화 */
 .mockup-btn:focus:not(:hover) {
     border-color: rgba(43, 38, 32, 0.08);
     transform: none;
@@ -460,7 +455,6 @@ body {
     font-size: 14px;
 }
 
-/* 브랜드 스토리 리스트형 스타일 */
 .brand-story-section {
     padding: 120px 0 100px 0;
     background-color: var(--bg-main);
@@ -1339,12 +1333,6 @@ body {
     margin-bottom: 2px;
 }
 
-.original-price {
-    font-size: 13px;
-    color: var(--text-muted);
-    text-decoration: line-through;
-}
-
 .discount-badge {
     display: inline-block;
     font-size: 11px;
@@ -1474,7 +1462,6 @@ body {
     max-width: 760px;
 }
 
-/* FAQ 아코디언 스타일 */
 .faq-list {
     display: flex;
     flex-direction: column;
@@ -1513,7 +1500,6 @@ body {
     line-height: 1.5;
 }
 
-/* 화살표 토글 아이콘 */
 .faq-icon {
     width: 10px;
     height: 10px;
@@ -1529,7 +1515,6 @@ body {
     transform: rotate(-135deg);
 }
 
-/* 슬라이드 펼침 애니메이션 */
 .faq-a-wrap {
     max-height: 0;
     overflow: hidden;
@@ -1550,7 +1535,6 @@ body {
     word-break: keep-all;
 }
 
-/* FAQ 탭 스타일 */
 .faq-tabs {
     display: flex;
     justify-content: center;
@@ -1577,7 +1561,6 @@ body {
     color: var(--accent-brown);
 }
 
-/* 활성화된 탭 */
 .faq-tab.active {
     background-color: var(--accent-brown);
     color: #ffffff;
@@ -1585,7 +1568,6 @@ body {
     font-weight: 600;
 }
 
-/* 탭 전환 시 숨김 처리 */
 .faq-item.hide {
     display: none;
 }
@@ -1882,16 +1864,6 @@ body {
     color: var(--text-muted);
 }
 
-.order-notice {
-    background: #FCFAF7;
-    border-radius: 8px;
-    padding: 10px 12px;
-    margin-bottom: 20px;
-    font-size: 11.5px;
-    color: var(--text-sub);
-    line-height: 1.5;
-}
-
 .plan-card-group {
     display: flex;
     gap: 10px;
@@ -2056,21 +2028,6 @@ body {
     font-weight: 500;
 }
 
-.access-links-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-bottom: 32px;
-    text-align: left;
-}
-
-.link-item-box {
-    background: #FCFAF7;
-    border: 1px solid var(--border-light);
-    border-radius: 12px;
-    padding: 16px;
-}
-
 .link-item-highlight {
     border-color: rgba(212, 163, 115, 0.4);
     background: #FAF8F5;
@@ -2142,38 +2099,6 @@ body {
     gap: 10px;
 }
 
-.sms-notice-banner {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    background: #FDFBF7;
-    border: 1px solid rgba(212, 163, 115, 0.35);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 20px;
-    text-align: left;
-}
-
-.sms-notice-icon {
-    font-size: 16px;
-    line-height: 1.5;
-    flex-shrink: 0;
-    margin-top: 1px;
-}
-
-.sms-notice-banner p {
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.55;
-    color: var(--text-main);
-    word-break: keep-all;
-}
-
-.sms-notice-banner strong {
-    color: var(--accent-brown);
-}
-
-/* 목업 버튼 기준점 및 텍스트 겹침 방지 */
 .mockup-interactive {
     position: relative;
     display: flex;
@@ -2241,9 +2166,6 @@ body {
     }
 }
 
-/* =========================================
-   이용약관 & 개인정보처리방침 (Legal Pages)
-   ========================================= */
 .legal-wrap {
     max-width: 800px;
     margin: 0 auto;
@@ -2333,9 +2255,6 @@ body {
     font-weight: 600;
 }
 
-/* =========================================
-   결제 모달: 화면보다 길어지면 모달 안에서 스크롤
-========================================= */
 .order-modal-backdrop {
     height: 100vh;
     height: 100dvh;
@@ -2358,20 +2277,17 @@ body {
     overscroll-behavior: contain;
 }
 
-/* 안내 글자(placeholder): 입력값과 확실히 구분되도록 연한 회색 */
 input::placeholder,
 textarea::placeholder {
     color: #C4BDB3;
     opacity: 1;
 }
 
-/* 입력칸을 터치하면 안내 글자 숨기기 */
 input:focus::placeholder,
 textarea:focus::placeholder {
     color: transparent;
 }
 
-/* 빌더 미입력 안내 */
 .builder-guide-notice {
     background: #FAF3E8;
     border: 1px solid rgba(212, 163, 115, 0.45);
@@ -2398,7 +2314,6 @@ textarea:focus::placeholder {
     }
 }
 
-/* 버튼 안 로딩 표시 */
 .btn-spinner {
     display: inline-block;
     width: 14px;
@@ -2417,15 +2332,11 @@ textarea:focus::placeholder {
     }
 }
 
-/* =========================================
-   디자인 통일: 이름표(작은 영문) 두께 강화
-========================================= */
 .section-tag {
     font-weight: 600;
     letter-spacing: 2.5px;
 }
 
-/* 빌더 '사진이 등록됐어요' 안내가 좁은 화면에서 잘리지 않게 줄바꿈 허용 */
 .photo-upload-inline {
     height: auto;
     min-height: 38px;
@@ -2437,9 +2348,6 @@ textarea:focus::placeholder {
     word-break: keep-all;
 }
 
-/* =========================================
-   요금제: 용량을 크게 + 어색한 줄바꿈 정리
-========================================= */
 .capacity-box {
     display: flex;
     flex-direction: column;
@@ -2493,7 +2401,6 @@ textarea:focus::placeholder {
     word-break: keep-all;
 }
 
-/* 결제 모달 플랜 카드: 용량 강조, 설명은 한 줄로 */
 .plan-capacity {
     font-size: 15px;
     font-weight: 700;
@@ -2506,10 +2413,6 @@ textarea:focus::placeholder {
     word-break: keep-all;
 }
 
-/* =========================================
-   모바일 반응형 정리
-========================================= */
-/* 한글이 단어 중간에서 끊기지 않게 (긴 주소는 필요할 때만 줄바꿈) */
 body {
     word-break: keep-all;
     overflow-wrap: anywhere;
@@ -2521,8 +2424,6 @@ body {
 }
 
 @media (max-width: 480px) {
-
-    /* 메인 상단 버튼: 세로로 쌓아 넓게 */
     .hero-btns {
         flex-direction: column;
     }
@@ -2540,12 +2441,10 @@ body {
         white-space: nowrap;
     }
 
-    /* 빌더: 아이 이름과 사진 등록을 위아래로 */
     .builder-form-box .form-row:has(.photo-upload-inline) {
         flex-direction: column;
     }
 
-    /* 하단 사업자 정보: 한 줄에 하나씩 */
     .footer-info {
         gap: 8px;
         text-align: left;
@@ -2576,7 +2475,6 @@ body {
     }
 }
 
-/* 아주 좁은 화면(320px대) 대응 */
 @media (max-width: 360px) {
     .pricing-grid {
         grid-template-columns: minmax(0, 1fr);
@@ -2593,7 +2491,6 @@ body {
     display: block;
 }
 
-/* 다크모드에서도 원래의 밝은 디자인 유지 */
 @media (prefers-color-scheme: dark) {
     :root {
         color-scheme: light only;
@@ -2606,14 +2503,11 @@ body {
     }
 }
 
-/* 말 덩어리 묶음: 덩어리 안에서는 줄바꿈하지 않고, 덩어리 사이에서만 줄바꿈 */
 .nb {
     white-space: nowrap;
 }
 
 @media (max-width: 480px) {
-
-    /* 섹션 제목: 휴대폰에서 말 덩어리가 한 줄에 들어가는 크기 */
     .section-heading {
         font-size: 25px;
         line-height: 1.4;
@@ -2627,16 +2521,11 @@ body {
 }
 
 @media (max-width: 480px) {
-
-    /* 미리보기 카드 설명: 휴대폰에선 PC용 줄바꿈 대신 자연스럽게 흐르도록 */
     .preview-card-info p br {
         display: none;
     }
 }
 
-/* =========================================
-   빌더: 배경음악 미리듣기
-========================================= */
 .bgm-select-row {
     display: flex;
     gap: 8px;
@@ -2678,9 +2567,6 @@ body {
     color: var(--text-sub);
 }
 
-/* =========================================
-   PC 달력: 연도·월 이동 화살표를 누르기 쉽게 크게
-========================================= */
 .flatpickr-calendar .flatpickr-prev-month,
 .flatpickr-calendar .flatpickr-next-month {
     padding: 10px 12px;
@@ -2709,7 +2595,6 @@ body {
     border-top-width: 4.5px;
 }
 
-/* 휴대폰 기본 날짜 칸: 기기가 덧붙이는 ∨ 표시를 없애고, 칸 전체를 눌러 열리게 */
 .flatpickr-mobile {
     -webkit-appearance: none;
     appearance: none;
@@ -2730,34 +2615,6 @@ body {
     text-align: left;
 }
 
-.order-refund-note {
-    margin: 14px 0 10px;
-    font-size: 12px;
-    line-height: 1.6;
-    color: var(--text-sub);
-    word-break: keep-all;
-}
-
-.order-agree {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 14px;
-    font-size: 12.5px;
-    line-height: 1.55;
-    color: var(--text-main);
-    cursor: pointer;
-}
-
-.order-agree input {
-    flex-shrink: 0;
-    width: 16px;
-    height: 16px;
-    margin-top: 2px;
-    accent-color: var(--accent-brown);
-}
-
-.order-agree a,
 .pricing-refund a {
     color: var(--accent-brown);
     text-decoration: underline;
@@ -2824,13 +2681,6 @@ body {
     cursor: pointer;
 }
 
-.gift-code-hint {
-    margin-top: 6px;
-    font-size: 12px;
-    color: var(--text-sub);
-    word-break: keep-all;
-}
-
 #giftCodeInput {
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -2843,7 +2693,6 @@ body {
     display: none;
 }
 
-/* order-modal */
 .order-modal-body {
     padding: 14px 22px 16px;
 }

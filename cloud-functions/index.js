@@ -9,22 +9,19 @@ const { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand, List
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { SolapiMessageService } = require("solapi");
 
+const ENFORCE_APP_CHECK = false;
+
 initializeApp();
 const db = getFirestore();
 
-// 토스 시크릿 키 (Firebase 비밀 값 보관함에서 꺼내 씀 - 코드에는 절대 적지 않음)
 const TOSS_SECRET_KEY = defineSecret("TOSS_SECRET_KEY");
 
-// 운영자 전용 비밀번호 (관리자 링크 재발급 등 운영자 기능에만 사용)
 const OPERATOR_KEY = defineSecret("OPERATOR_KEY");
 
-// 솔라피 (문자·알림톡 발송)
 const SOLAPI_API_KEY = defineSecret("SOLAPI_API_KEY");
 const SOLAPI_API_SECRET = defineSecret("SOLAPI_API_SECRET");
 const SMS_SECRETS = [SOLAPI_API_KEY, SOLAPI_API_SECRET];
 
-// 솔라피에 등록한 발신번호 (받는 사람에게 보이는 번호라 비밀 값이 아님)
-// ※ 비어 있으면 문자를 보내지 않고 건너뜀 → 발신번호 등록 후 숫자만 입력하고 다시 배포
 const SMS_SENDER = "01025544784";
 
 const SITE_BASE = "https://onsemiro.me";
@@ -37,7 +34,6 @@ const KAKAO_TEMPLATES = {
     meet: "KA01TP261027005844224VARDYZSvupl"
 };
 
-// Cloudflare R2 (사진·영상 저장소) 접근 정보
 const R2_ACCESS_KEY_ID = defineSecret("R2_ACCESS_KEY_ID");
 const R2_SECRET_ACCESS_KEY = defineSecret("R2_SECRET_ACCESS_KEY");
 const R2_ACCOUNT_ID = defineSecret("R2_ACCOUNT_ID");
@@ -45,30 +41,22 @@ const R2_SECRETS = [R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ACCOUNT_ID];
 const R2_BUCKET = "onsemiro-media";
 const MEDIA_BASE = "https://media.onsemiro.me";
 
-// 업로드 제한 (악용 방지용 안전장치)
 const UPLOAD_LIMITS = {
     maxFilesPerMemory: 10,
-    imageBytes: 30 * 1024 * 1024,        // 사진 1장 (압축 후라 넉넉함)
-    videoBytes: 500 * 1024 * 1024,       // 영상 1개
-    thumbBytes: 2 * 1024 * 1024          // 영상 썸네일
-    // 추모관 전체 한도는 요금제별 (PLANS.storageBytes)
+    imageBytes: 30 * 1024 * 1024,
+    videoBytes: 500 * 1024 * 1024,
+    thumbBytes: 2 * 1024 * 1024
 };
 const IMAGE_TYPES = ["image/webp", "image/jpeg", "image/png", "image/gif"];
 const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 
-// 모든 함수를 서울 리전에서 실행, 동시 실행 개수 제한(비용 안전장치)
 setGlobalOptions({ region: "asia-northeast3", maxInstances: 10 });
 
-// =========================================
-// 가격표 - 금액은 오직 서버의 이 표로만 정해짐
-// =========================================
 const PLANS = {
     essential: { price: 19500, name: "에센셜 아카이브", storageBytes: 20 * 1024 * 1024 * 1024 },
     signature: { price: 49000, name: "시그니처 아카이브", storageBytes: 50 * 1024 * 1024 * 1024 }
-    // heritage: 헤리티지 아카이브 (출시 예정)
 };
 
-// 요금제별 저장 한도 (알 수 없는 요금제는 에센셜 기준)
 function storageLimitOf(plan) {
     return (PLANS[plan] || PLANS.essential).storageBytes;
 }
@@ -82,23 +70,16 @@ const BGM_TITLE_TO_KEY = {
     "음악 없음 (조용한 추모)": "none"
 };
 
-// =========================================
-// 공통 도우미
-// =========================================
-
-// 문자열 정리 (앞뒤 공백 제거 + 최대 길이 자르기)
 function cleanText(value, maxLength) {
     return String(value || "").trim().slice(0, maxLength);
 }
 
-// "2013. 05. 10." → "2013-05-10"
 function toIsoDate(value) {
     const digits = String(value || "").replace(/[^\d]/g, "");
     if (digits.length !== 8) return "";
     return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
 }
 
-// 받침이 있으면 '이'를 붙여 부르는 이름 (하임 → 하임이, 코코 → 코코)
 function callName(name) {
     if (!name) return "";
     const code = name.charCodeAt(name.length - 1);
@@ -106,7 +87,6 @@ function callName(name) {
     return (code - 0xAC00) % 28 > 0 ? name + "이" : name;
 }
 
-// 헷갈리는 글자(0, O, 1, I 등)를 뺀 6자리 추모관 주소
 function generateSlug() {
     const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
     let slug = "";
@@ -116,7 +96,6 @@ function generateSlug() {
     return slug;
 }
 
-// 아직 쓰이지 않은 슬러그를 찾을 때까지 다시 뽑기
 async function generateUniqueSlug() {
     for (let i = 0; i < 10; i++) {
         const slug = generateSlug();
@@ -126,12 +105,10 @@ async function generateUniqueSlug() {
     throw new HttpsError("internal", "추모관 주소를 만들지 못했습니다. 다시 시도해 주세요.");
 }
 
-// 관리자 키는 원본 대신 해시로만 저장 (유출돼도 원래 키를 알 수 없음)
 function hashKey(key) {
     return crypto.createHash("sha256").update(key).digest("hex");
 }
 
-// R2 연결 (S3 호환 방식)
 let r2Client = null;
 function getR2() {
     if (!r2Client) {
@@ -160,8 +137,6 @@ async function deleteR2Object(path) {
     }
 }
 
-// base64 대표 사진을 R2에 저장하고 { path, url } 돌려주기
-// (같은 주소를 덮어쓰면 캐시 때문에 예전 사진이 보일 수 있어서, 저장할 때마다 새 이름 사용)
 async function saveProfilePhoto(slug, dataUrl) {
     const match = /^data:(image\/(jpeg|png|webp));base64,(.+)$/.exec(dataUrl || "");
     if (!match) return null;
@@ -181,8 +156,6 @@ async function saveProfilePhoto(slug, dataUrl) {
     return { path, url: mediaUrl(path) };
 }
 
-// 문자 발송 (긴 문자는 솔라피가 자동으로 LMS로 보냄)
-// 결과: "sent" | "skipped"(발신번호 미설정) | "failed"
 async function sendSms(to, text, subject = "[온새미로] 추모관 안내") {
     const from = SMS_SENDER.replace(/[^\d]/g, "");
     if (!from || !to) return "skipped";
@@ -252,11 +225,7 @@ function reissueMessage({ petName, slug, adminKey }) {
     ].join("\n");
 }
 
-// =========================================
-// 1. 주문 등록 (결제창을 열기 직전에 호출)
-// - 브라우저는 플랜 이름만 보내고, 금액은 서버가 가격표로 정함
-// =========================================
-exports.createOrder = onCall({ secrets: [...R2_SECRETS, ...SMS_SECRETS] }, async (request) => {
+exports.createOrder = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: [...R2_SECRETS, ...SMS_SECRETS] }, async (request) => {
     const data = request.data || {};
     const giftCode = String(data.giftCode || "").trim().toUpperCase();
     let giftPlan = null;
@@ -290,7 +259,6 @@ exports.createOrder = onCall({ secrets: [...R2_SECRETS, ...SMS_SECRETS] }, async
         throw new HttpsError("invalid-argument", "휴대폰 번호를 확인해 주세요.");
     }
 
-    // 대표 사진은 압축된 이미지만 허용 (약 700KB 이하)
     const photo = typeof memorial.photo === "string" && memorial.photo.startsWith("data:image/")
         && memorial.photo.length < 700000 ? memorial.photo : "";
 
@@ -346,16 +314,11 @@ exports.createOrder = onCall({ secrets: [...R2_SECRETS, ...SMS_SECRETS] }, async
     return { ...result, gift: true };
 });
 
-// =========================================
-// 2. 결제 승인 (결제 성공 후 complete.html에서 호출)
-// - 토스에 실제 결제를 확인하고, 금액이 맞을 때만 추모관 생성
 async function openMemorial(orderRef, orderId, order, paidFields) {
-    // 결제 확인 완료 → 추모관 주소와 관리자 키 생성
     const slug = await generateUniqueSlug();
     const adminKey = crypto.randomBytes(24).toString("base64url");
     const draft = order.memorialDraft || {};
 
-    // 대표 사진 저장 (실패해도 추모관 생성은 계속 진행)
     let photo = null;
     try {
         photo = await saveProfilePhoto(slug, draft.photo);
@@ -379,7 +342,6 @@ async function openMemorial(orderRef, orderId, order, paidFields) {
         photoPath: photo ? photo.path : "",
         storageBytes: 0,
         plan: order.plan,
-        // 보호자가 오기 전 온새미로가 먼저 켜둔 촛불과 선물
         counts: { treat: 1, toy: 1, candle: 1 },
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp()
@@ -391,7 +353,6 @@ async function openMemorial(orderRef, orderId, order, paidFields) {
         createdAt: FieldValue.serverTimestamp()
     });
 
-    // 기본 발자취 두 개 (만난 날, 별이 된 날) - 관리자 화면에서 수정·삭제 가능
     const timelineRef = db.collection("memorials").doc(slug).collection("timeline");
     if (draft.meetDate) {
         batch.set(timelineRef.doc(), {
@@ -416,7 +377,6 @@ async function openMemorial(orderRef, orderId, order, paidFields) {
 
     await batch.commit();
 
-    // 개설 안내 문자 (실패해도 결제·추모관 생성에는 영향 없음)
     const applicantName = order.applicant?.name || "보호자";
     const smsResult = await sendNotice(order.applicant?.phone, {
         template: "opening",
@@ -431,7 +391,6 @@ async function openMemorial(orderRef, orderId, order, paidFields) {
     });
     await orderRef.update({ notification: { sms: smsResult, at: FieldValue.serverTimestamp() } });
 
-    // 관리자 키 원본은 이 응답에서 딱 한 번만 전달됨
     return {
         slug,
         adminKey,
@@ -444,8 +403,7 @@ async function openMemorial(orderRef, orderId, order, paidFields) {
     };
 }
 
-// =========================================
-exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS, ...SMS_SECRETS] }, async (request) => {
+exports.confirmPayment = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: [TOSS_SECRET_KEY, ...R2_SECRETS, ...SMS_SECRETS] }, async (request) => {
     const { paymentKey, orderId } = request.data || {};
     const amount = Number(request.data?.amount);
 
@@ -455,7 +413,6 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS, ...S
 
     const orderRef = db.collection("orders").doc(orderId);
 
-    // 같은 주문이 동시에 두 번 처리되지 않도록 '처리 중'으로 먼저 잠금
     const order = await db.runTransaction(async (tx) => {
         const snap = await tx.get(orderRef);
         if (!snap.exists) {
@@ -472,7 +429,6 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS, ...S
         return current;
     });
 
-    // 새로고침 등으로 다시 호출된 경우: 추모관은 이미 만들어져 있음
     if (order.alreadyPaid) {
         return {
             alreadyPaid: true,
@@ -484,13 +440,11 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS, ...S
         };
     }
 
-    // ⚠ 핵심: 결제창에서 넘어온 금액이 서버에 저장해 둔 금액과 다르면 승인하지 않음
     if (amount !== order.amount) {
         await orderRef.update({ status: "amount_mismatch", requestedAmount: amount });
         throw new HttpsError("failed-precondition", "결제 금액이 주문 금액과 일치하지 않습니다.");
     }
 
-    // 토스페이먼츠에 결제 승인 요청 (시크릿 키는 서버에서만 사용)
     const authorization = "Basic " + Buffer.from(`${TOSS_SECRET_KEY.value().trim()}:`).toString("base64");
     const response = await fetch("https://api.tosspayments.com/v1/payments/confirm", {
         method: "POST",
@@ -515,10 +469,6 @@ exports.confirmPayment = onCall({ secrets: [TOSS_SECRET_KEY, ...R2_SECRETS, ...S
     });
 });
 
-
-// =========================================
-// 관리자 공통: 관리자 키 확인
-// =========================================
 async function assertAdmin(slug, key) {
     const denied = new HttpsError("permission-denied", "관리자 링크가 올바르지 않습니다.");
 
@@ -533,9 +483,7 @@ async function assertAdmin(slug, key) {
     const expected = Buffer.from(secret.adminKeyHash || "", "hex");
     const actual = Buffer.from(keyHash, "hex");
 
-    // 글자를 하나씩 비교하는 시간 차이로 키를 추측하지 못하도록 일정한 시간으로 비교
     if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) {
-        // 재발급 전의 예전 키로 들어온 경우에만 '재발급됨'을 알려줌
         if ((secret.previousKeyHashes || []).includes(keyHash)) {
             throw new HttpsError("permission-denied", "관리자 링크가 재발급되었습니다.", { reason: "reissued" });
         }
@@ -543,7 +491,6 @@ async function assertAdmin(slug, key) {
     }
 }
 
-// 화면으로 돌려줄 추모관 정보만 골라내기 (서버 전용 값·시간 객체 제외)
 function pickMemorial(m) {
     return {
         petName: m.petName || "",
@@ -562,10 +509,7 @@ function pickMemorial(m) {
     };
 }
 
-// =========================================
-// 3. 관리자 확인 (관리자 화면 입장, 추모관의 관리자 버튼 표시 여부)
-// =========================================
-exports.verifyAdmin = onCall(async (request) => {
+exports.verifyAdmin = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (request) => {
     const { slug, key } = request.data || {};
     await assertAdmin(slug, key);
 
@@ -576,10 +520,7 @@ exports.verifyAdmin = onCall(async (request) => {
     return { memorial: pickMemorial(snap.data()) };
 });
 
-// =========================================
-// 4. 추모관 기본 정보 수정 (관리자 화면 '추모관 정보' 탭)
-// =========================================
-exports.updateMemorialInfo = onCall({ secrets: R2_SECRETS }, async (request) => {
+exports.updateMemorialInfo = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: R2_SECRETS }, async (request) => {
     const { slug, key } = request.data || {};
     const info = request.data?.info || {};
     await assertAdmin(slug, key);
@@ -607,7 +548,6 @@ exports.updateMemorialInfo = onCall({ secrets: R2_SECRETS }, async (request) => 
         updatedAt: FieldValue.serverTimestamp()
     };
 
-    // 대표 사진을 새로 고른 경우에만 Storage에 다시 저장
     if (typeof info.photo === "string" && info.photo.startsWith("data:image/")) {
         if (info.photo.length > 700000) {
             throw new HttpsError("invalid-argument", "사진 용량이 너무 큽니다. 다른 사진으로 시도해 주세요.");
@@ -623,7 +563,6 @@ exports.updateMemorialInfo = onCall({ secrets: R2_SECRETS }, async (request) => 
     const before = (await ref.get()).data() || {};
     await ref.update(update);
 
-    // 대표 사진을 바꿨다면 예전 사진 파일 정리
     if (update.photoPath && before.photoPath && before.photoPath !== update.photoPath) {
         await deleteR2Object(before.photoPath);
     }
@@ -632,11 +571,7 @@ exports.updateMemorialInfo = onCall({ secrets: R2_SECRETS }, async (request) => 
     return { memorial: pickMemorial(saved.data()) };
 });
 
-
-// =========================================
-// 5. 발자취 등록·수정·삭제 (관리자)
-// =========================================
-exports.adminSaveTimeline = onCall(async (request) => {
+exports.adminSaveTimeline = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (request) => {
     const { slug, key, id } = request.data || {};
     await assertAdmin(slug, key);
 
@@ -660,7 +595,7 @@ exports.adminSaveTimeline = onCall(async (request) => {
     return { id: ref.id };
 });
 
-exports.adminDeleteTimeline = onCall(async (request) => {
+exports.adminDeleteTimeline = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (request) => {
     const { slug, key, id } = request.data || {};
     await assertAdmin(slug, key);
     if (!id) throw new HttpsError("invalid-argument", "삭제할 발자취를 확인해 주세요.");
@@ -669,11 +604,7 @@ exports.adminDeleteTimeline = onCall(async (request) => {
     return { ok: true };
 });
 
-// =========================================
-// 6. 우체통 편지 목록·상태 변경 (관리자)
-// - 방문객에게는 '공개(approved)' 편지만 보이고, 관리자는 전체를 봄
-// =========================================
-exports.adminListLetters = onCall(async (request) => {
+exports.adminListLetters = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (request) => {
     const { slug, key } = request.data || {};
     await assertAdmin(slug, key);
 
@@ -693,7 +624,7 @@ exports.adminListLetters = onCall(async (request) => {
     return { letters };
 });
 
-exports.adminUpdateLetter = onCall(async (request) => {
+exports.adminUpdateLetter = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (request) => {
     const { slug, key, id, status, remove } = request.data || {};
     await assertAdmin(slug, key);
     if (!id) throw new HttpsError("invalid-argument", "편지를 확인해 주세요.");
@@ -711,14 +642,6 @@ exports.adminUpdateLetter = onCall(async (request) => {
     return { ok: true };
 });
 
-
-// =========================================
-// 사진·영상 (추억) - Cloudflare R2
-// - memories: 보낸 원본 기록 (비공개, 관리자만 서버 함수로 접근)
-// - gallery : 승인된 파일만 모아 둔 공개 목록 (추모관 갤러리가 읽음)
-// =========================================
-
-// 갤러리 공개 목록을 추억 기록 상태에 맞게 다시 만들기
 async function syncGallery(slug, memoryId, memory) {
     const galleryRef = db.collection("memorials").doc(slug).collection("gallery");
     const old = await galleryRef.where("memoryId", "==", memoryId).get();
@@ -729,7 +652,6 @@ async function syncGallery(slug, memoryId, memory) {
         const baseLabel = memory.isDirect ? (memory.sender || "보호자") : `${memory.relation || ""} ${memory.sender || ""}`.trim();
         (memory.files || []).forEach((file, index) => {
             if (file.excluded) return;
-            // 사진 한 장만 따로 고친 경우 그 내용이 우선
             const story = typeof file.story === "string" ? file.story : (memory.story || "");
             const senderLabel = memory.isDirect && file.sender ? file.sender : baseLabel;
             batch.set(galleryRef.doc(`${memoryId}_${index}`), {
@@ -747,8 +669,7 @@ async function syncGallery(slug, memoryId, memory) {
     await batch.commit();
 }
 
-// 업로드 주소 발급 (지인 업로드 = 키 없음 / 보호자 바로 업로드 = 관리자 키)
-exports.createMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) => {
+exports.createMemoryUpload = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: R2_SECRETS }, async (request) => {
     const data = request.data || {};
     const slug = String(data.slug || "").toUpperCase();
     const isDirect = Boolean(data.key);
@@ -768,7 +689,6 @@ exports.createMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) => 
         throw new HttpsError("invalid-argument", "파일 개수를 확인해 주세요.");
     }
 
-    // 보호자 바로 업로드는 표시 이름을 직접 정할 수 있음 (비우면 "보호자")
     const sender = isDirect ? (cleanText(data.sender, 20) || "보호자") : cleanText(data.sender, 20);
     const relation = isDirect ? "" : cleanText(data.relation, 20);
     const story = cleanText(data.story, 1000);
@@ -776,7 +696,6 @@ exports.createMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) => 
         throw new HttpsError("invalid-argument", "보내는 분 성함과 관계를 입력해 주세요.");
     }
 
-    // 파일 하나하나 검사
     let totalBytes = 0;
     const plan = files.map((file, index) => {
         const type = file.type === "video" ? "video" : "image";
@@ -832,7 +751,6 @@ exports.createMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) => 
         createdAt: FieldValue.serverTimestamp()
     });
 
-    // 1시간짜리 1회용 업로드 주소
     const sign = (key, contentType) => getSignedUrl(
         getR2(),
         new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, ContentType: contentType }),
@@ -847,8 +765,7 @@ exports.createMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) => 
     return { memoryId: memoryRef.id, uploads };
 });
 
-// 업로드 완료 확인 → 지인은 '확인 대기', 보호자는 바로 '전시'
-exports.completeMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) => {
+exports.completeMemoryUpload = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: R2_SECRETS }, async (request) => {
     const slug = String(request.data?.slug || "").toUpperCase();
     const memoryId = String(request.data?.memoryId || "");
     if (!/^[A-Z0-9]{6}$/.test(slug) || !memoryId) {
@@ -863,7 +780,6 @@ exports.completeMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) =
     }
     const memory = snap.data();
 
-    // 실제로 R2에 올라갔는지, 신고한 크기와 맞는지 확인
     const check = async (path, expectedSize, maxBytes) => {
         const head = await getR2().send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: path }));
         const size = Number(head.ContentLength) || 0;
@@ -897,8 +813,7 @@ exports.completeMemoryUpload = onCall({ secrets: R2_SECRETS }, async (request) =
     return { status };
 });
 
-// 관리자: 추억 전체 목록 (확인 대기·전시·제외 모두)
-exports.adminListMemories = onCall(async (request) => {
+exports.adminListMemories = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (request) => {
     const { slug, key } = request.data || {};
     await assertAdmin(slug, key);
 
@@ -927,7 +842,6 @@ exports.adminListMemories = onCall(async (request) => {
         .filter((m) => m.status !== "uploading");
     memories.sort((a, b) => b.createdAt - a.createdAt);
 
-    // 저장 공간 사용량도 함께 전달 (관리자 화면 표시용)
     const memorial = (await db.collection("memorials").doc(slug).get()).data() || {};
     return {
         memories,
@@ -936,8 +850,7 @@ exports.adminListMemories = onCall(async (request) => {
     };
 });
 
-// 관리자: 검수 결정 (선택한 파일만 전시 / 전부 제외 / 다시 검수)
-exports.adminReviewMemory = onCall(async (request) => {
+exports.adminReviewMemory = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (request) => {
     const { slug, key, id, action } = request.data || {};
     await assertAdmin(slug, key);
 
@@ -965,8 +878,7 @@ exports.adminReviewMemory = onCall(async (request) => {
     return { status };
 });
 
-// 관리자: 사연 수정
-exports.adminUpdateMemoryStory = onCall(async (request) => {
+exports.adminUpdateMemoryStory = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (request) => {
     const { slug, key, id } = request.data || {};
     await assertAdmin(slug, key);
 
@@ -982,13 +894,11 @@ exports.adminUpdateMemoryStory = onCall(async (request) => {
 
     let update;
     if (Number.isInteger(fileIndex) && memory.files && memory.files[fileIndex]) {
-        // 사진(영상) 한 장만 수정: 같이 올린 다른 사진은 그대로
         const files = memory.files.map((f) => ({ ...f }));
         files[fileIndex].story = story;
         if (hasSender) files[fileIndex].sender = sender;
         update = { files };
     } else {
-        // 묶음 전체 수정 (예전 방식)
         update = { story };
         if (hasSender) update.sender = sender;
     }
@@ -998,8 +908,7 @@ exports.adminUpdateMemoryStory = onCall(async (request) => {
     return { ok: true };
 });
 
-// 관리자: 갤러리에서 파일 하나 삭제 (R2 원본까지 완전히 삭제)
-exports.adminDeleteMemoryFile = onCall({ secrets: R2_SECRETS }, async (request) => {
+exports.adminDeleteMemoryFile = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: R2_SECRETS }, async (request) => {
     const { slug, key, id } = request.data || {};
     const fileIndex = Number(request.data?.fileIndex);
     await assertAdmin(slug, key);
@@ -1030,10 +939,6 @@ exports.adminDeleteMemoryFile = onCall({ secrets: R2_SECRETS }, async (request) 
     return { ok: true };
 });
 
-// =========================================
-// 운영자 기능 (고객 문의 대응용)
-// - 브라우저 콘솔에서 운영자 비밀번호와 함께 호출
-// =========================================
 function assertOperator(key) {
     const expected = Buffer.from(OPERATOR_KEY.value().trim());
     const actual = Buffer.from(String(key || ""));
@@ -1042,8 +947,7 @@ function assertOperator(key) {
     }
 }
 
-// 휴대폰 번호로 주문 찾기 (본인 확인용)
-exports.operatorFindOrders = onCall({ secrets: [OPERATOR_KEY] }, async (request) => {
+exports.operatorFindOrders = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: [OPERATOR_KEY] }, async (request) => {
     assertOperator(request.data?.operatorKey);
 
     const phone = String(request.data?.phone || "").replace(/[^\d]/g, "");
@@ -1069,8 +973,7 @@ exports.operatorFindOrders = onCall({ secrets: [OPERATOR_KEY] }, async (request)
     return { orders };
 });
 
-// 관리자 링크 재발급 (예전 링크는 즉시 무효)
-exports.operatorReissueAdminKey = onCall({ secrets: [OPERATOR_KEY, ...SMS_SECRETS] }, async (request) => {
+exports.operatorReissueAdminKey = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: [OPERATOR_KEY, ...SMS_SECRETS] }, async (request) => {
     assertOperator(request.data?.operatorKey);
 
     const slug = String(request.data?.slug || "").toUpperCase();
@@ -1087,14 +990,12 @@ exports.operatorReissueAdminKey = onCall({ secrets: [OPERATOR_KEY, ...SMS_SECRET
     const oldHash = secretSnap.data().adminKeyHash;
     await secretRef.update({
         adminKeyHash: hashKey(adminKey),
-        // 예전 키는 '재발급됨' 안내를 위해 기록만 해둠 (예전 키로는 접속 불가)
         previousKeyHashes: oldHash ? FieldValue.arrayUnion(oldHash) : [],
         reissuedAt: FieldValue.serverTimestamp()
     });
 
     const adminLink = `${SITE_BASE}/admin.html?room=${slug}&key=${adminKey}`;
 
-    // sendSms: true 로 호출하면 결제 때 등록한 번호로 새 주소를 문자 발송
     let sms = "not_requested";
     if (request.data?.sendSms) {
         const orderId = secretSnap.data().orderId;
@@ -1114,14 +1015,7 @@ exports.operatorReissueAdminKey = onCall({ secrets: [OPERATOR_KEY, ...SMS_SECRET
     return { adminLink, sms };
 });
 
-
-// =========================================
-// 운영자: 추모관 영구 삭제 (보호자 삭제 요청 대응)
-// - R2의 사진·영상 전체, 추모관 데이터(발자취·편지·갤러리·추억), 관리자 키를 모두 삭제
-// - 주문 기록은 전자상거래법상 보관 의무(5년)가 있어 결제·신청자 정보만 남기고 아이 정보는 지움
-// - 실수 방지를 위해 confirm 값에 추모관 주소를 한 번 더 입력해야 실행됨
-// =========================================
-exports.operatorDeleteMemorial = onCall({ secrets: [OPERATOR_KEY, ...R2_SECRETS], timeoutSeconds: 300 }, async (request) => {
+exports.operatorDeleteMemorial = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: [OPERATOR_KEY, ...R2_SECRETS], timeoutSeconds: 300 }, async (request) => {
     assertOperator(request.data?.operatorKey);
 
     const slug = String(request.data?.slug || "").toUpperCase();
@@ -1139,7 +1033,6 @@ exports.operatorDeleteMemorial = onCall({ secrets: [OPERATOR_KEY, ...R2_SECRETS]
         throw new HttpsError("not-found", "추모관을 찾을 수 없습니다.");
     }
 
-    // 1. R2에서 이 추모관 폴더의 파일 전부 삭제 (1,000개씩 나눠서)
     let deletedFiles = 0;
     let token;
     do {
@@ -1156,10 +1049,8 @@ exports.operatorDeleteMemorial = onCall({ secrets: [OPERATOR_KEY, ...R2_SECRETS]
         token = list.IsTruncated ? list.NextContinuationToken : undefined;
     } while (token);
 
-    // 2. 추모관 데이터 전체 삭제 (발자취·편지·갤러리·추억 하위 데이터 포함)
     await db.recursiveDelete(memorialRef);
 
-    // 3. 주문 기록: 결제·신청자 정보는 법정 보관, 아이 정보는 삭제
     const orderId = secretSnap.exists ? secretSnap.data().orderId : null;
     if (orderId) {
         await db.collection("orders").doc(orderId).update({
@@ -1168,17 +1059,11 @@ exports.operatorDeleteMemorial = onCall({ secrets: [OPERATOR_KEY, ...R2_SECRETS]
         }).catch((err) => console.error("주문 기록 정리 실패:", err));
     }
 
-    // 4. 관리자 키 삭제 (기존 관리자 링크도 모두 무효)
     await secretRef.delete();
 
     return { deleted: true, slug, deletedFiles };
 });
 
-
-// =========================================
-// 관리자: 원본 사진·영상 내려받기 목록 (백업용)
-// - 파일마다 1시간짜리 내려받기 주소를 만들어 줌 (브라우저가 바로 파일로 저장)
-// =========================================
 const DOWNLOAD_EXT = {
     "image/webp": ".webp",
     "image/gif": ".gif",
@@ -1190,12 +1075,11 @@ const DOWNLOAD_EXT = {
 };
 
 function downloadDisposition(filename) {
-    // 한글 파일 이름이 깨지지 않도록 두 가지 방식으로 함께 지정
     const ascii = filename.replace(/[^\x20-\x7E]/g, "_").replace(/"/g, "");
     return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
 }
 
-exports.adminListDownloads = onCall({ secrets: R2_SECRETS }, async (request) => {
+exports.adminListDownloads = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: R2_SECRETS }, async (request) => {
     const { slug, key } = request.data || {};
     await assertAdmin(slug, key);
 
@@ -1212,7 +1096,6 @@ exports.adminListDownloads = onCall({ secrets: R2_SECRETS }, async (request) => 
     const files = [];
     let totalBytes = 0;
 
-    // 대표 사진
     if (memorial.photoPath) {
         const ext = (memorial.photoPath.match(/\.[a-z0-9]+$/i) || [".jpg"])[0];
         files.push({
@@ -1225,7 +1108,6 @@ exports.adminListDownloads = onCall({ secrets: R2_SECRETS }, async (request) => 
         });
     }
 
-    // 갤러리·지인이 보낸 사진·영상 (오래된 순)
     const memSnap = await memorialRef.collection("memories").get();
     const memories = memSnap.docs
         .map((doc) => doc.data())
@@ -1261,8 +1143,7 @@ exports.adminListDownloads = onCall({ secrets: R2_SECRETS }, async (request) => 
     return { files, totalBytes };
 });
 
-
-exports.adminSetReminder = onCall(async (request) => {
+exports.adminSetReminder = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (request) => {
     const { slug, key, enabled } = request.data || {};
     await assertAdmin(slug, key);
     await db.collection("memorials").doc(slug).update({
@@ -1364,7 +1245,7 @@ exports.sendAnniversaryReminders = onSchedule({
     }
 });
 
-exports.operatorTestReminder = onCall({ secrets: [OPERATOR_KEY, ...SMS_SECRETS] }, async (request) => {
+exports.operatorTestReminder = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: [OPERATOR_KEY, ...SMS_SECRETS] }, async (request) => {
     assertOperator(request.data?.operatorKey);
 
     const slug = String(request.data?.slug || "").toUpperCase();
@@ -1388,7 +1269,7 @@ function randomGiftPart(length) {
     return Array.from(bytes, (b) => GIFT_CODE_CHARS[b % GIFT_CODE_CHARS.length]).join("");
 }
 
-exports.operatorCreateGiftCodes = onCall({ secrets: [OPERATOR_KEY] }, async (request) => {
+exports.operatorCreateGiftCodes = onCall({ enforceAppCheck: ENFORCE_APP_CHECK, secrets: [OPERATOR_KEY] }, async (request) => {
     assertOperator(request.data?.operatorKey);
 
     const plan = PLANS[request.data?.plan] ? request.data.plan : "essential";

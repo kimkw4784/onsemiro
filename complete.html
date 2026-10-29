@@ -7,7 +7,7 @@
     <meta name="robots" content="noindex, nofollow">
     <title>추모관 개설 완료 | ONSEMIRO 온새미로</title>
 
-    <link rel="stylesheet" as="style" crossorigin
+    <link rel="stylesheet" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -15,7 +15,6 @@
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@300;400;600;700&display=swap"
         rel="stylesheet">
 
-    <!-- 분리된 전용 CSS 연결 -->
     <link rel="stylesheet" href="complete.css">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -36,7 +35,6 @@
 
     <main class="complete-container">
         <div class="complete-card">
-            <!-- 상단 완료 아이콘 및 안내 -->
             <div class="complete-header">
                 <div class="complete-check-icon" aria-hidden="true"><svg viewBox="0 0 20 20" width="1em" height="1em"
                         fill="none" aria-hidden="true">
@@ -52,7 +50,6 @@
                 </p>
             </div>
 
-            <!-- [1그룹] 주문 확인 + 감동 멘트 묶음 -->
             <div class="complete-group-box">
                 <div class="complete-summary">
                     <div class="summary-row">
@@ -80,7 +77,6 @@
                 </div>
             </div>
 
-            <!-- [2그룹] 목적별 링크 분리 (지인 전달용) -->
             <div class="complete-group-box">
                 <div class="group-section-title">
                     <span class="section-title-icon"><iconify-icon icon="noto:loudspeaker"
@@ -90,7 +86,6 @@
                 </div>
 
                 <div class="links-sub-stack">
-                    <!-- 1. 공식 추모관 방문 링크 -->
                     <div class="inner-link-item link-item-highlight">
                         <div class="link-item-header">
                             <span class="link-badge badge-accent">가족·지인용</span>
@@ -104,7 +99,6 @@
                         </div>
                     </div>
 
-                    <!-- 2. 지인 사진 취합 링크 -->
                     <div class="inner-link-item">
                         <div class="link-item-header">
                             <span class="link-badge">사진 모으기</span>
@@ -127,7 +121,6 @@
                 </div>
             </div>
 
-            <!-- [3그룹] 보호자 전용 시크릿 링크 묶음 -->
             <div class="complete-group-box box-admin-secret">
                 <div class="group-section-title title-admin">
                     <span class="section-title-icon"><iconify-icon icon="noto:locked"
@@ -154,7 +147,6 @@
                     </div>
                 </div>
 
-                <!-- 알림톡 안내 배너 -->
                 <div class="group-inner-banner sms-banner" style="margin-top: 14px;">
                     <span class="banner-icon"><iconify-icon icon="noto:speech-balloon"
                             aria-hidden="true"></iconify-icon></span>
@@ -177,10 +169,9 @@
         </div>
     </main>
 
-
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
     <script src="firebase-config.js"></script>
 

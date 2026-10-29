@@ -16,7 +16,7 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
 
-    <link rel="stylesheet" as="style" crossorigin
+    <link rel="stylesheet" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -54,7 +54,6 @@
     </header>
 
     <main class="sample-container">
-        <!-- 인트로 섹션 -->
         <section class="memorial-intro">
             <span class="intro-badge">IN LOVING MEMORY</span>
             <div class="intro-avatar-frame">
@@ -64,13 +63,11 @@
             <p class="intro-dates" id="memorialDates"></p>
 
             <div class="interactive-row" id="interactiveRow">
-                <!-- JS 동적 주입 -->
             </div>
 
             <div class="intro-quote" id="memorialQuote"></div>
         </section>
 
-        <!-- 발자취 타임라인 -->
         <section class="sub-section">
             <div class="sub-header">
                 <span class="sub-tag">TIMELINE</span>
@@ -79,7 +76,6 @@
             <div class="timeline-list" id="memorialTimelineList"></div>
         </section>
 
-        <!-- 갤러리 섹션 -->
         <section class="sub-section" id="gallerySection">
             <div class="sub-header">
                 <span class="sub-tag">PHOTO GALLERY</span>
@@ -88,7 +84,6 @@
             <div class="gallery-grid" id="galleryGrid"></div>
         </section>
 
-        <!-- 이미지 모달 -->
         <div id="imageModal" class="image-modal" onclick="closeImageModal(event)">
             <div class="image-modal-content" onclick="event.stopPropagation()">
                 <button type="button" class="btn-modal-close" onclick="closeImageModalDirect()" aria-label="닫기"><svg
@@ -103,7 +98,6 @@
             </div>
         </div>
 
-        <!-- 비디오 섹션 (등록된 영상이 있을 때만 활성화) -->
         <section class="sub-section" id="videoSection" style="display: none;">
             <div class="sub-header">
                 <span class="sub-tag">VIDEO MEMORY</span>
@@ -112,7 +106,6 @@
             <div class="video-grid" id="videoGrid"></div>
         </section>
 
-        <!-- 사진/영상 모으기 배너 -->
         <div class="gallery-archive-cta">
             <div class="archive-cta-content">
                 <span class="archive-cta-tag">MEMORY ARCHIVE</span>
@@ -130,7 +123,6 @@
             </a>
         </div>
 
-        <!-- 비디오 모달 -->
         <div id="videoModal" class="video-modal" onclick="closeVideoModal(event)">
             <div class="video-modal-content" onclick="event.stopPropagation()">
                 <button type="button" class="btn-modal-close" onclick="forceCloseModal()" aria-label="닫기"><svg
@@ -148,7 +140,6 @@
             </div>
         </div>
 
-        <!-- 우체통 섹션 -->
         <section class="sub-section">
             <div class="sub-header">
                 <span class="sub-tag">POSTBOX</span>
@@ -168,7 +159,6 @@
             <div class="letter-list" id="letterList"></div>
         </section>
 
-        <!-- 공유 버튼 -->
         <div class="share-container">
             <button type="button" class="btn-share-link" onclick="copyMemorialLink()">
                 <iconify-icon icon="noto:link" aria-hidden="true"></iconify-icon> 추모관 링크 공유하기
@@ -178,14 +168,13 @@
         <div id="toastMessage" class="toast-popup">추모관 링크가 클립보드에 복사되었습니다.</div>
     </main>
 
-    <!-- 우측 하단 고정 관리자 버튼 -->
     <a href="#" id="adminFloatingBtn" class="btn-admin-floating" style="display: none;">
         <iconify-icon icon="noto:gear" aria-hidden="true"></iconify-icon> 관리자 모드
     </a>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
     <script src="firebase-config.js"></script>
 

@@ -1,4 +1,3 @@
-// 온새미로 기본 도메인
 const BASE_DOMAIN = 'https://onsemiro.me';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -7,14 +6,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const orderId = urlParams.get('orderId');
     const amount = urlParams.get('amount');
 
-    // 1. 토스 결제창에서 막 돌아온 경우 → 서버에 결제 승인 요청
     if (paymentKey && orderId && amount) {
         setCardState('loading');
 
         let pending = {};
         try {
             pending = JSON.parse(localStorage.getItem('pendingMemorialOrder') || '{}');
-        } catch (e) { /* 빈 값으로 진행 */ }
+        } catch (e) {  }
 
         try {
             const response = await functions.httpsCallable('confirmPayment')({
@@ -42,14 +40,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error('주문 정보 저장 실패:', e);
             }
 
-            // 결제한 이 기기는 바로 관리자로 기억 (추모관에서 관리자 버튼이 보이게)
             if (result.adminKey && result.slug) {
                 try {
                     localStorage.setItem(`onsemiro_admin_${result.slug}`, result.adminKey);
-                } catch (e) { /* 저장 실패 시 무시 */ }
+                } catch (e) {  }
             }
 
-            // 주소창의 결제 정보를 지워서 새로고침 시 다시 승인 요청하지 않도록
             history.replaceState(null, '', 'complete.html');
 
             setCardState('done');
@@ -61,11 +57,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // 2. 완료 화면을 새로고침하거나 다시 연 경우 → 저장해 둔 정보로 표시
     let recent = null;
     try {
         recent = JSON.parse(localStorage.getItem('recentMemorialOrder') || 'null');
-    } catch (e) { /* 무시 */ }
+    } catch (e) {  }
 
     if (recent && recent.roomSlug) {
         renderOrder(recent);
@@ -74,7 +69,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// 카드 상태 전환: loading(확인 중) / done(완료) / error(실패) / empty(정보 없음)
 let originalCardTexts = null;
 
 function setCardState(state, message = '') {
@@ -131,14 +125,12 @@ function setCardState(state, message = '') {
     if (iconEl) iconEl.innerHTML = texts.icon;
 }
 
-// 주문 정보를 화면에 채우기
 function renderOrder(orderData) {
     const petName = orderData.petName || '우리 아이';
     const applicantName = orderData.applicantName || '보호자';
     const slug = orderData.roomSlug;
     const adminKey = orderData.adminKey;
 
-    // [상단/하단 배너] 아이 이름 및 조사 적용
     const noticeNameEl = document.getElementById('noticePetName');
     const noticeJosaEl = document.getElementById('noticePetJosa');
     if (noticeNameEl) {
@@ -153,7 +145,6 @@ function renderOrder(orderData) {
         if (smsJosaEl) smsJosaEl.innerText = '를';
     }
 
-    // [주문 요약] 신청자, 추모관 명칭, 주문번호, 플랜
     const applicantEl = document.getElementById('applicantDisplay');
     if (applicantEl) applicantEl.innerText = applicantName;
 
@@ -170,7 +161,6 @@ function renderOrder(orderData) {
         planEl.innerText = orderData.gift ? `${planName} (선물)` : `${planName} (${planPrice})`;
     }
 
-    // [링크 박스]
     const memorialInput = document.getElementById('memorialLinkInput');
     if (memorialInput) memorialInput.value = `${BASE_DOMAIN}/memorial.html?room=${slug}`;
 
@@ -184,7 +174,6 @@ function renderOrder(orderData) {
             : '알림톡으로 보내드린 관리자 주소를 확인해 주세요.';
     }
 
-    // [하단 버튼]
     const viewBtn = document.getElementById('viewMemorialBtn');
     if (viewBtn) viewBtn.href = `memorial.html?room=${slug}`;
 
@@ -192,8 +181,6 @@ function renderOrder(orderData) {
     if (adminBtn) adminBtn.href = adminKey ? `admin.html?room=${slug}&key=${adminKey}` : '#';
 }
 
-// 이름 끝에 받침이 있으면 '이'를 붙여 부르는 이름으로 바꿔줍니다.
-// (하임 → 하임이, 코코 → 코코) 뒤에 붙는 조사는 항상 받침 없는 형태(가/를/와/의/에게)로 쓰면 됩니다.
 function callName(name) {
     if (!name) return '';
     const lastChar = name.charCodeAt(name.length - 1);
@@ -201,8 +188,6 @@ function callName(name) {
     return (lastChar - 0xAC00) % 28 > 0 ? name + '이' : name;
 }
 
-
-// 링크 클립보드 복사 함수
 function copyLink(inputId) {
     const copyInput = document.getElementById(inputId);
     if (!copyInput) return;

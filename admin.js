@@ -1,15 +1,6 @@
 let currentFilter = 'pending';
 let currentMainTab = 'direct';
 
-// 이름 끝에 받침이 있으면 '이'를 붙여 부르는 이름으로 바꿔줍니다.
-// (하임 → 하임이, 코코 → 코코) 뒤에 붙는 조사는 항상 받침 없는 형태(가/를/와/의/에게)로 쓰면 됩니다.
-function callName(name) {
-    if (!name) return '';
-    const lastChar = name.charCodeAt(name.length - 1);
-    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return name;
-    return (lastChar - 0xAC00) % 28 > 0 ? name + '이' : name;
-}
-
 function normalizeDate(dateStr) {
     if (!dateStr) return '';
     const cleaned = dateStr.replace(/[^\d]/g, '');
@@ -19,11 +10,6 @@ function normalizeDate(dateStr) {
     return dateStr.trim();
 }
 
-// =========================================
-// 관리자 인증 상태
-// - 관리자 링크(?room=...&key=...)로 한 번 들어오면 이 기기에 키를 기억하고,
-//   이후에는 주소에 키가 없어도 관리자 화면과 추모관의 관리자 버튼을 쓸 수 있음
-// =========================================
 const ADMIN_KEY_PREFIX = 'onsemiro_admin_';
 let adminRoom = '';
 let adminKey = '';
@@ -34,11 +20,11 @@ function getStoredAdminKey(room) {
 }
 
 function storeAdminKey(room, key) {
-    try { localStorage.setItem(ADMIN_KEY_PREFIX + room, key); } catch (e) { /* 저장 실패 시 무시 */ }
+    try { localStorage.setItem(ADMIN_KEY_PREFIX + room, key); } catch (e) {  }
 }
 
 function clearAdminKey(room) {
-    try { localStorage.removeItem(ADMIN_KEY_PREFIX + room); } catch (e) { /* 무시 */ }
+    try { localStorage.removeItem(ADMIN_KEY_PREFIX + room); } catch (e) {  }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -52,13 +38,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // 서버에 관리자 키 확인
     try {
         const result = await functions.httpsCallable('verifyAdmin')({ slug: room, key });
         adminMemorial = result.data.memorial;
     } catch (err) {
         console.error('관리자 확인 실패:', err);
-        if (!urlKey) clearAdminKey(room); // 기기에 남아 있던 예전 키는 정리
+        if (!urlKey) clearAdminKey(room);
         showAdminLocked(err.details?.reason);
         return;
     }
@@ -67,34 +52,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     adminKey = key;
     storeAdminKey(room, key);
 
-    // 주소창에서 키를 지워 화면 공유·방문 기록에 남지 않게 함
     if (urlKey) history.replaceState(null, '', `admin.html?room=${room}`);
 
     const nameEl = document.getElementById('adminPetName');
     if (nameEl) nameEl.innerText = adminMemorial.petName || '아이';
 
-    // 추모 기록집(PDF) 페이지 연결
     const bookLink = document.getElementById('bookLink');
     if (bookLink) bookLink.href = `memorial-book.html?room=${room}`;
 
-    // "추모관 메인으로 이동" → 공개 추모관 주소 (이 기기는 관리자 키를 기억하므로 관리자 버튼이 보임)
     const backLink = document.querySelector('.admin-footer-links .link-btn');
     if (backLink) backLink.href = `memorial.html?room=${room}`;
 
     updateMainTabBadges();
     loadMemorialInfo(adminMemorial);
 
-    // 사진·영상은 서버에서 불러옴
     loadMemories();
 
-    // 발자취·우체통은 서버에서 불러옴
     loadTimeline();
     loadLetters();
 
     document.querySelector('.admin-container')?.classList.remove('is-verifying');
 });
 
-// 관리자 키가 없거나 틀렸을 때 (reason이 'reissued'면 재발급 안내)
 function showAdminLocked(reason) {
     const container = document.querySelector('.admin-container');
     if (!container) return;
@@ -118,7 +97,6 @@ function showAdminLocked(reason) {
     `;
 }
 
-// 이 기기에서 관리자 모드 해제
 function forgetThisDevice() {
     const ok = confirm('이 기기에서 관리자 모드를 해제할까요?\n다시 관리하려면 알림톡으로 받으신 관리자 주소로 들어와야 합니다.');
     if (!ok) return;
@@ -126,9 +104,6 @@ function forgetThisDevice() {
     window.location.href = `memorial.html?room=${adminRoom}`;
 }
 
-// =========================================
-// 0. 메인 5단 탭 전환 및 배지 동기화
-// =========================================
 function switchMainTab(tabKey) {
     currentMainTab = tabKey;
 
@@ -144,11 +119,9 @@ function switchMainTab(tabKey) {
     const targetPanel = document.getElementById(`panel-${tabKey}`);
     if (targetPanel) targetPanel.classList.add('active');
 
-    // 탭을 누를 때마다 서버에서 최신 내용을 다시 불러옴 (새로고침 없이 바로 확인)
     refreshTab(tabKey);
 }
 
-// 너무 자주 불러오지 않도록 같은 탭은 3초 안에 다시 불러오지 않음
 const lastTabRefresh = {};
 
 function refreshTab(tabKey) {
@@ -166,7 +139,6 @@ function refreshTab(tabKey) {
 function updateMainTabBadges() {
     const memories = memoriesCache;
 
-    // 1) 지인 검수 대기 건수 (보호자 직접 업로드 항목 제외)
     const pendingCount = memories.filter(item => item.status === 'pending' && !item.isDirect).length;
     const badgePending = document.getElementById('badgePendingMain');
     if (badgePending) {
@@ -174,7 +146,6 @@ function updateMainTabBadges() {
         badgePending.classList.toggle('has-items', pendingCount > 0);
     }
 
-    // 2) 갤러리 전시 건수 (보호자 직접 업로드 + 지인 승인 항목 전체)
     const approvedList = memories.filter(item => item.status === 'approved');
     let totalApprovedFiles = 0;
     approvedList.forEach(m => {
@@ -185,13 +156,11 @@ function updateMainTabBadges() {
         badgeDirect.innerText = totalApprovedFiles;
     }
 
-    // 3) 발자취 개수
     const badgeTimeline = document.getElementById('badgeTimelineMain');
     if (badgeTimeline) {
         badgeTimeline.innerText = timelineCache.length;
     }
 
-    // 4) 우체통: 추모관에 공개 중인 편지 개수
     const publicLetters = lettersCache.filter(l => l.status === 'approved').length;
     const badgePostbox = document.getElementById('badgePostboxMain');
     if (badgePostbox) {
@@ -199,10 +168,7 @@ function updateMainTabBadges() {
     }
 }
 
-// =========================================
-// 1. 지인 사진/영상 검수 로직 (보호자 업로드 제외)
-// =========================================
-let memoriesCache = [];   // 서버에서 불러온 추억(사진·영상) 목록
+let memoriesCache = [];
 
 async function loadMemories() {
     try {
@@ -217,7 +183,6 @@ async function loadMemories() {
     renderDirectGallery();
 }
 
-// 저장 공간 사용량 표시 (예: 3.2GB / 20GB)
 function renderStorageUsage(used, limit) {
     const textEl = document.getElementById('storageUsageText');
     const barEl = document.getElementById('storageUsageBar');
@@ -265,7 +230,6 @@ function setFilter(filter) {
 }
 
 function updateCounts(list) {
-    // 보호자 직접 등록 항목은 지인 검수 카운트에서 제외
     const guestMemories = list.filter(item => !item.isDirect);
 
     const setCount = (id, n) => { const el = document.getElementById(id); if (el) el.innerText = n; };
@@ -276,7 +240,6 @@ function updateCounts(list) {
     updateMainTabBadges();
 }
 
-// 검수 대기 중 파일 선택/해제 (화면에서만 바뀌고, '전시하기'를 눌러야 저장됨)
 function toggleFileExclude(itemId, fileIndex) {
     const item = memoriesCache.find(m => m.id === itemId);
     if (!item || !item.files[fileIndex]) return;
@@ -352,7 +315,6 @@ function renderCards() {
     const list = memoriesCache;
     updateCounts(list);
 
-    // 보호자 직접 등록 항목은 지인 검수 목록에서 제외
     const filtered = list.filter(item => !item.isDirect && item.status === currentFilter);
 
     const container = document.getElementById('memoryCardList');
@@ -443,13 +405,10 @@ function renderCards() {
     });
 }
 
-// =========================================
-// 2. 보호자 직접 업로드 및 갤러리 관리
-// =========================================
 let currentSelectedFiles = [];
 
-const DIRECT_MAX_FILES = 30;   // 한 번에 선택할 수 있는 개수
-const DIRECT_BATCH_SIZE = 10;  // 서버에는 10개씩 나눠서 올림
+const DIRECT_MAX_FILES = 30;
+const DIRECT_BATCH_SIZE = 10;
 
 function handleFileSelect(input) {
     if (!input.files || input.files.length === 0) return;
@@ -530,7 +489,6 @@ async function handleDirectUpload() {
             items.push(await prepareMediaFile(currentSelectedFiles[i]));
         }
 
-        // 10개씩 나눠서 차례로 올리기
         const batches = [];
         for (let i = 0; i < items.length; i += DIRECT_BATCH_SIZE) {
             batches.push(items.slice(i, i + DIRECT_BATCH_SIZE));
@@ -549,7 +507,6 @@ async function handleDirectUpload() {
             });
         }
 
-        // 폼 초기화 (올리는 분 이름은 다음에도 쓰도록 유지)
         currentSelectedFiles = [];
         renderSelectedPreviews();
         storyInput.value = '';
@@ -584,7 +541,6 @@ function renderDirectGallery() {
             if (f.excluded) return;
             totalCount++;
 
-            // 사진 한 장만 따로 고친 내용이 있으면 그걸 보여줌
             const senderLabel = item.isDirect && f.sender ? f.sender : baseLabel;
             const story = typeof f.story === 'string' ? f.story : item.story;
 
@@ -617,7 +573,6 @@ function renderDirectGallery() {
     updateMainTabBadges();
 }
 
-// 사진(영상) 한 장의 이름·이야기만 입력창으로 전환
 function startEditStory(itemId, fIdx) {
     const item = memoriesCache.find(m => m.id === itemId);
     if (!item) return;
@@ -630,7 +585,6 @@ function startEditStory(itemId, fIdx) {
     const card = document.getElementById(`mediaCard-${itemId}-${idx}`);
     const storyBox = card.querySelector('.story-display-box');
 
-    // 보호자가 직접 올린 사진은 표시 이름도 함께 수정
     const senderRow = item.isDirect
         ? `<label class="direct-edit-row">
                 <span class="direct-edit-label">이름</span>
@@ -696,14 +650,10 @@ async function deleteGalleryItem(itemId, fileIndex, btn) {
     }
 }
 
-// =========================================
-// 3. 발자취 타임라인 관리 로직 (CRUD)
-// =========================================
-let timelineCache = [];   // 서버에서 불러온 발자취
-let lettersCache = [];    // 서버에서 불러온 편지
+let timelineCache = [];
+let lettersCache = [];
 let currentLetterFilter = 'approved';
 
-// 화면에 넣기 전에 HTML 특수문자를 바꿔서, 입력값에 섞인 태그가 실행되지 않게 함
 function escapeHtml(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -713,7 +663,6 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-// 발자취 목록 불러오기 (발자취는 공개 정보라 바로 읽을 수 있음)
 async function loadTimeline() {
     try {
         const snap = await db.collection('memorials').doc(adminRoom).collection('timeline').get();
@@ -830,11 +779,6 @@ async function deleteTimelineItem(id, btn) {
     }
 }
 
-// =========================================
-// 4. 무지개 우체통 관리 (공개 중 / 숨김)
-// - 편지는 쓰는 즉시 공개되고, 보호자는 숨기거나 삭제할 수 있음
-// - 예전 방식(확인 대기)으로 들어온 편지는 '숨김'에서 공개할 수 있게 함
-// =========================================
 async function loadLetters() {
     try {
         const result = await functions.httpsCallable('adminListLetters')({ slug: adminRoom, key: adminKey });
@@ -947,13 +891,7 @@ function showToast(message) {
     }, 2500);
 }
 
-// =========================================
-// 5. 추모관 정보 수정
-// -----------------------------------------
-// 서버(verifyAdmin)에서 받은 정보로 채우고, 저장은 updateMemorialInfo 함수로 처리
-// =========================================
-
-let infoOriginal = null;   // 불러온 당시 값 (변경 여부 비교용)
+let infoOriginal = null;
 let infoPetType = 'dog';
 let infoPhotoData = '';
 
@@ -973,14 +911,12 @@ function loadMemorialInfo(memorial) {
     document.getElementById('infoBgm').value = m.bgm || 'piano';
     renderReminderToggle(m);
 
-
     renderInfoAvatar();
     renderInfoPetType();
     infoOriginal = collectInfoValues();
     markInfoDirty();
 }
 
-// 현재 입력값을 하나의 객체로 모으기
 function collectInfoValues() {
     return {
         petName: document.getElementById('infoPetName').value.trim(),
@@ -1016,7 +952,6 @@ function selectInfoPetType(type) {
     markInfoDirty();
 }
 
-// 대표 사진용 압축 (최대 800px) - HEIC 사진도 자동 변환 (media-upload.js의 decodeImageFile 사용)
 async function compressProfilePhoto(file) {
     const { img, url } = await decodeImageFile(file);
     try {
@@ -1031,7 +966,6 @@ async function compressProfilePhoto(file) {
     }
 }
 
-// 대표 사진 교체
 async function handleInfoPhoto(input) {
     const file = input.files[0];
     if (!file) return;
@@ -1052,11 +986,9 @@ async function handleInfoPhoto(input) {
     input.value = '';
 }
 
-// 함께한 날 계산 + 글자 수 + 변경 여부 표시
 function markInfoDirty() {
     const values = collectInfoValues();
 
-    // 함께한 날
     const daysEl = document.getElementById('infoDaysText');
     if (values.meetDate && values.farewellDate) {
         const diff = new Date(values.farewellDate) - new Date(values.meetDate);
@@ -1067,10 +999,8 @@ function markInfoDirty() {
         daysEl.innerText = '';
     }
 
-    // 메시지 글자 수
     document.getElementById('infoQuoteCount').innerText = `${values.quote.length} / 100`;
 
-    // 변경 여부
     if (!infoOriginal) return;
     const isDirty = JSON.stringify(values) !== JSON.stringify(infoOriginal);
     const statusEl = document.getElementById('infoSaveStatus');
@@ -1103,7 +1033,6 @@ async function saveMemorialInfo() {
             key: adminKey,
             info: {
                 ...rest,
-                // 새로 고른 사진(data:...)일 때만 보내고, 기존 사진 주소는 보내지 않음
                 photo: petPhoto && petPhoto.startsWith('data:') ? petPhoto : ''
             }
         });
@@ -1124,15 +1053,11 @@ async function saveMemorialInfo() {
     }
 }
 
-// =========================================
-// 버튼 로딩 표시: 처리하는 동안 빙글빙글 + 다시 누르지 못하게
-// =========================================
 function setBtnLoading(btn, loading, text) {
     if (!btn) return;
     if (loading) {
         btn.dataset.originalHtml = btn.innerHTML;
         btn.disabled = true;
-        // 버튼 배경이 어두우면 흰색, 밝으면 진한색 표시
         const rgb = (getComputedStyle(btn).backgroundColor.match(/\d+/g) || [255, 255, 255]).map(Number);
         const isDarkBg = (rgb[3] === undefined || rgb[3] > 0) && (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114) < 140;
         btn.innerHTML = `<span class="btn-spinner${isDarkBg ? '' : ' is-dark'}" aria-hidden="true"></span>${text || ''}`;
@@ -1142,10 +1067,6 @@ function setBtnLoading(btn, loading, text) {
     }
 }
 
-// =========================================
-// 날짜 선택: 메인 빌더와 같은 달력 (휴대폰에서는 기기 기본 날짜 화면)
-// - 실제 값은 2026-10-11 형식, 화면에는 2026. 10. 11.로 표시
-// =========================================
 const DATEPICKER_ICON = '<svg class="datepicker-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>';
 
 function initAdminDatepickers(root = document) {
@@ -1153,7 +1074,6 @@ function initAdminDatepickers(root = document) {
     root.querySelectorAll('.admin-datepicker').forEach(el => {
         if (el._flatpickr) return;
 
-        // 빌더와 같은 모양을 쓰도록 상자로 감싸고 달력 아이콘 추가
         if (!el.parentElement.classList.contains('datepicker-wrap')) {
             const wrap = document.createElement('div');
             wrap.className = 'datepicker-wrap admin-datepicker-wrap';
@@ -1183,11 +1103,6 @@ function setDatepickerValue(id, value) {
 }
 
 document.addEventListener('DOMContentLoaded', () => initAdminDatepickers());
-// =========================================
-// 원본 사진·영상 내려받기 (백업)
-// - 서버가 파일마다 1시간짜리 내려받기 주소를 만들어 줌
-// - 파일을 브라우저가 직접 저장해서, 큰 영상도 휴대폰 메모리와 상관없이 받아짐
-// =========================================
 let downloadList = [];
 
 function formatBytes(bytes) {

@@ -8,7 +8,7 @@
     <meta name="color-scheme" content="light only">
     <title>추모 기록집 | ONSEMIRO 온새미로</title>
 
-    <link rel="stylesheet" as="style" crossorigin
+    <link rel="stylesheet" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +23,6 @@
 </head>
 
 <body>
-    <!-- 화면에서만 보이는 안내·저장 버튼 (인쇄할 때는 숨김) -->
     <div class="book-toolbar">
         <div class="book-toolbar-inner">
             <div class="book-toolbar-text">
@@ -39,12 +38,11 @@
     </div>
 
     <main class="book" id="book">
-        <!-- book.js가 페이지를 채웁니다 -->
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
     <script src="firebase-config.js"></script>
 

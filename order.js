@@ -1,16 +1,12 @@
-// order.js
-
 let currentSelectedPlan = 'essential';
-let currentPayMethod = 'CARD';   // CARD(카드·간편결제) / TRANSFER(계좌이체) / MOBILE_PHONE(휴대폰)
+let currentPayMethod = 'CARD';
 const PLAN_PRICES = {
-    essential: 19500,   // 에센셜 아카이브 (화면 표시용, 실제 결제 금액은 서버 가격표로 정해짐)
-    signature: 49000    // 시그니처 아카이브
+    essential: 19500,
+    signature: 49000
 };
 
-// 토스페이먼츠 클라이언트 키 설정 (테스트용 키)
 const TOSS_CLIENT_KEY = 'test_ck_LlDJaYngro5x6xkBPvBn3ezGdRpX';
 
-// 빌더에서 선택한 반려동물 종류 (dog / cat / small)
 const PET_TYPE_ICONS = {
     dog: 'fluent-emoji-flat:dog-face',
     cat: 'fluent-emoji-flat:cat-face',
@@ -23,14 +19,12 @@ function getSelectedPetType() {
     return match ? match[1] : 'dog';
 }
 
-// 빌더에 아이 이름을 직접 입력했는지 확인
 function isBuilderFilled() {
     const nameEl = document.getElementById('petNameInput');
     if (!nameEl) return true;
     return nameEl.value.trim() !== '';
 }
 
-// 빌더로 안내: 부드럽게 스크롤하고 안내 문구를 잠깐 보여준 뒤 이름 칸에 커서
 function guideToBuilder() {
     const formBox = document.querySelector('.builder-form-box');
     if (!formBox) return;
@@ -57,9 +51,7 @@ function guideToBuilder() {
     }, 600);
 }
 
-// 모달 열기 (빌더에 입력된 최신 정보 및 사진 동기화)
 function openOrderModal(planType = 'essential') {
-    // 빌더를 건드리지 않고 요금제 버튼을 누른 경우: 먼저 정보 입력 안내
     if (!isBuilderFilled()) {
         guideToBuilder();
         return;
@@ -69,16 +61,13 @@ function openOrderModal(planType = 'essential') {
     currentPayMethod = 'CARD';
     giftMode = false;
 
-    // 기존 모달이 남아있다면 제거
     const oldModal = document.getElementById('orderModal');
     if (oldModal) oldModal.remove();
 
-    // 1. 빌더 입력값 가져오기
     const petName = document.getElementById('petNameInput')?.value || '우리 아이';
     const meetDate = document.getElementById('petMeetInput')?.value || '2013. 05. 10.';
     const farewellDate = document.getElementById('petFarewellInput')?.value || '2026. 02. 15.';
 
-    // 2. 사진 데이터 확인
     let photoData = window.uploadedImageData;
     if (!photoData) {
         const previewImg = document.querySelector('#liveAvatar img');
@@ -87,13 +76,11 @@ function openOrderModal(planType = 'essential') {
         }
     }
 
-    // 썸네일 렌더링
     let thumbHtml = `<iconify-icon icon="${PET_TYPE_ICONS[getSelectedPetType()]}" aria-hidden="true"></iconify-icon>`;
     if (photoData) {
         thumbHtml = `<img src="${photoData}" alt="${petName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
     }
 
-    // 3. 모달 마크업 동적 삽입
     const modalHtml = `
     <div id="orderModal" class="order-modal-backdrop">
         <div class="order-modal-card">
@@ -197,14 +184,12 @@ function openOrderModal(planType = 'essential') {
     document.body.style.overflow = 'hidden';
 }
 
-// 모달 닫기
 function closeOrderModal() {
     const modal = document.getElementById('orderModal');
     if (modal) modal.remove();
     document.body.style.overflow = '';
 }
 
-// 플랜 선택 토글
 function selectPlanInModal(cardElement, planValue) {
     currentSelectedPlan = planValue;
     document.querySelectorAll('#planCardGroup .plan-card').forEach(el => el.classList.remove('active'));
@@ -216,7 +201,6 @@ function selectPlanInModal(cardElement, planValue) {
     updateSubmitButtonText();
 }
 
-// 결제 수단 선택 토글
 function selectPayMethod(cardElement, method) {
     currentPayMethod = method;
     document.querySelectorAll('#payMethodGroup .pay-option').forEach(el => {
@@ -227,7 +211,6 @@ function selectPayMethod(cardElement, method) {
     cardElement.setAttribute('aria-pressed', 'true');
 }
 
-// 폼 최종 제출 → 서버에 주문 등록 → 토스 결제창 열기
 let giftMode = false;
 
 function normalizeGiftCode(value) {
@@ -297,13 +280,11 @@ async function handleOrderSubmit(event) {
     const applicantName = document.getElementById('applicantName')?.value.trim() || '';
     const applicantPhone = document.getElementById('applicantPhone')?.value.trim() || '';
 
-    // 서버로 보낼 추모관 정보 (사진은 직접 고른 경우에만 전송)
     const memorial = {
         petName: document.getElementById('petNameInput')?.value.trim() || '우리 아이',
         petType: getSelectedPetType(),
         meetDate: document.getElementById('petMeetInput')?.value || '',
         farewellDate: document.getElementById('petFarewellInput')?.value || '',
-        // 선물을 비워두면 미리보기에 보이던 예시 그대로 사용
         gift1: valueOrExample(document.getElementById('giftInput1')),
         gift2: valueOrExample(document.getElementById('giftInput2')),
         quote: valueOrExample(document.getElementById('petQuoteInput')),
@@ -314,7 +295,6 @@ async function handleOrderSubmit(event) {
 
     setLoading(true);
 
-    // 1. 서버에 주문 등록 (금액은 서버가 가격표로 정해서 돌려줌)
     let order;
     try {
         const result = await functions.httpsCallable('createOrder')({
@@ -351,7 +331,6 @@ async function handleOrderSubmit(event) {
         return;
     }
 
-    // 2. 완료 화면에서 바로 보여줄 정보만 임시 저장 (사진·연락처 제외)
     const { photo, ...memorialWithoutPhoto } = memorial;
     localStorage.setItem('pendingMemorialOrder', JSON.stringify({
         ...memorialWithoutPhoto,
@@ -360,13 +339,12 @@ async function handleOrderSubmit(event) {
         applicantName
     }));
 
-    // 3. 서버가 정한 주문번호·금액으로 토스 결제창 열기
     try {
         const tossPayments = TossPayments(TOSS_CLIENT_KEY);
         const payment = tossPayments.payment({ customerKey: TossPayments.ANONYMOUS });
 
         await payment.requestPayment({
-            method: currentPayMethod,   // 선택한 결제 수단의 결제창 열기
+            method: currentPayMethod,
             amount: { currency: 'KRW', value: order.amount },
             orderId: order.orderId,
             orderName: order.orderName,

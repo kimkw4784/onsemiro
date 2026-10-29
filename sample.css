@@ -26,9 +26,6 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* =========================================
-   1. 상단 네비게이션 & BGM 컨트롤러
-========================================= */
 .sample-nav {
     position: sticky;
     top: 0;
@@ -45,21 +42,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
-
-.btn-back {
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-sub);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: color 0.2s ease;
-}
-
-.btn-back:hover {
-    color: var(--accent-brown);
 }
 
 .bgm-controller {
@@ -97,9 +79,6 @@ body {
     font-weight: 700;
 }
 
-/* =========================================
-   2. 레이아웃 & 인트로 프로필
-========================================= */
 .sample-container {
     max-width: 680px;
     margin: 0 auto;
@@ -163,9 +142,6 @@ body {
     font-weight: 600;
 }
 
-/* =========================================
-   3. 상호작용 인터랙션 (버튼 & 플로팅 파티클)
-========================================= */
 .interactive-row {
     position: relative;
     display: flex;
@@ -263,56 +239,6 @@ body {
     }
 }
 
-.interact-welcome-bubble {
-    position: absolute;
-    bottom: calc(100% + 12px);
-    left: 50%;
-    transform: translateX(-50%) translateY(6px);
-    background: rgba(43, 38, 32, 0.94);
-    color: #FFFFFF;
-    padding: 10px 14px 10px 18px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.4;
-    letter-spacing: -0.3px;
-    white-space: nowrap;
-    box-shadow: 0 8px 24px rgba(43, 38, 32, 0.16);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 50;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.interact-welcome-bubble.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-    pointer-events: auto;
-}
-
-.btn-bubble-close {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 12px;
-    cursor: pointer;
-    padding: 2px 4px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.2s;
-}
-
-.btn-bubble-close:hover {
-    color: #FFFFFF;
-}
-
 .intro-quote {
     font-family: var(--font-serif-kr);
     font-size: 14.5px;
@@ -326,9 +252,6 @@ body {
     word-break: keep-all;
 }
 
-/* =========================================
-   4. 공통 서브 섹션 타이틀
-========================================= */
 .sub-section {
     padding: 48px 0 20px;
     border-bottom: 1px solid var(--border-light);
@@ -355,9 +278,6 @@ body {
     font-weight: 600;
 }
 
-/* =========================================
-   5. 발자취 타임라인
-========================================= */
 .timeline-list {
     position: relative;
     padding-left: 20px;
@@ -404,9 +324,6 @@ body {
     color: var(--text-sub);
 }
 
-/* =========================================
-   6. 갤러리 섹션
-========================================= */
 .gallery-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -452,9 +369,6 @@ body {
     pointer-events: none;
 }
 
-/* =========================================
-   7. 비디오 섹션
-========================================= */
 .video-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -550,9 +464,6 @@ body {
     word-break: keep-all;
 }
 
-/* =========================================
-   8. 미디어 아카이브 배너
-========================================= */
 .gallery-archive-cta {
     margin-top: 48px;
     background: #FCFAF8;
@@ -623,9 +534,6 @@ body {
     height: 16px;
 }
 
-/* =========================================
-   9. 이미지 & 비디오 팝업 모달
-========================================= */
 .image-modal,
 .video-modal {
     display: none;
@@ -768,9 +676,6 @@ body {
     }
 }
 
-/* =========================================
-   10. 무지개 우체통 섹션
-========================================= */
 .letter-form {
     background: #FFFFFF;
     padding: 20px;
@@ -885,10 +790,6 @@ body {
     word-break: break-word;
 }
 
-.letter-card.new-arrival {
-    animation: letterSlideDown 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
 @keyframes letterSlideDown {
     from {
         opacity: 0;
@@ -903,9 +804,6 @@ body {
     }
 }
 
-/* =========================================
-   11. 하단 배너, 공유 및 플로팅 관리자
-========================================= */
 .sample-cta-banner {
     margin-top: 48px;
     background: #FFFFFF;
@@ -1016,9 +914,6 @@ body {
     transform: translateY(-2px);
 }
 
-/* =========================================
-   12. 반응형 미디어 쿼리
-========================================= */
 @media (max-width: 640px) {
     .sample-nav {
         padding: 12px 16px;
@@ -1052,32 +947,19 @@ body {
         justify-content: center;
         margin-top: 10px;
     }
-
-    .interact-welcome-bubble {
-        font-size: 11.5px;
-        padding: 9px 12px 9px 14px;
-        white-space: normal;
-        width: 90%;
-        text-align: left;
-    }
 }
 
-/* 안내 글자(placeholder): 입력값과 확실히 구분되도록 연한 회색 */
 input::placeholder,
 textarea::placeholder {
     color: #C4BDB3;
     opacity: 1;
 }
 
-/* 입력칸을 터치하면 안내 글자(placeholder) 숨기기 */
 input:focus::placeholder,
 textarea:focus::placeholder {
     color: transparent;
 }
 
-/* =========================================
-   확대 사진 이전/다음
-========================================= */
 .btn-gallery-nav {
     position: absolute;
     top: 50%;
@@ -1121,7 +1003,6 @@ textarea:focus::placeholder {
     display: none;
 }
 
-/* 화면이 좁으면 화살표를 사진 안쪽 가장자리로 */
 @media (max-width: 900px) {
     .btn-gallery-nav.prev {
         left: 8px;
@@ -1132,9 +1013,6 @@ textarea:focus::placeholder {
     }
 }
 
-/* =========================================
-   영상 창: 세로·가로 영상 모두 영상 모양에 맞춰 크게
-========================================= */
 .video-modal-content {
     width: auto;
     max-width: min(800px, 100%);
@@ -1156,17 +1034,12 @@ textarea:focus::placeholder {
     max-height: 72dvh;
 }
 
-/* 설명 글이 길어도 창 너비를 늘리지 않고 영상 너비에 맞춰 줄바꿈 */
 .modal-video-meta {
     width: 0;
     min-width: 100%;
     box-sizing: border-box;
 }
 
-/* =========================================
-   디자인 통일 (메인 페이지 기준)
-========================================= */
-/* 상단 로고 (메인과 동일) */
 .sample-nav .logo {
     text-decoration: none;
     display: flex;
@@ -1197,7 +1070,6 @@ textarea:focus::placeholder {
     }
 }
 
-/* 이름표(작은 영문) 두께 강화 */
 .intro-badge,
 .sub-tag,
 .archive-cta-tag {
@@ -1210,7 +1082,6 @@ textarea:focus::placeholder {
     letter-spacing: -0.4px;
 }
 
-/* 링크 공유하기 버튼: 아이콘과 글자 가운데 정렬 */
 .btn-share-link {
     display: inline-flex;
     align-items: center;
@@ -1222,13 +1093,11 @@ textarea:focus::placeholder {
     font-size: 15px;
 }
 
-/* 우체통 이름·관계 입력칸이 화면 밖으로 넘치지 않게 */
 .letter-input {
     min-width: 0;
     width: 100%;
 }
 
-/* 배경음악 음표 아이콘 세로 가운데 정렬 */
 .bgm-icon {
     display: inline-flex;
     align-items: center;
@@ -1240,7 +1109,6 @@ textarea:focus::placeholder {
     display: block;
 }
 
-/* 영상 날짜·올린 사람: 한글과 숫자가 같은 크기로 또렷하게 보이도록 일반 글꼴 사용 */
 .video-date,
 .modal-date {
     font-family: var(--font-sans);
@@ -1249,9 +1117,6 @@ textarea:focus::placeholder {
     letter-spacing: 0;
 }
 
-/* =========================================
-   공유하기 선택 창
-========================================= */
 .share-sheet-backdrop {
     position: fixed;
     inset: 0;
@@ -1358,18 +1223,12 @@ textarea:focus::placeholder {
     }
 }
 
-/* =========================================
-   모바일 반응형 정리
-========================================= */
-/* 한글이 단어 중간에서 끊기지 않게 (긴 주소는 필요할 때만 줄바꿈) */
 body {
     word-break: keep-all;
     overflow-wrap: anywhere;
 }
 
 @media (max-width: 480px) {
-
-    /* 선물·촛불 버튼: 글자가 쪼개지지 않게 두 줄로 배치 */
     .interactive-row {
         flex-wrap: wrap;
         gap: 8px;
@@ -1386,9 +1245,6 @@ body {
     }
 }
 
-/* =========================================
-   추모관 상단: 로고는 줄바꿈 없이, 배경음악은 남는 공간에 맞춰 줄어들기
-========================================= */
 .sample-nav-inner {
     gap: 10px;
 }
