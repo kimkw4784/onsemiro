@@ -20,11 +20,11 @@ function getStoredAdminKey(room) {
 }
 
 function storeAdminKey(room, key) {
-    try { localStorage.setItem(ADMIN_KEY_PREFIX + room, key); } catch (e) {  }
+    try { localStorage.setItem(ADMIN_KEY_PREFIX + room, key); } catch (e) { }
 }
 
 function clearAdminKey(room) {
-    try { localStorage.removeItem(ADMIN_KEY_PREFIX + room); } catch (e) {  }
+    try { localStorage.removeItem(ADMIN_KEY_PREFIX + room); } catch (e) { }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1058,9 +1058,7 @@ function setBtnLoading(btn, loading, text) {
     if (loading) {
         btn.dataset.originalHtml = btn.innerHTML;
         btn.disabled = true;
-        const rgb = (getComputedStyle(btn).backgroundColor.match(/\d+/g) || [255, 255, 255]).map(Number);
-        const isDarkBg = (rgb[3] === undefined || rgb[3] > 0) && (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114) < 140;
-        btn.innerHTML = `<span class="btn-spinner${isDarkBg ? '' : ' is-dark'}" aria-hidden="true"></span>${text || ''}`;
+        btn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span>${text || ''}`;
     } else {
         btn.disabled = false;
         if (btn.dataset.originalHtml !== undefined) btn.innerHTML = btn.dataset.originalHtml;
@@ -1240,7 +1238,7 @@ async function toggleReminder(input) {
     const enabled = input.checked;
     const status = document.getElementById('reminderStatus');
     input.disabled = true;
-    if (status) status.innerText = '저장하는 중...';
+    if (status) status.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>저장하는 중...';
     try {
         await functions.httpsCallable('adminSetReminder')({ slug: adminRoom, key: adminKey, enabled });
         if (adminMemorial) adminMemorial.reminderEnabled = enabled;

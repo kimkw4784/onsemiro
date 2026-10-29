@@ -1337,9 +1337,10 @@
     flex: 1;
 }
 
+.btn-spinner,
 .btn-spinner.is-dark {
-    border-color: rgba(43, 38, 32, 0.2);
-    border-top-color: #2B2620;
+    border-color: currentColor;
+    border-right-color: transparent;
 }
 
 button:disabled .btn-spinner {
@@ -1648,6 +1649,7 @@ button:disabled .btn-spinner {
 }
 
 @media (max-width: 480px) {
+
     .timeline-input-row .admin-datepicker-wrap,
     .edit-mode-form .admin-datepicker-wrap {
         flex: 1 1 0;

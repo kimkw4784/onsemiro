@@ -358,6 +358,8 @@ function openVideoModal(videoSrc, dateText, descText) {
     document.body.style.overflow = 'hidden';
     pushModalHistory();
 
+    setupVideoLoading(player);
+    showVideoLoading('영상을 불러오는 중...');
     player.load();
     const playPromise = player.play();
     if (playPromise !== undefined) {
@@ -377,6 +379,7 @@ function closeVideoModalNow() {
     player.pause();
     player.removeAttribute('src');
     player.load();
+    hideVideoLoading();
 
     modal.classList.remove('active');
     document.body.style.overflow = '';
@@ -520,7 +523,7 @@ async function loadTimeline() {
 async function showAdminButtonIfVerified(urlKey) {
     const storageKey = `onsemiro_admin_${activeRoomSlug}`;
     let storedKey = '';
-    try { storedKey = localStorage.getItem(storageKey) || ''; } catch (e) {  }
+    try { storedKey = localStorage.getItem(storageKey) || ''; } catch (e) { }
 
     const key = urlKey || storedKey;
     if (!key) return;
@@ -529,12 +532,12 @@ async function showAdminButtonIfVerified(urlKey) {
         await functions.httpsCallable('verifyAdmin')({ slug: activeRoomSlug, key });
     } catch (err) {
         if (!urlKey) {
-            try { localStorage.removeItem(storageKey); } catch (e) {  }
+            try { localStorage.removeItem(storageKey); } catch (e) { }
         }
         return;
     }
 
-    try { localStorage.setItem(storageKey, key); } catch (e) {  }
+    try { localStorage.setItem(storageKey, key); } catch (e) { }
 
     if (urlKey) history.replaceState(null, '', `memorial.html?room=${activeRoomSlug}`);
 
@@ -684,4 +687,57 @@ function showToast(msg) {
     toast.innerText = msg;
     toast.classList.add("show");
     setTimeout(() => toast.classList.remove("show"), 2500);
+}
+
+let videoLoadingReady = false;
+
+function showVideoLoading(text) {
+    const box = document.querySelector('#videoModal .modal-player-box');
+    if (!box) return;
+    let overlay = document.getElementById('videoLoading');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'videoLoading';
+        overlay.className = 'video-loading';
+        overlay.innerHTML = '<span class="video-loading-spinner" aria-hidden="true"></span><span class="video-loading-text" id="videoLoadingText"></span>';
+        box.appendChild(overlay);
+    }
+    document.getElementById('videoLoadingText').innerText = text;
+    overlay.hidden = false;
+}
+
+function hideVideoLoading() {
+    const overlay = document.getElementById('videoLoading');
+    if (overlay) overlay.hidden = true;
+}
+
+function setupVideoLoading(player) {
+    if (videoLoadingReady) return;
+    videoLoadingReady = true;
+
+    const updateProgress = () => {
+        if (!player.duration || !isFinite(player.duration) || player.buffered.length === 0) return;
+        const loaded = player.buffered.end(player.buffered.length - 1);
+        const percent = Math.min(99, Math.round((loaded / player.duration) * 100));
+        const overlay = document.getElementById('videoLoading');
+        if (overlay && !overlay.hidden) {
+            document.getElementById('videoLoadingText').innerText = `영상을 불러오는 중... ${percent}%`;
+        }
+    };
+
+    player.addEventListener('progress', updateProgress);
+    player.addEventListener('waiting', () => {
+        if (player.getAttribute('src')) showVideoLoading('영상을 불러오는 중...');
+        updateProgress();
+    });
+    player.addEventListener('playing', hideVideoLoading);
+    player.addEventListener('canplay', () => {
+        if (!player.paused) hideVideoLoading();
+    });
+    player.addEventListener('pause', () => {
+        if (player.readyState >= 3) hideVideoLoading();
+    });
+    player.addEventListener('error', () => {
+        if (player.getAttribute('src')) showVideoLoading('영상을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+    });
 }
