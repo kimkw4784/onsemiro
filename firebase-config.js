@@ -16,7 +16,15 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
-firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(RECAPTCHA_SITE_KEY), true);
+try {
+    if (typeof firebase.appCheck === 'function') {
+        firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(RECAPTCHA_SITE_KEY), true);
+    } else {
+        console.error('App Check 도구를 불러오지 못했습니다.');
+    }
+} catch (err) {
+    console.error('App Check 시작 실패:', err);
+}
 
 window.db = firebase.firestore();
 window.functions = firebase.app().functions('asia-northeast3');
