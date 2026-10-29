@@ -16,14 +16,22 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
-try {
-    if (typeof firebase.appCheck === 'function') {
-        firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(RECAPTCHA_SITE_KEY), true);
-    } else {
-        console.error('App Check 도구를 불러오지 못했습니다.');
+function startAppCheck() {
+    try {
+        if (typeof firebase.appCheck === 'function') {
+            firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(RECAPTCHA_SITE_KEY), true);
+        } else {
+            console.error('App Check 도구를 불러오지 못했습니다.');
+        }
+    } catch (err) {
+        console.error('App Check 시작 실패:', err);
     }
-} catch (err) {
-    console.error('App Check 시작 실패:', err);
+}
+
+if (document.body) {
+    startAppCheck();
+} else {
+    document.addEventListener('DOMContentLoaded', startAppCheck);
 }
 
 window.db = firebase.firestore();
